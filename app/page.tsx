@@ -14,16 +14,33 @@ const ranking = [
   ["03", "Tom", "LVL 8", "1,626"], ["04", "k1ng", "LVL 7", "1,514"],
 ];
 
+const mapPool = ["Mirage", "Inferno", "Nuke", "Ancient", "Anubis", "Dust II", "Train"];
+type Screen = "landing" | "dashboard" | "room";
+
 export default function Home() {
   const [steamOpen, setSteamOpen] = useState(false);
   const [joined, setJoined] = useState(false);
   const [notice, setNotice] = useState("");
+  const [screen, setScreen] = useState<Screen>("landing");
+  const [balance, setBalance] = useState(24);
+  const [activeTab, setActiveTab] = useState("Inicio");
+  const [bannedMaps, setBannedMaps] = useState<string[]>([]);
 
   function joinRoom() {
     setJoined(true);
     setNotice("Puesto reservado · S/ 6 bloqueados de tu saldo");
     window.setTimeout(() => setNotice(""), 3500);
   }
+
+  function enterDemo() {
+    setSteamOpen(false);
+    setScreen("dashboard");
+    setNotice("Cuenta demo conectada · Perfil verificado");
+    window.setTimeout(() => setNotice(""), 3500);
+  }
+
+  if (screen === "dashboard") return <Dashboard balance={balance} activeTab={activeTab} setActiveTab={setActiveTab} openRoom={() => setScreen("room")} goHome={() => setScreen("landing")} notice={notice} />;
+  if (screen === "room") return <RoomFlow balance={balance} bannedMaps={bannedMaps} setBannedMaps={setBannedMaps} onReserve={() => { if (!joined) { setJoined(true); setBalance((value) => value - 6); setNotice("S/ 6 bloqueados · Ya estás dentro de la sala"); window.setTimeout(() => setNotice(""), 3500); } }} joined={joined} goBack={() => setScreen("dashboard")} notice={notice} />;
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#09080d] text-white">
@@ -63,8 +80,43 @@ export default function Home() {
 
       <footer className="relative z-10 border-t border-white/7 px-5 py-8 text-center text-xs text-white/30">TENE es una plataforma independiente y no está afiliada a Valve Corporation. Solo para mayores de 18 años.</footer>
 
-      {steamOpen && <div className="modal-backdrop" role="presentation" onMouseDown={() => setSteamOpen(false)}><section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="steam-title" onMouseDown={(e) => e.stopPropagation()}><button className="modal-close" aria-label="Cerrar" onClick={() => setSteamOpen(false)}>×</button><span className="steam-logo-large">S</span><p className="eyebrow justify-center">VERIFICACIÓN OFICIAL</p><h2 id="steam-title" className="mt-4 text-2xl font-black">Conecta tu cuenta de Steam</h2><p className="mt-3 text-sm leading-6 text-white/45">Obtendremos tu SteamID64 y comprobaremos que tu perfil, biblioteca y horas de CS2 sean públicos.</p><button className="primary-button mt-6 w-full" onClick={() => { setSteamOpen(false); setNotice("Demo: la conexión real de Steam se habilitará en integración"); window.setTimeout(() => setNotice(""), 3500); }}>Continuar con Steam</button><p className="mt-4 text-[11px] text-white/25">TENE nunca recibe ni almacena tu contraseña de Steam.</p></section></div>}
+      {steamOpen && <div className="modal-backdrop" role="presentation" onMouseDown={() => setSteamOpen(false)}><section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="steam-title" onMouseDown={(e) => e.stopPropagation()}><button className="modal-close" aria-label="Cerrar" onClick={() => setSteamOpen(false)}>×</button><span className="steam-logo-large">S</span><p className="eyebrow justify-center">VERIFICACIÓN OFICIAL</p><h2 id="steam-title" className="mt-4 text-2xl font-black">Conecta tu cuenta de Steam</h2><p className="mt-3 text-sm leading-6 text-white/45">Obtendremos tu SteamID64 y comprobaremos que tu perfil, biblioteca y horas de CS2 sean públicos.</p><button className="primary-button mt-6 w-full" onClick={enterDemo}>Continuar con Steam</button><p className="mt-4 text-[11px] text-white/25">TENE nunca recibe ni almacena tu contraseña de Steam.</p></section></div>}
       {notice && <div className="toast"><span className="live-pulse" />{notice}</div>}
     </main>
   );
+}
+
+function Dashboard({ balance, activeTab, setActiveTab, openRoom, goHome, notice }: { balance: number; activeTab: string; setActiveTab: (tab: string) => void; openRoom: () => void; goHome: () => void; notice: string }) {
+  const tabs = ["Inicio", "Salas", "Wallet", "Historial", "Ranking"];
+  return <main className="app-bg min-h-screen text-white">
+    <aside className="app-sidebar"><button className="flex items-center gap-3" onClick={goHome}><span className="brand-mark">T</span><span className="font-black tracking-[.2em]">TENE</span></button><nav>{tabs.map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={activeTab === tab ? "active" : ""}><span>{({ Inicio: "⌂", Salas: "◫", Wallet: "◈", Historial: "↺", Ranking: "⌁" } as Record<string,string>)[tab]}</span>{tab}</button>)}</nav><div className="sidebar-bottom"><span className="avatar small bg-gradient-to-br from-violet-500 to-fuchsia-500">T</span><div><strong>Tom</strong><small>LVL 5 · Verificado</small></div></div></aside>
+    <div className="app-content">
+      <header className="app-header"><div><p className="eyebrow"><span /> PANEL DEL JUGADOR</p><h1>{activeTab === "Inicio" ? "Buenos días, Tom" : activeTab}</h1></div><div className="header-actions"><button className="balance-chip"><small>SALDO DISPONIBLE</small><strong>S/ {balance.toFixed(2)}</strong></button><button className="icon-button">●</button></div></header>
+      <section className="dashboard-grid">
+        <article className="verification-card"><div><span className="verified-badge">✓ CUENTA VERIFICADA</span><h2>Listo para competir</h2><p>Tu SteamID64, perfil público y 1,284 horas de CS2 fueron revisados por el staff.</p></div><div className="level-orbit"><small>NIVEL</small><strong>5</strong><span>1,298 ELO</span></div></article>
+        <article className="wallet-card"><div className="card-label">TU WALLET</div><strong className="wallet-total">S/ {balance.toFixed(2)}</strong><div className="wallet-split"><span><small>Disponible</small>S/ {balance.toFixed(2)}</span><span><small>Bloqueado</small>S/ 0.00</span></div><div className="wallet-actions"><button onClick={() => setActiveTab("Wallet")}>＋ Recargar</button><button onClick={() => setActiveTab("Wallet")}>↗ Retirar</button></div></article>
+        <article className="rooms-panel"><div className="panel-title"><div><span className="live-pulse" /><strong>Salas disponibles</strong></div><button onClick={() => setActiveTab("Salas")}>Ver todas →</button></div><RoomRow name="Sala Violeta #184" players="4 / 10" average="LVL 6.8" openRoom={openRoom} /><RoomRow name="Sala Nocturna #183" players="8 / 10" average="LVL 8.2" openRoom={openRoom} /><RoomRow name="Sala Base #182" players="2 / 10" average="LVL 3.5" openRoom={openRoom} /></article>
+        <article className="stats-card"><div className="card-label">TU TEMPORADA</div><div className="stat-big"><strong>68%</strong><span>WIN RATE</span></div><div className="stats-line"><span><small>Partidas</small>19</span><span><small>Victorias</small>13</span><span><small>Racha</small>W3</span></div></article>
+        <article className="activity-card"><div className="panel-title"><strong>Últimos movimientos</strong><button onClick={() => setActiveTab("Historial")}>Historial →</button></div>{[["Premio · Sala #176","+ S/ 10.00","win"],["Entrada · Sala #176","− S/ 6.00",""],["Recarga Yape","+ S/ 20.00","win"]].map(([label,value,tone]) => <div className="activity-row" key={label}><span className={tone ? "positive-dot" : "neutral-dot"} /><div><strong>{label}</strong><small>24 ago · 22:14</small></div><b className={tone ? "positive" : ""}>{value}</b></div>)}</article>
+      </section>
+    </div>{notice && <div className="toast"><span className="live-pulse" />{notice}</div>}
+  </main>;
+}
+
+function RoomRow({ name, players: count, average, openRoom }: { name: string; players: string; average: string; openRoom: () => void }) {
+  return <button className="room-row" onClick={openRoom}><span className="room-symbol">T</span><span><strong>{name}</strong><small>Entrada S/ 6 · Premio S/ 10</small></span><span className="room-metric"><small>JUGADORES</small>{count}</span><span className="room-metric"><small>PROMEDIO</small>{average}</span><b>Entrar →</b></button>;
+}
+
+function RoomFlow({ balance, bannedMaps, setBannedMaps, onReserve, joined, goBack, notice }: { balance: number; bannedMaps: string[]; setBannedMaps: (maps: string[]) => void; onReserve: () => void; joined: boolean; goBack: () => void; notice: string }) {
+  const remaining = mapPool.filter((map) => !bannedMaps.includes(map));
+  const currentCaptain = bannedMaps.length % 2 === 0 ? "Capitán A" : "Capitán B";
+  return <main className="app-bg room-screen min-h-screen text-white"><header className="room-header"><button onClick={goBack}>← Volver a salas</button><div><span className="status-pill"><i /> SALA ABIERTA</span><strong>Sala Violeta #184</strong></div><div className="room-balance"><small>SALDO</small>S/ {balance.toFixed(2)}</div></header>
+    <section className="room-layout"><div className="room-main"><div className="room-stage"><div><p className="eyebrow"><span /> ETAPA 1 DE 3</p><h1>{joined ? "Draft y veto" : "Reserva tu puesto"}</h1><p>{joined ? "La sala está en modo demostración. Prueba el veto de mapas para ver cómo funcionará cuando se complete." : "El importe queda bloqueado al entrar y solo se liquida cuando termina la partida."}</p></div><div className="room-count"><strong>{joined ? "5" : "4"}/10</strong><span>jugadores</span></div></div>
+      {!joined ? <article className="reserve-card"><div className="price-breakdown"><span><small>Entrada total</small><strong>S/ 6.00</strong></span><span><small>Fondo de premio</small><strong>S/ 5.00</strong></span><span><small>Servicio</small><strong>S/ 1.00</strong></span></div><button className="primary-button" onClick={onReserve}>Confirmar y entrar por S/ 6</button><p>Cuenta verificada · Saldo suficiente · Sin sanciones activas</p></article> : <VetoBoard bannedMaps={bannedMaps} remaining={remaining} currentCaptain={currentCaptain} ban={(map) => remaining.length > 1 && setBannedMaps([...bannedMaps, map])} reset={() => setBannedMaps([])} />}
+    </div><aside className="room-side"><div className="side-title"><strong>Jugadores</strong><span>{joined ? 5 : 4}/10</span></div>{[...players, ...(joined ? [{ name: "Tom", level: 5, tone: "from-violet-500 to-fuchsia-500" }] : [])].map((p,i) => <div className="side-player" key={`${p.name}-${i}`}><span className={`avatar small bg-gradient-to-br ${p.tone}`}>{p.name[0]}</span><div><strong>{p.name}</strong><small>{i < 2 ? "Capitán provisional" : "Verificado"}</small></div><span className="level">LVL {p.level}</span></div>)}{Array.from({length: joined ? 5 : 6},(_,i)=><div className="side-empty" key={i}>Puesto disponible</div>)}</aside></section>{notice && <div className="toast"><span className="live-pulse" />{notice}</div>}
+  </main>;
+}
+
+function VetoBoard({ bannedMaps, remaining, currentCaptain, ban, reset }: { bannedMaps: string[]; remaining: string[]; currentCaptain: string; ban: (map: string) => void; reset: () => void }) {
+  return <article className="veto-card"><div className="veto-head"><div><small>TURNO ACTUAL</small><strong>{remaining.length === 1 ? "Mapa definido" : `${currentCaptain} banea`}</strong></div><button onClick={reset}>Reiniciar demo</button></div><div className="maps-grid">{mapPool.map((map) => { const banned = bannedMaps.includes(map); const selected = remaining.length === 1 && remaining[0] === map; return <button key={map} disabled={banned || selected} onClick={() => ban(map)} className={`${banned ? "banned" : ""} ${selected ? "selected" : ""}`}><span>{map.slice(0,2).toUpperCase()}</span><strong>{map}</strong><small>{banned ? "BANEADO" : selected ? "MAPA ELEGIDO" : "BANEAR"}</small></button>; })}</div><div className="veto-log"><span>Veto: {bannedMaps.length ? bannedMaps.join(" → ") : "Aún no hay mapas baneados"}</span>{remaining.length === 1 && <strong>{remaining[0]} · El otro capitán elige CT o T</strong>}</div></article>;
 }

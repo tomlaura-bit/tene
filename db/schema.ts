@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
@@ -45,3 +45,41 @@ export const ledgerEntries = sqliteTable("ledger_entries", {
   description: text("description").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
+
+export const verificationReviews = sqliteTable("verification_reviews", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  reviewerId: text("reviewer_id").references(() => users.id),
+  status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+  assignedLevel: integer("assigned_level"),
+  profilePublic: integer("profile_public", { mode: "boolean" }).notNull().default(false),
+  gameDetailsPublic: integer("game_details_public", { mode: "boolean" }).notNull().default(false),
+  notes: text("notes"),
+  reviewedAt: integer("reviewed_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+}, (table) => [index("idx_verification_reviews_status_created").on(table.status, table.createdAt)]);
+
+export const sanctions = sqliteTable("sanctions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  issuedById: text("issued_by_id").notNull().references(() => users.id),
+  type: text("type", { enum: ["warning", "mute", "suspension", "ban", "no_show", "abandonment"] }).notNull(),
+  reason: text("reason").notNull(),
+  penaltyCents: integer("penalty_cents").notNull().default(0),
+  expiresAt: integer("expires_at", { mode: "timestamp" }),
+  revokedAt: integer("revoked_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+}, (table) => [index("idx_sanctions_user_created").on(table.userId, table.createdAt)]);
+
+export const auditLogs = sqliteTable("audit_logs", {
+  id: text("id").primaryKey(),
+  actorId: text("actor_id").notNull().references(() => users.id),
+  targetUserId: text("target_user_id").references(() => users.id),
+  action: text("action").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: text("entity_id"),
+  beforeJson: text("before_json"),
+  afterJson: text("after_json"),
+  reason: text("reason"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+}, (table) => [index("idx_audit_logs_actor_created").on(table.actorId, table.createdAt)]);

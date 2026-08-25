@@ -118,7 +118,7 @@ export default function Home() {
           </a>
         </nav>
         <button className="steam-button" onClick={() => setSteamOpen(true)}>
-          <span className="steam-dot">S</span>Entrar con Steam
+          <span className="steam-dot">T</span>Iniciar sesión / Registrarme
         </button>
       </header>
 
@@ -337,7 +337,8 @@ function SteamRegistrationModal({
   close: () => void;
   complete: () => void;
 }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
+  const [mode, setMode] = useState<"register" | "login">("register");
   const [steamId, setSteamId] = useState("76561198442891307");
   const validId = /^7656119\d{10}$/.test(steamId);
   return (
@@ -352,16 +353,102 @@ function SteamRegistrationModal({
         <button className="modal-close" aria-label="Cerrar" onClick={close}>
           ×
         </button>
-        <div className="registration-progress">
-          {[1, 2, 3].map((number) => (
-            <span key={number} className={step >= number ? "active" : ""}>
-              <i>{step > number ? "✓" : number}</i>
-              <small>
-                {number === 1 ? "Steam" : number === 2 ? "Requisitos" : "Staff"}
-              </small>
-            </span>
-          ))}
-        </div>
+        {step > 0 && (
+          <div className="registration-progress">
+            {[1, 2, 3].map((number) => (
+              <span key={number} className={step >= number ? "active" : ""}>
+                <i>{step > number ? "✓" : number}</i>
+                <small>
+                  {number === 1
+                    ? "Steam"
+                    : number === 2
+                      ? "Requisitos"
+                      : "Staff"}
+                </small>
+              </span>
+            ))}
+          </div>
+        )}
+        {step === 0 && (
+          <>
+            <div className="auth-switch">
+              <button
+                className={mode === "login" ? "active" : ""}
+                onClick={() => setMode("login")}
+              >
+                Iniciar sesión
+              </button>
+              <button
+                className={mode === "register" ? "active" : ""}
+                onClick={() => setMode("register")}
+              >
+                Registrarme
+              </button>
+            </div>
+            <p className="eyebrow justify-center">CUENTA TENE</p>
+            <h2 id="steam-title">
+              {mode === "register" ? "Crea tu cuenta" : "Bienvenido de nuevo"}
+            </h2>
+            <p className="registration-copy">
+              {mode === "register"
+                ? "Primero creamos tu perfil TENE. Después vincularemos tu Steam de forma obligatoria."
+                : "Ingresa con el correo de tu cuenta TENE."}
+            </p>
+            <div className="account-form">
+              {mode === "register" && (
+                <>
+                  <label>
+                    Nombre completo
+                    <input defaultValue="Tom Laura" autoComplete="name" />
+                  </label>
+                  <label>
+                    Nickname
+                    <input defaultValue="Tom" />
+                  </label>
+                </>
+              )}
+              <label>
+                Correo electrónico
+                <input
+                  type="email"
+                  defaultValue="tom@correo.com"
+                  autoComplete="email"
+                />
+              </label>
+              <label>
+                Contraseña
+                <input
+                  type="password"
+                  defaultValue="demostracion"
+                  autoComplete={
+                    mode === "register" ? "new-password" : "current-password"
+                  }
+                />
+              </label>
+              {mode === "register" && (
+                <label>
+                  Fecha de nacimiento
+                  <input type="date" defaultValue="2000-08-25" />
+                  <small>
+                    Debes ser mayor de 18 años. En tu cumpleaños recibes 2 salas
+                    gratis.
+                  </small>
+                </label>
+              )}
+            </div>
+            <button
+              className="primary-button w-full"
+              onClick={() => (mode === "register" ? setStep(1) : complete())}
+            >
+              {mode === "register"
+                ? "Siguiente: vincular Steam →"
+                : "Iniciar sesión demo"}
+            </button>
+            <p className="auth-security">
+              Demostración visual: no se envían ni almacenan credenciales.
+            </p>
+          </>
+        )}
         {step === 1 && (
           <>
             <span className="steam-logo-large">S</span>
@@ -384,7 +471,20 @@ function SteamRegistrationModal({
                   ? "✓ Formato válido de 17 dígitos"
                   : "Debe empezar con 7656119 y tener 17 dígitos"}
               </small>
+              <a href="https://steamid.xyz/" target="_blank" rel="noreferrer">
+                ¿No sabes tu SteamID64? Encuéntralo aquí ↗
+              </a>
             </label>
+            <button className="steam-openid-button" onClick={() => setStep(2)}>
+              <span className="steam-dot">S</span>
+              <span>
+                <b>Vincular con Steam</b>
+                <small>Recomendado · evita errores de identidad</small>
+              </span>
+            </button>
+            <div className="auth-divider">
+              <span>o usa el SteamID64 escrito arriba</span>
+            </div>
             <button
               className="primary-button w-full"
               disabled={!validId}
@@ -493,6 +593,7 @@ function Dashboard({
 }) {
   const tabs = [
     "Inicio",
+    "Cuenta",
     "Salas",
     "Wallet",
     "Historial",
@@ -1060,6 +1161,7 @@ function EnhancedDashboard({
 }) {
   const tabs = [
     "Inicio",
+    "Cuenta",
     "Salas",
     "Wallet",
     "Historial",
@@ -1107,6 +1209,7 @@ function EnhancedDashboard({
                   (
                     {
                       Inicio: "⌂",
+                      Cuenta: "◎",
                       Salas: "◫",
                       Wallet: "◈",
                       Historial: "↺",
@@ -1223,6 +1326,7 @@ function EnhancedDashboard({
           </section>
         </div>
       )}
+      {activeTab === "Cuenta" && <AccountPanel />}
       {notice && (
         <div className="toast">
           <span className="live-pulse" />
@@ -1230,6 +1334,114 @@ function EnhancedDashboard({
         </div>
       )}
     </main>
+  );
+}
+
+function AccountPanel() {
+  const [tab, setTab] = useState<"Cuenta" | "Steam">("Cuenta");
+  return (
+    <section className="account-panel">
+      <div className="account-tabs">
+        <button
+          className={tab === "Cuenta" ? "active" : ""}
+          onClick={() => setTab("Cuenta")}
+        >
+          Cuenta
+        </button>
+        <button
+          className={tab === "Steam" ? "active" : ""}
+          onClick={() => setTab("Steam")}
+        >
+          Steam
+        </button>
+        <button>Partidas</button>
+        <button>Conducta</button>
+        <button>Movimientos</button>
+        <button>Privacidad</button>
+      </div>
+      {tab === "Cuenta" ? (
+        <div className="account-surface">
+          <div className="account-title">
+            <div>
+              <span className="verified-badge">CUENTA ACTIVA</span>
+              <h2>Información de la cuenta</h2>
+              <p>Administra tus datos personales y seguridad.</p>
+            </div>
+            <span className="birthday-gift">
+              🎁 2 salas gratis en tu cumpleaños
+            </span>
+          </div>
+          <div className="profile-fields">
+            <label>
+              Nombre completo
+              <input defaultValue="Tom Laura" />
+            </label>
+            <label>
+              Nickname
+              <input defaultValue="Tom" />
+            </label>
+            <label>
+              Correo electrónico
+              <input type="email" defaultValue="tom@correo.com" />
+            </label>
+            <label>
+              Fecha de nacimiento
+              <input type="date" defaultValue="2000-08-25" />
+            </label>
+          </div>
+          <button className="primary-button">Guardar cambios demo</button>
+          <div className="password-section">
+            <h3>Cambiar contraseña</h3>
+            <div>
+              <label>
+                Contraseña actual
+                <input type="password" placeholder="••••••••" />
+              </label>
+              <label>
+                Nueva contraseña
+                <input type="password" placeholder="••••••••" />
+              </label>
+              <label>
+                Confirmar contraseña
+                <input type="password" placeholder="••••••••" />
+              </label>
+            </div>
+            <button className="secondary-button">Cambiar contraseña</button>
+          </div>
+        </div>
+      ) : (
+        <div className="account-surface">
+          <div className="account-title">
+            <div>
+              <span className="verified-badge">✓ STEAM VINCULADO</span>
+              <h2>Cuenta de Steam</h2>
+              <p>Esta asociación protege tu identidad competitiva.</p>
+            </div>
+          </div>
+          <div className="linked-steam">
+            <img
+              src="https://api.dicebear.com/9.x/thumbs/svg?seed=Maddison&backgroundColor=2e1065,312e81"
+              alt="Avatar Steam"
+            />
+            <div>
+              <strong>Maddison</strong>
+              <span>76561198442891307</span>
+              <small>Vinculada el 25 ago. 2026 · Validada por moderación</small>
+            </div>
+            <b>LVL 5</b>
+          </div>
+          <div className="steam-validation">
+            <strong>✓ 2,341 horas de CS2 detectadas</strong>
+            <span>Perfil y detalles de juego públicos · AppID 730</span>
+            <button className="secondary-button">Volver a validar horas</button>
+          </div>
+          <p className="permanent-link">
+            La vinculación es personal y no puede cambiarse sin revisión del
+            staff.
+          </p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -2037,15 +2249,17 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
         </div>
       </div>
       <div className="staff-tabs">
-        {["Solicitudes", "Disputas", "Usuarios", "Sanciones", "Auditoría"].map((tab) => (
-          <button
-            className={staffTab === tab ? "active" : ""}
-            onClick={() => setStaffTab(tab)}
-            key={tab}
-          >
-            {tab}
-          </button>
-        ))}
+        {["Solicitudes", "Disputas", "Usuarios", "Sanciones", "Auditoría"].map(
+          (tab) => (
+            <button
+              className={staffTab === tab ? "active" : ""}
+              onClick={() => setStaffTab(tab)}
+              key={tab}
+            >
+              {tab}
+            </button>
+          ),
+        )}
       </div>
       {staffTab === "Solicitudes" && (
         <div className="staff-workspace">
@@ -2196,8 +2410,91 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
 
 function DisputeReview({ notify }: { notify: (message: string) => void }) {
   const [status, setStatus] = useState("Pendiente");
-  const resolve = (result: string) => { setStatus(result); notify(`Caso DSP-031: ${result}`); };
-  return <div className="dispute-review"><aside><div className="candidate-filter"><strong>Casos abiertos</strong><span>1 pendiente</span></div><button className="active"><span className="case-alert">!</span><span><strong>DSP-031 · Sala #184</strong><small>Hacks · Reportado por Tom</small></span><i className={`request-status ${status.toLowerCase()}`}>{status}</i></button></aside><article><div className="case-head"><div><span className="staff-role">PRIORIDAD ALTA</span><h3>Sospecha de uso de hacks</h3><p>Sala Violeta #184 · Mirage · Equipo A 13—9</p></div><i className={`request-status ${status.toLowerCase()}`}>{status}</i></div><div className="case-evidence"><span><small>REPORTADO</small>neo · Equipo B</span><span><small>RONDA SEÑALADA</small>Ronda 17</span><span><small>DEMO MATCHZY</small><b>Disponible</b></span><span><small>DINERO</small>S/ 60 bloqueados</span></div><div className="demo-timeline"><div><b>▶ Demo de la partida</b><span>17:42 / 38:10</span></div><div className="timeline-bar"><i/></div><p>Marca del denunciante: “pre-aim repetido y seguimiento a través del humo”.</p></div><label className="staff-notes">Resolución interna<textarea placeholder="Describe la evidencia revisada y el motivo de la decisión…"/></label><div className="case-policy"><strong>Si se confirma la infracción:</strong><span>Se cancela la partida y se devuelve S/ 6 a los nueve jugadores inocentes.</span><span>El sancionado pierde su entrada y recibe suspensión o ban.</span><span>La decisión genera movimientos contables y registro de auditoría.</span></div><div className="case-actions"><button onClick={()=>resolve("Desestimado")}>Desestimar reporte</button><button onClick={()=>resolve("Sancionado")}>Confirmar infracción y cancelar</button></div></article></div>;
+  const resolve = (result: string) => {
+    setStatus(result);
+    notify(`Caso DSP-031: ${result}`);
+  };
+  return (
+    <div className="dispute-review">
+      <aside>
+        <div className="candidate-filter">
+          <strong>Casos abiertos</strong>
+          <span>1 pendiente</span>
+        </div>
+        <button className="active">
+          <span className="case-alert">!</span>
+          <span>
+            <strong>DSP-031 · Sala #184</strong>
+            <small>Hacks · Reportado por Tom</small>
+          </span>
+          <i className={`request-status ${status.toLowerCase()}`}>{status}</i>
+        </button>
+      </aside>
+      <article>
+        <div className="case-head">
+          <div>
+            <span className="staff-role">PRIORIDAD ALTA</span>
+            <h3>Sospecha de uso de hacks</h3>
+            <p>Sala Violeta #184 · Mirage · Equipo A 13—9</p>
+          </div>
+          <i className={`request-status ${status.toLowerCase()}`}>{status}</i>
+        </div>
+        <div className="case-evidence">
+          <span>
+            <small>REPORTADO</small>neo · Equipo B
+          </span>
+          <span>
+            <small>RONDA SEÑALADA</small>Ronda 17
+          </span>
+          <span>
+            <small>DEMO MATCHZY</small>
+            <b>Disponible</b>
+          </span>
+          <span>
+            <small>DINERO</small>S/ 60 bloqueados
+          </span>
+        </div>
+        <div className="demo-timeline">
+          <div>
+            <b>▶ Demo de la partida</b>
+            <span>17:42 / 38:10</span>
+          </div>
+          <div className="timeline-bar">
+            <i />
+          </div>
+          <p>
+            Marca del denunciante: “pre-aim repetido y seguimiento a través del
+            humo”.
+          </p>
+        </div>
+        <label className="staff-notes">
+          Resolución interna
+          <textarea placeholder="Describe la evidencia revisada y el motivo de la decisión…" />
+        </label>
+        <div className="case-policy">
+          <strong>Si se confirma la infracción:</strong>
+          <span>
+            Se cancela la partida y se devuelve S/ 6 a los nueve jugadores
+            inocentes.
+          </span>
+          <span>
+            El sancionado pierde su entrada y recibe suspensión o ban.
+          </span>
+          <span>
+            La decisión genera movimientos contables y registro de auditoría.
+          </span>
+        </div>
+        <div className="case-actions">
+          <button onClick={() => resolve("Desestimado")}>
+            Desestimar reporte
+          </button>
+          <button onClick={() => resolve("Sancionado")}>
+            Confirmar infracción y cancelar
+          </button>
+        </div>
+      </article>
+    </div>
+  );
 }
 function StaffTable({ title, rows }: { title: string; rows: string[][] }) {
   return (

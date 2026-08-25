@@ -43,6 +43,13 @@
       "when": 1787674097279,
       "tag": "0005_careless_angel",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1787674959365,
+      "tag": "0006_foamy_zemo",
+      "breakpoints": true
     }
   ]
 }

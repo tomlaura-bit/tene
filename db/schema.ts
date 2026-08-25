@@ -83,3 +83,33 @@ export const auditLogs = sqliteTable("audit_logs", {
   reason: text("reason"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 }, (table) => [index("idx_audit_logs_actor_created").on(table.actorId, table.createdAt)]);
+
+export const paymentRequests = sqliteTable("payment_requests", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  reviewedById: text("reviewed_by_id").references(() => users.id),
+  type: text("type", { enum: ["deposit", "withdrawal"] }).notNull(),
+  method: text("method", { enum: ["yape", "plin"] }).notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  operationCode: text("operation_code"),
+  status: text("status", { enum: ["pending", "approved", "rejected", "paid", "cancelled"] }).notNull().default("pending"),
+  proofUrl: text("proof_url"),
+  reviewNotes: text("review_notes"),
+  requestedAt: integer("requested_at", { mode: "timestamp" }).notNull(),
+  reviewedAt: integer("reviewed_at", { mode: "timestamp" }),
+}, (table) => [
+  index("idx_payment_requests_status_requested").on(table.status, table.requestedAt),
+  uniqueIndex("idx_payment_requests_operation_code").on(table.operationCode),
+]);
+
+export const reconciliations = sqliteTable("reconciliations", {
+  id: text("id").primaryKey(),
+  dateKey: text("date_key").notNull().unique(),
+  expectedCents: integer("expected_cents").notNull().default(0),
+  actualCents: integer("actual_cents").notNull().default(0),
+  differenceCents: integer("difference_cents").notNull().default(0),
+  status: text("status", { enum: ["open", "matched", "review"] }).notNull().default("open"),
+  closedById: text("closed_by_id").references(() => users.id),
+  closedAt: integer("closed_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});

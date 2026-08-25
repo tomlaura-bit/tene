@@ -15,6 +15,13 @@
       "when": 1787672080253,
       "tag": "0001_neat_giant_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787672922206,
+      "tag": "0002_sad_shinobi_shaw",
+      "breakpoints": true
     }
   ]
 }

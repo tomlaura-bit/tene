@@ -113,3 +113,16 @@ export const reconciliations = sqliteTable("reconciliations", {
   closedAt: integer("closed_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
+
+export const steamProfileChecks = sqliteTable("steam_profile_checks", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  steamId64: text("steam_id_64").notNull(),
+  profilePublic: integer("profile_public", { mode: "boolean" }).notNull().default(false),
+  gameDetailsPublic: integer("game_details_public", { mode: "boolean" }).notNull().default(false),
+  ownsCs2: integer("owns_cs2", { mode: "boolean" }).notNull().default(false),
+  cs2Minutes: integer("cs2_minutes").notNull().default(0),
+  eligible: integer("eligible", { mode: "boolean" }).notNull().default(false),
+  rawSnapshotJson: text("raw_snapshot_json"),
+  checkedAt: integer("checked_at", { mode: "timestamp" }).notNull(),
+}, (table) => [index("idx_steam_profile_checks_user_checked").on(table.userId, table.checkedAt)]);

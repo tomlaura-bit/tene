@@ -40,7 +40,7 @@ export default function Home() {
   function enterDemo() {
     setSteamOpen(false);
     setScreen("dashboard");
-    setNotice("Cuenta demo conectada · Perfil verificado");
+    setNotice("Verificación demo aprobada · Ya puedes entrar a las salas");
     window.setTimeout(() => setNotice(""), 3500);
   }
 
@@ -85,10 +85,17 @@ export default function Home() {
 
       <footer className="relative z-10 border-t border-white/7 px-5 py-8 text-center text-xs text-white/30">TENE es una plataforma independiente y no está afiliada a Valve Corporation. Solo para mayores de 18 años.</footer>
 
-      {steamOpen && <div className="modal-backdrop" role="presentation" onMouseDown={() => setSteamOpen(false)}><section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="steam-title" onMouseDown={(e) => e.stopPropagation()}><button className="modal-close" aria-label="Cerrar" onClick={() => setSteamOpen(false)}>×</button><span className="steam-logo-large">S</span><p className="eyebrow justify-center">VERIFICACIÓN OFICIAL</p><h2 id="steam-title" className="mt-4 text-2xl font-black">Conecta tu cuenta de Steam</h2><p className="mt-3 text-sm leading-6 text-white/45">Obtendremos tu SteamID64 y comprobaremos que tu perfil, biblioteca y horas de CS2 sean públicos.</p><button className="primary-button mt-6 w-full" onClick={enterDemo}>Continuar con Steam</button><p className="mt-4 text-[11px] text-white/25">TENE nunca recibe ni almacena tu contraseña de Steam.</p></section></div>}
+      {steamOpen && <SteamRegistrationModal close={() => setSteamOpen(false)} complete={enterDemo} />}
       {notice && <div className="toast"><span className="live-pulse" />{notice}</div>}
     </main>
   );
+}
+
+function SteamRegistrationModal({ close, complete }: { close: () => void; complete: () => void }) {
+  const [step, setStep] = useState(1);
+  const [steamId, setSteamId] = useState("76561198442891307");
+  const validId = /^7656119\d{10}$/.test(steamId);
+  return <div className="modal-backdrop" role="presentation" onMouseDown={close}><section className="steam-registration" role="dialog" aria-modal="true" aria-labelledby="steam-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" aria-label="Cerrar" onClick={close}>×</button><div className="registration-progress">{[1,2,3].map((number)=><span key={number} className={step>=number?"active":""}><i>{step>number?"✓":number}</i><small>{number===1?"Steam":number===2?"Requisitos":"Staff"}</small></span>)}</div>{step===1&&<><span className="steam-logo-large">S</span><p className="eyebrow justify-center">REGISTRO DE JUGADOR</p><h2 id="steam-title">Conecta tu cuenta de Steam</h2><p className="registration-copy">Steam confirma tu identidad. TENE nunca recibe ni almacena tu contraseña.</p><label className="steam-id-field">SteamID64<input value={steamId} onChange={(event)=>setSteamId(event.target.value.replace(/\D/g,"").slice(0,17))}/><small>{validId?"✓ Formato válido de 17 dígitos":"Debe empezar con 7656119 y tener 17 dígitos"}</small></label><button className="primary-button w-full" disabled={!validId} onClick={()=>setStep(2)}>Continuar con Steam</button></>}{step===2&&<><div className="steam-profile-preview"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=Maddison&backgroundColor=2e1065,312e81" alt="Avatar del perfil de Steam"/><div><small>PERFIL ENCONTRADO</small><strong>Maddison</strong><span>{steamId}</span></div></div><h2>Comprobación de requisitos</h2><div className="registration-checks"><span><i>✓</i><b>Perfil público</b><small>Información básica visible</small></span><span><i>✓</i><b>Detalles de juego públicos</b><small>Biblioteca y horas visibles</small></span><span><i>✓</i><b>2,341 horas en CS2</b><small>Supera el mínimo de 500 h</small></span><span><i>✓</i><b>CS2 detectado</b><small>AppID 730 en la cuenta</small></span></div><p className="registration-notice">Estas comprobaciones determinan si puedes solicitar revisión. Solo el staff puede habilitarte para entrar a salas.</p><button className="primary-button w-full" onClick={()=>setStep(3)}>Enviar solicitud al staff</button></>}{step===3&&<><span className="pending-seal">⌛</span><p className="eyebrow justify-center">SOLICITUD CREADA</p><h2>Revisión pendiente</h2><p className="registration-copy">Tu cuenta cumple los requisitos automáticos. El staff revisará el perfil y asignará un nivel inicial del 1 al 10.</p><div className="request-ticket"><span><small>SOLICITUD</small>VER-2041</span><span><small>ESTADO</small><b>Pendiente</b></span><span><small>TIEMPO ESTIMADO</small>Hasta 24 h</span></div><button className="primary-button w-full" onClick={complete}>Simular aprobación y entrar</button><button className="secondary-registration" onClick={close}>Cerrar y esperar revisión</button></>}</section></div>;
 }
 
 function Dashboard({ balance, activeTab, setActiveTab, openRoom, goHome, notice }: { balance: number; activeTab: string; setActiveTab: (tab: string) => void; openRoom: () => void; goHome: () => void; notice: string }) {

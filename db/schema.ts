@@ -126,3 +126,16 @@ export const steamProfileChecks = sqliteTable("steam_profile_checks", {
   rawSnapshotJson: text("raw_snapshot_json"),
   checkedAt: integer("checked_at", { mode: "timestamp" }).notNull(),
 }, (table) => [index("idx_steam_profile_checks_user_checked").on(table.userId, table.checkedAt)]);
+
+export const matchServers = sqliteTable("match_servers", {
+  id: text("id").primaryKey(), roomId: text("room_id").notNull().references(() => rooms.id),
+  provider: text("provider").notNull().default("matchzy"), region: text("region").notNull().default("lima"),
+  addressEncrypted: text("address_encrypted"), map: text("map"), status: text("status", { enum:["provisioning","ready","live","finished","failed"] }).notNull().default("provisioning"),
+  teamAScore: integer("team_a_score").notNull().default(0), teamBScore: integer("team_b_score").notNull().default(0),
+  startedAt: integer("started_at", { mode:"timestamp" }), finishedAt: integer("finished_at", { mode:"timestamp" }), createdAt: integer("created_at", { mode:"timestamp" }).notNull(),
+}, (table)=>[uniqueIndex("idx_match_servers_room").on(table.roomId)]);
+
+export const matchEvents = sqliteTable("match_events", {
+  id:text("id").primaryKey(), serverId:text("server_id").notNull().references(()=>matchServers.id),
+  eventType:text("event_type").notNull(), payloadJson:text("payload_json").notNull(), createdAt:integer("created_at",{mode:"timestamp"}).notNull(),
+}, (table)=>[index("idx_match_events_server_created").on(table.serverId,table.createdAt)]);

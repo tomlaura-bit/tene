@@ -65,6 +65,57 @@ export const birthdayRewards = sqliteTable(
   ],
 );
 
+export const subscriptions = sqliteTable(
+  "subscriptions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    plan: text("plan", { enum: ["sub"] })
+      .notNull()
+      .default("sub"),
+    priceCents: integer("price_cents").notNull().default(2000),
+    status: text("status", {
+      enum: ["pending", "active", "expired", "cancelled"],
+    })
+      .notNull()
+      .default("pending"),
+    startsAt: integer("starts_at", { mode: "timestamp" }),
+    endsAt: integer("ends_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_subscriptions_user_status").on(table.userId, table.status),
+  ],
+);
+
+export const benefitPasses = sqliteTable(
+  "benefit_passes",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    source: text("source", {
+      enum: ["daily_sub", "birthday", "promotion"],
+    }).notNull(),
+    valueCents: integer("value_cents").notNull().default(600),
+    status: text("status", {
+      enum: ["available", "reserved", "used", "expired"],
+    })
+      .notNull()
+      .default("available"),
+    validOn: text("valid_on"),
+    expiresAt: integer("expires_at", { mode: "timestamp" }),
+    roomId: text("room_id").references(() => rooms.id),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_benefit_passes_user_status").on(table.userId, table.status),
+  ],
+);
+
 export const wallets = sqliteTable("wallets", {
   userId: text("user_id")
     .primaryKey()

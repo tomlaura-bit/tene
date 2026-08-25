@@ -596,6 +596,7 @@ function Dashboard({
     "Cuenta",
     "Salas",
     "Wallet",
+    "Beneficios",
     "Historial",
     "Ranking",
     "Staff",
@@ -622,6 +623,7 @@ function Dashboard({
                       Inicio: "⌂",
                       Salas: "◫",
                       Wallet: "◈",
+                      Beneficios: "★",
                       Historial: "↺",
                       Ranking: "⌁",
                       Staff: "⚙",
@@ -1164,6 +1166,7 @@ function EnhancedDashboard({
     "Cuenta",
     "Salas",
     "Wallet",
+    "Beneficios",
     "Historial",
     "Ranking",
     "Staff",
@@ -1212,6 +1215,7 @@ function EnhancedDashboard({
                       Cuenta: "◎",
                       Salas: "◫",
                       Wallet: "◈",
+                      Beneficios: "★",
                       Historial: "↺",
                       Ranking: "⌁",
                       Staff: "⚙",
@@ -1268,6 +1272,7 @@ function EnhancedDashboard({
             action={(value) => setWalletAction(value)}
           />
         )}
+        {activeTab === "Beneficios" && <BenefitsPanel notify={flash} />}
         {activeTab === "Historial" && <HistoryPanel />}
         {activeTab === "Ranking" && <RankingPanel />}
         {activeTab === "Staff" && <StaffPanel notify={flash} />}
@@ -1587,6 +1592,126 @@ function RoomsPanel({ openRoom }: { openRoom: () => void }) {
     </section>
   );
 }
+function BenefitsPanel({ notify }: { notify: (message: string) => void }) {
+  const [subscribed, setSubscribed] = useState(false);
+  const [dailyUsed, setDailyUsed] = useState(false);
+  return (
+    <section className="benefits-panel">
+      <div className="benefits-hero">
+        <div>
+          <span className="sub-badge">TENE SUB</span>
+          <h2>Más partidas. Más identidad.</h2>
+          <p>
+            Una membresía simple para jugadores frecuentes. No mejora tu nivel
+            ni te da ventajas dentro de la partida.
+          </p>
+          <div className="sub-price">
+            <strong>S/ 20</strong>
+            <span>
+              al mes
+              <br />
+              renovación manual
+            </span>
+          </div>
+          <button
+            className="primary-button"
+            onClick={() => {
+              setSubscribed(true);
+              notify("Suscripción demo activada por 30 días");
+            }}
+          >
+            {subscribed ? "✓ Suscripción activa" : "Activar suscripción demo"}
+          </button>
+        </div>
+        <div className="sub-mark">
+          SUB<small>MIEMBRO</small>
+        </div>
+      </div>
+      <div className="benefit-grid">
+        <article>
+          <span>01</span>
+          <h3>Una sala gratis diaria</h3>
+          <p>Un pase de S/6 cada día. No se acumula y vence a medianoche.</p>
+          <button
+            disabled={!subscribed || dailyUsed}
+            onClick={() => {
+              setDailyUsed(true);
+              notify("Pase diario demo reservado");
+            }}
+          >
+            {dailyUsed
+              ? "Usado hoy"
+              : subscribed
+                ? "Usar pase diario"
+                : "Requiere Sub"}
+          </button>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Prefijo exclusivo</h3>
+          <p>Etiqueta SUB visible en perfil, salas, chat y Discord.</p>
+          <div className="prefix-preview">
+            <b>SUB</b>
+            <strong>Tom</strong>
+            <small>LVL 5</small>
+          </div>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Beneficios futuros</h3>
+          <p>
+            Acceso anticipado a eventos y salas especiales, sin ventajas
+            competitivas.
+          </p>
+          <i>Próximamente</i>
+        </article>
+      </div>
+      <div className="rewards-board">
+        <div>
+          <span>🎁</span>
+          <div>
+            <small>BENEFICIO ANUAL</small>
+            <h3>Regalo de cumpleaños</h3>
+            <p>
+              Recibes dos salas gratuitas el día de tu cumpleaños. Válidas
+              durante 7 días y una sola vez por año.
+            </p>
+          </div>
+        </div>
+        <div className="reward-counter">
+          <span>
+            <small>DISPONIBLES</small>2
+          </span>
+          <span>
+            <small>VENCEN</small>01 sep.
+          </span>
+          <button
+            onClick={() =>
+              notify("Se usará un pase de cumpleaños en tu próxima sala")
+            }
+          >
+            Usar en próxima sala
+          </button>
+        </div>
+      </div>
+      <div className="benefit-history">
+        <strong>Historial de beneficios</strong>
+        {[
+          ["Pase cumpleaños", "2 salas otorgadas", "25 ago. 2026"],
+          ["TENE Sub", "Activación demo", "25 ago. 2026"],
+          ["Pase diario", "Disponible", "Hoy"],
+        ].map((row) => (
+          <div key={row[0]}>
+            <span>{row[0]}</span>
+            <b>{row[1]}</b>
+            <small>{row[2]}</small>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function WalletPanel({
   balance,
   action,

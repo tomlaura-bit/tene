@@ -139,3 +139,16 @@ export const matchEvents = sqliteTable("match_events", {
   id:text("id").primaryKey(), serverId:text("server_id").notNull().references(()=>matchServers.id),
   eventType:text("event_type").notNull(), payloadJson:text("payload_json").notNull(), createdAt:integer("created_at",{mode:"timestamp"}).notNull(),
 }, (table)=>[index("idx_match_events_server_created").on(table.serverId,table.createdAt)]);
+
+export const matchDisputes = sqliteTable("match_disputes", {
+  id: text("id").primaryKey(), roomId: text("room_id").notNull().references(() => rooms.id),
+  reporterId: text("reporter_id").notNull().references(() => users.id), accusedUserId: text("accused_user_id").references(() => users.id),
+  reviewedById: text("reviewed_by_id").references(() => users.id), reason: text("reason", { enum:["hacking","collusion","wrong_result","impersonation","other"] }).notNull(),
+  description: text("description").notNull(), status: text("status", { enum:["pending","upheld","dismissed"] }).notNull().default("pending"),
+  resolution: text("resolution"), createdAt: integer("created_at", { mode:"timestamp" }).notNull(), reviewedAt: integer("reviewed_at", { mode:"timestamp" }),
+}, (table)=>[index("idx_match_disputes_status_created").on(table.status,table.createdAt)]);
+
+export const disputeEvidence = sqliteTable("dispute_evidence", {
+  id:text("id").primaryKey(), disputeId:text("dispute_id").notNull().references(()=>matchDisputes.id),
+  type:text("type",{enum:["demo","clip","image","note"]}).notNull(), storageKey:text("storage_key"), description:text("description"), createdAt:integer("created_at",{mode:"timestamp"}).notNull(),
+}, (table)=>[index("idx_dispute_evidence_dispute").on(table.disputeId)]);

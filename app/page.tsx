@@ -1545,7 +1545,9 @@ function EnhancedDashboard({
         )}
         {activeTab === "Beneficios" && <BenefitsPanel notify={flash} />}
         {activeTab === "Conducta" && <ConductPanel notify={flash} />}
-        {activeTab === "Chat" && <CommunityChat notify={flash} />}
+        {activeTab === "Chat" && (
+          <CommunityChat notify={flash} session={session} />
+        )}
         {activeTab === "Alertas" && <NotificationsPanel notify={flash} />}
         {activeTab === "Historial" && <HistoryPanel />}
         {activeTab === "Ranking" && <RankingPanel />}
@@ -2542,64 +2544,75 @@ function ConductPanel({ notify }: { notify: (message: string) => void }) {
 }
 
 type ChatMessage = {
-  id: number;
+  id: string;
   name: string;
   role: string;
-  text: string;
-  time: string;
+  body: string;
+  createdAt: string;
   level: number;
+  elo: number;
+  hours: number;
+  avatarUrl?: string | null;
 };
-function CommunityChat({ notify }: { notify: (message: string) => void }) {
+const chatChannels = {
+  General: "general",
+  "Busco sala": "looking_for_room",
+  Soporte: "support",
+  Anuncios: "announcements",
+} as const;
+
+function CommunityChat({
+  notify,
+  session,
+}: {
+  notify: (message: string) => void;
+  session: SessionData | null;
+}) {
   const [channel, setChannel] = useState("General");
   const [text, setText] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 1,
-      name: "hoxhi",
-      role: "DUEÑO",
-      text: "Sala nocturna abierta, entren rápido.",
-      time: "11:32",
-      level: 10,
-    },
-    {
-      id: 2,
-      name: "Jericho",
-      role: "MOD",
-      text: "Recuerden tener perfil y horas públicas antes de solicitar revisión.",
-      time: "11:34",
-      level: 7,
-    },
-    {
-      id: 3,
-      name: "Maddison",
-      role: "SUB",
-      text: "¿Alguien para una sala LVL 6–8?",
-      time: "11:35",
-      level: 8,
-    },
-    {
-      id: 4,
-      name: "rayo",
-      role: "JUGADOR",
-      text: "Me apunto, tengo saldo listo.",
-      time: "11:36",
-      level: 4,
-    },
-  ]);
-  const send = () => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+
+  const loadMessages = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/chat?channel=${chatChannels[channel as keyof typeof chatChannels]}`);
+      const data = (await response.json()) as { ok: boolean; messages?: ChatMessage[] };
+      if (response.ok && data.messages) setMessages(data.messages);
+      else notify("No se pudo cargar este canal");
+    } catch {
+      notify("No se pudo conectar con el chat");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadMessages();
+  }, [channel]);
+
+  const send = async () => {
     if (!text.trim()) return;
-    setMessages([
-      ...messages,
-      {
-        id: Date.now(),
-        name: "Tom",
-        role: "DUEÑO",
-        text: text.trim(),
-        time: "Ahora",
-        level: 5,
-      },
-    ]);
-    setText("");
+    if (!session) return notify("Inicia sesión para escribir en el chat");
+    setSending(true);
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channel: chatChannels[channel as keyof typeof chatChannels],
+          message: text.trim(),
+        }),
+      });
+      if (!response.ok) throw new Error("send_failed");
+      setText("");
+      await loadMessages();
+    } catch {
+      notify("No se pudo enviar el mensaje");
+    } finally {
+      setSending(false);
+    }
   };
   return (
     <section className="community-panel">
@@ -2653,15 +2666,20 @@ function CommunityChat({ notify }: { notify: (message: string) => void }) {
             <span>186 conectados</span>
           </header>
           <div className="message-stream">
+            {loading && <p className="chat-empty">Cargando mensajes…</p>}
+            {!loading && messages.length === 0 && (
+              <p className="chat-empty">Todavía no hay mensajes en este canal.</p>
+            )}
             {messages.map((message) => (
               <article key={message.id}>
                 <ProfileAvatar
                   profile={{
                     name: message.name,
                     level: message.level,
-                    elo: 1298 + message.level * 20,
-                    hours: 600 + message.level * 210,
+                    elo: message.elo,
+                    hours: message.hours,
                     conduct: "Buena",
+                    avatarUrl: message.avatarUrl,
                   }}
                   compact
                 />
@@ -2671,7 +2689,12 @@ function CommunityChat({ notify }: { notify: (message: string) => void }) {
                       {message.role}
                     </b>
                     <strong>{message.name}</strong>
-                    <small>{message.time}</small>
+                    <small>
+                      {new Date(message.createdAt).toLocaleTimeString("es-PE", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </small>
                     <button
                       onClick={() =>
                         notify(
@@ -2682,7 +2705,7 @@ function CommunityChat({ notify }: { notify: (message: string) => void }) {
                       •••
                     </button>
                   </div>
-                  <p>{message.text}</p>
+                  <p>{message.body}</p>
                 </div>
               </article>
             ))}
@@ -2692,11 +2715,13 @@ function CommunityChat({ notify }: { notify: (message: string) => void }) {
               value={text}
               maxLength={240}
               onChange={(event) => setText(event.target.value)}
-              onKeyDown={(event) => event.key === "Enter" && send()}
+              onKeyDown={(event) => event.key === "Enter" && void send()}
               placeholder={`Enviar mensaje a #${channel.toLowerCase()}…`}
             />
             <span>{text.length}/240</span>
-            <button onClick={send}>Enviar</button>
+            <button disabled={sending || !text.trim()} onClick={() => void send()}>
+              {sending ? "Enviando…" : "Enviar"}
+            </button>
           </div>
         </main>
         <aside className="online-list">

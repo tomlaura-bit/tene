@@ -631,3 +631,46 @@ export const teamBalanceSnapshots = sqliteTable(
     index("idx_team_balance_room_created").on(table.roomId, table.createdAt),
   ],
 );
+
+export const competitiveSeasons = sqliteTable("competitive_seasons", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  name: text("name").notNull(),
+  status: text("status", { enum: ["scheduled", "active", "closed"] })
+    .notNull()
+    .default("scheduled"),
+  startsAt: integer("starts_at", { mode: "timestamp" }).notNull(),
+  endsAt: integer("ends_at", { mode: "timestamp" }).notNull(),
+  resetFactorBasisPoints: integer("reset_factor_basis_points")
+    .notNull()
+    .default(2500),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+export const seasonPlacements = sqliteTable(
+  "season_placements",
+  {
+    id: text("id").primaryKey(),
+    seasonId: text("season_id")
+      .notNull()
+      .references(() => competitiveSeasons.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    finalPosition: integer("final_position").notNull(),
+    finalElo: integer("final_elo").notNull(),
+    finalLevel: integer("final_level").notNull(),
+    badgeKey: text("badge_key"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_season_placements_season_user").on(
+      table.seasonId,
+      table.userId,
+    ),
+    index("idx_season_placements_season_position").on(
+      table.seasonId,
+      table.finalPosition,
+    ),
+  ],
+);

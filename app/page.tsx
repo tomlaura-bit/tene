@@ -2303,6 +2303,9 @@ function RankingPanel() {
   const [balanceMode, setBalanceMode] = useState<"suggested" | "alternate">(
     "suggested",
   );
+  const [seasonView, setSeasonView] = useState<"current" | "previous">(
+    "current",
+  );
   const suggested = {
     a: ["hoxhi", "Jericho", "k1ng", "neo", "ace"],
     b: ["melo", "Tom", "navi", "loko", "shiro"],
@@ -2433,6 +2436,94 @@ function RankingPanel() {
           <span>Sin cambios manuales ocultos</span>
         </div>
       </div>
+      <section className="season-center">
+        <header>
+          <div>
+            <small>CENTRO DE TEMPORADA</small>
+            <h3>
+              {seasonView === "current"
+                ? "Temporada 01 · Lima"
+                : "Pretemporada · Fundadores"}
+            </h3>
+            <p>
+              {seasonView === "current"
+                ? "19 ago — 30 sep · Quedan 36 días"
+                : "Finalizada · 18 ago 2026"}
+            </p>
+          </div>
+          <div className="season-switch">
+            <button
+              className={seasonView === "current" ? "active" : ""}
+              onClick={() => setSeasonView("current")}
+            >
+              Actual
+            </button>
+            <button
+              className={seasonView === "previous" ? "active" : ""}
+              onClick={() => setSeasonView("previous")}
+            >
+              Historial
+            </button>
+          </div>
+        </header>
+        {seasonView === "current" ? (
+          <div className="season-body">
+            <div className="season-track">
+              <div>
+                <span>Tu posición</span>
+                <strong>#6</strong>
+                <small>Top 18% · 1,298 ELO</small>
+              </div>
+              <div className="season-progress">
+                <span>
+                  <i style={{ width: "58%" }} />
+                </span>
+                <div>
+                  <small>Partida 19</small>
+                  <small>Meta: 30 partidas</small>
+                </div>
+              </div>
+            </div>
+            <div className="season-rewards">
+              <article>
+                <span>TOP 10</span>
+                <b>Insignia Violeta</b>
+                <small>Visible en perfil y salas</small>
+              </article>
+              <article>
+                <span>TOP 3</span>
+                <b>Podio de temporada</b>
+                <small>Marco exclusivo permanente</small>
+              </article>
+              <article>
+                <span>#1</span>
+                <b>Campeón TENE</b>
+                <small>Título histórico verificado</small>
+              </article>
+            </div>
+            <p className="season-policy">
+              Los premios son reconocimientos dentro de TENE, no apuestas ni
+              dinero adicional. Al cerrar la temporada, el Elo se comprime
+              parcialmente para conservar el nivel sin congelar el ranking.
+            </p>
+          </div>
+        ) : (
+          <div className="past-seasons">
+            <article>
+              <span>PRETEMPORADA</span>
+              <strong>#1 hoxhi</strong>
+              <b>1,804 ELO</b>
+              <small>Tu posición: #9 · 1,241 ELO</small>
+            </article>
+            <article>
+              <span>REINICIO CONTROLADO</span>
+              <strong>−25% hacia 1,000</strong>
+              <b>Sin borrar historial</b>
+              <small>Calibración conservada por el staff</small>
+            </article>
+          </div>
+        )}
+      </section>
     </section>
   );
 }

@@ -71,26 +71,24 @@ export async function POST(request: Request) {
       steamPersonaName: inspection.personaName,
       steamAvatarUrl: inspection.avatarUrl,
       cs2Minutes: inspection.cs2Minutes,
-      status: inspection.eligible ? "verified" : "pending",
+      status: user.status === "verified" ? "verified" : "pending",
     })
     .where(eq(users.id, user.id));
-  await db
-    .insert(steamProfileChecks)
-    .values({
-      id: `spc_${crypto.randomUUID()}`,
-      userId: user.id,
-      steamId64: user.steamId64,
-      profilePublic: inspection.profilePublic,
-      gameDetailsPublic: inspection.gameDetailsPublic,
-      ownsCs2: inspection.ownsCs2,
-      cs2Minutes: inspection.cs2Minutes,
-      eligible: inspection.eligible,
-      rawSnapshotJson: JSON.stringify(inspection),
-      checkedAt: now,
-    });
+  await db.insert(steamProfileChecks).values({
+    id: `spc_${crypto.randomUUID()}`,
+    userId: user.id,
+    steamId64: user.steamId64,
+    profilePublic: inspection.profilePublic,
+    gameDetailsPublic: inspection.gameDetailsPublic,
+    ownsCs2: inspection.ownsCs2,
+    cs2Minutes: inspection.cs2Minutes,
+    eligible: inspection.eligible,
+    rawSnapshotJson: JSON.stringify(inspection),
+    checkedAt: now,
+  });
   return Response.json({
     ok: true,
     result: inspection,
-    status: inspection.eligible ? "verified" : "pending",
+    status: user.status === "verified" ? "verified" : "pending",
   });
 }

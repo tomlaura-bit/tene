@@ -39,7 +39,7 @@ export async function GET(request: Request) {
       steamAvatarUrl: successful ? check.avatarUrl : null,
       steamLinkedAt: now,
       cs2Minutes: successful ? check.cs2Minutes : 0,
-      status: successful && check.eligible ? "verified" : "pending",
+      status: "pending",
     })
     .where(eq(users.id, user.id));
   await db.insert(steamProfileChecks).values({
@@ -54,8 +54,5 @@ export async function GET(request: Request) {
     rawSnapshotJson: JSON.stringify(check),
     checkedAt: now,
   });
-  return Response.redirect(
-    `${TENE_ORIGIN}/?steam=${successful && check.eligible ? "verified" : "linked"}`,
-    302,
-  );
+  return Response.redirect(`${TENE_ORIGIN}/?steam=linked`, 302);
 }

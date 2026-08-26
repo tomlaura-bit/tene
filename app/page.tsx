@@ -3949,24 +3949,71 @@ const initialCandidates: Candidate[] = [
   },
 ];
 function StaffPanel({ notify }: { notify: (message: string) => void }) {
-  const [candidates, setCandidates] = useState(initialCandidates);
-  const [selectedId, setSelectedId] = useState("u1");
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [selectedId, setSelectedId] = useState("");
   const [staffTab, setStaffTab] = useState("Solicitudes");
   const [notes, setNotes] = useState("");
   const selected =
     candidates.find((candidate) => candidate.id === selectedId) ||
-    candidates[0];
+    candidates[0] ||
+    null;
+  const loadCandidates = async () => {
+    const response = await fetch("/api/staff/verifications");
+    if (!response.ok) return;
+    const body = (await response.json()) as {
+      candidates: Array<{
+        user: {
+          id: string;
+          nickname: string;
+          steamId64: string | null;
+          cs2Minutes: number;
+          level: number;
+          status: string;
+        };
+        check: { eligible: boolean } | null;
+      }>;
+    };
+    const mapped: Candidate[] = body.candidates.map(({ user }) => ({
+      id: user.id,
+      name: user.nickname,
+      steamId: user.steamId64 ?? "Sin Steam",
+      hours: Math.floor(user.cs2Minutes / 60),
+      accountYears: 0,
+      status: user.status === "rejected" ? "Rechazado" : "Pendiente",
+      level: user.level,
+    }));
+    setCandidates(mapped);
+    setSelectedId((current) => current || mapped[0]?.id || "");
+  };
+  useEffect(() => {
+    void loadCandidates();
+  }, []);
   const update = (values: Partial<Candidate>) =>
     setCandidates((items) =>
       items.map((item) =>
-        item.id === selected.id ? { ...item, ...values } : item,
+        item.id === selected?.id ? { ...item, ...values } : item,
       ),
     );
-  const resolve = (status: "Verificado" | "Rechazado") => {
-    update({ status });
-    notify(
-      `${selected.name}: solicitud ${status === "Verificado" ? "aprobada" : "rechazada"}`,
+  const resolve = async (status: "Verificado" | "Rechazado") => {
+    if (!selected) return;
+    const response = await fetch(
+      `/api/staff/verifications/${selected.id}/review`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          decision: status === "Verificado" ? "approve" : "reject",
+          level: selected.level,
+          notes,
+        }),
+      },
     );
+    notify(
+      response.ok
+        ? `${selected.name}: solicitud ${status === "Verificado" ? "aprobada" : "rechazada"}`
+        : "No se pudo registrar la revisión",
+    );
+    if (response.ok) await loadCandidates();
   };
   return (
     <section className="staff-panel">
@@ -4042,83 +4089,94 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
               </button>
             ))}
           </aside>
-          <article className="review-card">
-            <div className="review-head">
-              <img
-                src={`https://api.dicebear.com/9.x/thumbs/svg?seed=${selected.name}&backgroundColor=2e1065,312e81`}
-                alt={`Avatar de ${selected.name}`}
-              />
-              <div>
-                <span className="verified-badge">STEAM CONECTADO</span>
-                <h3>{selected.name}</h3>
-                <p>{selected.steamId}</p>
+          {selected ? (
+            <article className="review-card">
+              <div className="review-head">
+                <img
+                  src={`https://api.dicebear.com/9.x/thumbs/svg?seed=${selected.name}&backgroundColor=2e1065,312e81`}
+                  alt={`Avatar de ${selected.name}`}
+                />
+                <div>
+                  <span className="verified-badge">STEAM CONECTADO</span>
+                  <h3>{selected.name}</h3>
+                  <p>{selected.steamId}</p>
+                </div>
+                <i
+                  className={`request-status ${selected.status.toLowerCase()}`}
+                >
+                  {selected.status}
+                </i>
               </div>
-              <i className={`request-status ${selected.status.toLowerCase()}`}>
-                {selected.status}
-              </i>
-            </div>
-            <div className="verification-checks">
-              <div>
-                <span>✓</span>
-                <b>Perfil público</b>
-                <small>La información es visible.</small>
+              <div className="verification-checks">
+                <div>
+                  <span>✓</span>
+                  <b>Perfil público</b>
+                  <small>La información es visible.</small>
+                </div>
+                <div>
+                  <span>✓</span>
+                  <b>CS2 en biblioteca</b>
+                  <small>AppID 730 detectado.</small>
+                </div>
+                <div className={selected.hours < 500 ? "failed" : ""}>
+                  <span>{selected.hours >= 500 ? "✓" : "!"}</span>
+                  <b>{selected.hours.toLocaleString()} horas</b>
+                  <small>Mínimo requerido: 500 h.</small>
+                </div>
+                <div>
+                  <span>✓</span>
+                  <b>Sin VAC reciente</b>
+                  <small>Sin señales críticas.</small>
+                </div>
               </div>
-              <div>
-                <span>✓</span>
-                <b>CS2 en biblioteca</b>
-                <small>AppID 730 detectado.</small>
+              <div className="level-control">
+                <label>
+                  Nivel inicial asignado <strong>LVL {selected.level}</strong>
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={selected.level}
+                  onChange={(event) =>
+                    update({ level: Number(event.target.value) })
+                  }
+                />
+                <div>
+                  <span>1</span>
+                  <span>5</span>
+                  <span>10</span>
+                </div>
               </div>
-              <div className={selected.hours < 500 ? "failed" : ""}>
-                <span>{selected.hours >= 500 ? "✓" : "!"}</span>
-                <b>{selected.hours.toLocaleString()} horas</b>
-                <small>Mínimo requerido: 500 h.</small>
-              </div>
-              <div>
-                <span>✓</span>
-                <b>Sin VAC reciente</b>
-                <small>Sin señales críticas.</small>
-              </div>
-            </div>
-            <div className="level-control">
-              <label>
-                Nivel inicial asignado <strong>LVL {selected.level}</strong>
+              <label className="staff-notes">
+                Notas internas
+                <textarea
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  placeholder="Motivo del nivel, referencias o señales de riesgo…"
+                />
               </label>
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={selected.level}
-                onChange={(event) =>
-                  update({ level: Number(event.target.value) })
-                }
-              />
-              <div>
-                <span>1</span>
-                <span>5</span>
-                <span>10</span>
+              <div className="review-actions">
+                <button className="reject" onClick={() => resolve("Rechazado")}>
+                  Rechazar
+                </button>
+                <button
+                  className="approve"
+                  disabled={selected.hours < 500}
+                  onClick={() => resolve("Verificado")}
+                >
+                  Aprobar como LVL {selected.level}
+                </button>
               </div>
-            </div>
-            <label className="staff-notes">
-              Notas internas
-              <textarea
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                placeholder="Motivo del nivel, referencias o señales de riesgo…"
-              />
-            </label>
-            <div className="review-actions">
-              <button className="reject" onClick={() => resolve("Rechazado")}>
-                Rechazar
-              </button>
-              <button
-                className="approve"
-                disabled={selected.hours < 500}
-                onClick={() => resolve("Verificado")}
-              >
-                Aprobar como LVL {selected.level}
-              </button>
-            </div>
-          </article>
+            </article>
+          ) : (
+            <article className="review-card">
+              <h3>No hay verificaciones pendientes</h3>
+              <p className="wallet-help">
+                Las nuevas cuentas vinculadas aparecerán aquí.
+              </p>
+            </article>
+          )}
         </div>
       )}
       {staffTab === "Disputas" && <DisputeReview notify={notify} />}

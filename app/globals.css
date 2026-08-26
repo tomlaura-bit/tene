@@ -3114,6 +3114,17 @@ button {
   color: white;
   font-size: 13px;
 }
+.wallet-modal select,
+.qr-placeholder input {
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid #ffffff16;
+  border-radius: 9px;
+  outline: 0;
+  background: #15111d;
+  padding: 11px 12px;
+  color: white;
+}
 
 .account-section-content {
   min-height: 390px;

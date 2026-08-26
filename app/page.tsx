@@ -85,6 +85,29 @@ type RoomData = {
   }>;
 };
 
+type WalletData = {
+  wallet: {
+    availableCents: number;
+    lockedCents: number;
+    debtCents: number;
+  } | null;
+  entries: Array<{
+    id: string;
+    type: string;
+    amountCents: number;
+    description: string;
+    createdAt: string | number;
+  }>;
+  requests: Array<{
+    id: string;
+    type: "deposit" | "withdrawal";
+    method: "yape" | "plin";
+    amountCents: number;
+    status: string;
+    requestedAt: string | number;
+  }>;
+};
+
 export default function Home() {
   const [steamOpen, setSteamOpen] = useState(false);
   const [joined, setJoined] = useState(false);
@@ -1363,21 +1386,48 @@ function EnhancedDashboard({
     "deposit" | "withdraw" | null
   >(null);
   const [amount, setAmount] = useState("20");
+  const [paymentMethod, setPaymentMethod] = useState<"yape" | "plin">("yape");
+  const [operationCode, setOperationCode] = useState("");
   const flash = (message: string) => {
     setNotice(message);
     window.setTimeout(() => setNotice(""), 3500);
   };
-  const applyWallet = () => {
+  const applyWallet = async () => {
     const value = Number(amount);
     if (!Number.isFinite(value) || value <= 0) return;
-    if (walletAction === "deposit") {
-      setBalance((current) => current + value);
-      flash(`Recarga demo de S/ ${value.toFixed(2)} acreditada`);
-    }
-    if (walletAction === "withdraw" && value <= balance) {
-      setBalance((current) => current - value);
-      flash(`Retiro demo de S/ ${value.toFixed(2)} solicitado`);
-    }
+    const response = await fetch("/api/wallet", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        type: walletAction === "deposit" ? "deposit" : "withdrawal",
+        method: paymentMethod,
+        amountCents: Math.round(value * 100),
+        operationCode: walletAction === "deposit" ? operationCode : undefined,
+      }),
+    });
+    const body = (await response.json()) as {
+      error?: string;
+      wallet?: { availableCents: number };
+    };
+    const labels: Record<string, string> = {
+      operation_code_required: "Ingresa el código de operación de Yape o Plin",
+      withdrawal_minimum: "El retiro mínimo es S/ 10",
+      one_room_required: "Debes haber participado en una sala antes de retirar",
+      insufficient_balance: "No tienes saldo suficiente",
+      duplicate_operation: "Ese código de operación ya fue registrado",
+      invalid_request: "Revisa el monto y los datos de la solicitud",
+    };
+    if (!response.ok)
+      return flash(
+        labels[body.error ?? ""] ?? "No se pudo registrar la solicitud",
+      );
+    if (body.wallet) setBalance(body.wallet.availableCents / 100);
+    flash(
+      walletAction === "deposit"
+        ? "Recarga enviada · pendiente de validación del staff"
+        : "Retiro solicitado · saldo bloqueado hasta su aprobación",
+    );
+    setOperationCode("");
     setWalletAction(null);
   };
   return (
@@ -1484,6 +1534,7 @@ function EnhancedDashboard({
           <WalletPanel
             balance={balance}
             action={(value) => setWalletAction(value)}
+            session={session}
           />
         )}
         {activeTab === "Beneficios" && <BenefitsPanel notify={flash} />}
@@ -1532,10 +1583,28 @@ function EnhancedDashboard({
                 onChange={(event) => setAmount(event.target.value)}
               />
             </label>
+            <label>
+              Método
+              <select
+                value={paymentMethod}
+                onChange={(event) =>
+                  setPaymentMethod(event.target.value as "yape" | "plin")
+                }
+              >
+                <option value="yape">Yape</option>
+                <option value="plin">Plin</option>
+              </select>
+            </label>
             {walletAction === "deposit" ? (
               <div className="qr-placeholder">
                 <strong>QR</strong>
                 <span>El comprobante se validará antes de acreditar</span>
+                <input
+                  value={operationCode}
+                  onChange={(event) => setOperationCode(event.target.value)}
+                  placeholder="Código de operación"
+                  aria-label="Código de operación"
+                />
               </div>
             ) : (
               <p className="wallet-help">
@@ -1544,7 +1613,7 @@ function EnhancedDashboard({
               </p>
             )}
             <button className="primary-button w-full" onClick={applyWallet}>
-              Confirmar operación demo
+              Enviar solicitud
             </button>
           </section>
         </div>
@@ -1864,7 +1933,7 @@ function AccountPanel({ session }: { session: SessionData | null }) {
               <p>Recargas, reservas, premios, retiros y penalizaciones.</p>
             </div>
           </div>
-          <Transactions compact />
+          <WalletActivity compact />
         </div>
       )}
       {tab === "Privacidad" && (
@@ -2826,9 +2895,11 @@ function NotificationsPanel({ notify }: { notify: (message: string) => void }) {
 function WalletPanel({
   balance,
   action,
+  session,
 }: {
   balance: number;
   action: (value: "deposit" | "withdraw") => void;
+  session: SessionData | null;
 }) {
   return (
     <section className="section-panel">
@@ -2858,12 +2929,16 @@ function WalletPanel({
         </article>
         <article>
           <b>Saldo bloqueado</b>
-          <strong>S/ 0.00</strong>
+          <strong>
+            S/ {((session?.wallet?.lockedCents ?? 0) / 100).toFixed(2)}
+          </strong>
           <p>Reservado en salas activas.</p>
         </article>
         <article>
           <b>Deuda disciplinaria</b>
-          <strong>S/ 0.00</strong>
+          <strong>
+            S/ {((session?.wallet?.debtCents ?? 0) / 100).toFixed(2)}
+          </strong>
           <p>Sin sanciones pendientes.</p>
         </article>
       </div>
@@ -2872,9 +2947,65 @@ function WalletPanel({
           <strong>Libro de movimientos</strong>
           <span>Todos los importes están en PEN</span>
         </div>
-        <Transactions />
+        <WalletActivity />
       </div>
     </section>
+  );
+}
+
+function WalletActivity({ compact = false }: { compact?: boolean }) {
+  const [data, setData] = useState<WalletData | null>(null);
+  useEffect(() => {
+    void fetch("/api/wallet").then(async (response) => {
+      if (response.ok) setData(await response.json());
+    });
+  }, []);
+  if (!data) return <p className="wallet-help">Cargando movimientos…</p>;
+  const rows = [
+    ...data.requests.map((request) => ({
+      id: request.id,
+      label: `${request.type === "deposit" ? "Recarga" : "Retiro"} ${request.method.toUpperCase()} · ${request.status}`,
+      date: request.requestedAt,
+      amountCents:
+        request.type === "deposit" ? request.amountCents : -request.amountCents,
+      pending: true,
+    })),
+    ...data.entries.map((entry) => ({
+      id: entry.id,
+      label: entry.description,
+      date: entry.createdAt,
+      amountCents: entry.amountCents,
+      pending: false,
+    })),
+  ].slice(0, compact ? 4 : 12);
+  if (!rows.length)
+    return (
+      <p className="wallet-help">Todavía no tienes movimientos registrados.</p>
+    );
+  return (
+    <>
+      {rows.map((row) => (
+        <div className="activity-row" key={row.id}>
+          <span
+            className={row.amountCents > 0 ? "positive-dot" : "neutral-dot"}
+          />
+          <div>
+            <strong>{row.label}</strong>
+            <small>
+              {row.pending ? "Pendiente de revisión · " : ""}
+              {new Date(row.date).toLocaleString("es-PE", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </small>
+          </div>
+          <b className={row.amountCents > 0 ? "positive" : ""}>
+            {row.amountCents > 0 ? "+" : "−"} S/{" "}
+            {(Math.abs(row.amountCents) / 100).toFixed(2)}
+          </b>
+        </div>
+      ))}
+    </>
   );
 }
 function PublicProfilePanel() {

@@ -85,6 +85,13 @@
       "when": 1787708773205,
       "tag": "0011_spicy_mentor",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1787709583777,
+      "tag": "0012_rapid_reavers",
+      "breakpoints": true
     }
   ]
 }

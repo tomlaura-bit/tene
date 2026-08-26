@@ -2300,29 +2300,138 @@ function HistoryPanel() {
   );
 }
 function RankingPanel() {
+  const [balanceMode, setBalanceMode] = useState<"suggested" | "alternate">(
+    "suggested",
+  );
+  const suggested = {
+    a: ["hoxhi", "Jericho", "k1ng", "neo", "ace"],
+    b: ["melo", "Tom", "navi", "loko", "shiro"],
+    aElo: 7341,
+    bElo: 7328,
+  };
+  const alternate = {
+    a: ["hoxhi", "Tom", "loko", "shiro", "ace"],
+    b: ["melo", "Jericho", "k1ng", "navi", "neo"],
+    aElo: 7396,
+    bElo: 7273,
+  };
+  const balance = balanceMode === "suggested" ? suggested : alternate;
+  const difference = Math.abs(balance.aElo - balance.bElo);
   return (
     <section className="section-panel">
       <div className="section-intro">
         <div>
           <span className="verified-badge">TEMPORADA 01</span>
           <h2>Ranking competitivo</h2>
-          <p>El Elo se actualiza después de cada resultado confirmado.</p>
+          <p>
+            El staff asigna el nivel inicial y, después, cada resultado
+            confirmado actualiza el Elo automáticamente.
+          </p>
         </div>
       </div>
-      <div className="ranking-large">
-        {ranking
-          .concat([
-            ["05", "loko", "LVL 7", "1,472"],
-            ["06", "Tom", "LVL 5", "1,298"],
-          ])
-          .map(([place, name, level, elo]) => (
-            <div key={`${place}-${name}`}>
-              <span>#{place}</span>
-              <strong>{name}</strong>
-              <i>{level}</i>
-              <b>{elo} ELO</b>
+      <div className="competitive-grid">
+        <div className="rating-column">
+          <article className="my-rating-card">
+            <div className="rating-level">
+              <small>NIVEL ACTUAL</small>
+              <strong>5</strong>
             </div>
-          ))}
+            <div className="rating-progress">
+              <span>Tom · 1,298 ELO</span>
+              <div>
+                <i style={{ width: "66%" }} />
+              </div>
+              <small>52 ELO para alcanzar LVL 6</small>
+            </div>
+            <div className="season-record">
+              <b>19</b>
+              <small>PARTIDAS</small>
+              <b>12–7</b>
+              <small>VICTORIAS</small>
+            </div>
+          </article>
+          <div className="ranking-large">
+            {ranking
+              .concat([
+                ["05", "loko", "LVL 7", "1,472"],
+                ["06", "Tom", "LVL 5", "1,298"],
+              ])
+              .map(([place, name, level, elo]) => (
+                <div
+                  key={`${place}-${name}`}
+                  className={name === "Tom" ? "is-me" : ""}
+                >
+                  <span>#{place}</span>
+                  <strong>{name}</strong>
+                  <i>{level}</i>
+                  <b>{elo} ELO</b>
+                </div>
+              ))}
+          </div>
+        </div>
+        <aside className="balance-lab">
+          <div className="balance-heading">
+            <div>
+              <small>BALANCE AUTOMÁTICO</small>
+              <h3>Equipos sugeridos</h3>
+            </div>
+            <span
+              className={difference <= 25 ? "balance-good" : "balance-warning"}
+            >
+              {difference} ELO de diferencia
+            </span>
+          </div>
+          <div className="balanced-teams">
+            {(["a", "b"] as const).map((side) => (
+              <div key={side}>
+                <span>EQUIPO {side.toUpperCase()}</span>
+                <strong>
+                  {side === "a" ? balance.aElo : balance.bElo} ELO
+                </strong>
+                {(side === "a" ? balance.a : balance.b).map((name, index) => (
+                  <p key={name}>
+                    <i>{index + 1}</i>
+                    {name}
+                    <small>LVL {10 - index - (side === "b" ? 1 : 0)}</small>
+                  </p>
+                ))}
+              </div>
+            ))}
+          </div>
+          <button
+            className="balance-button"
+            onClick={() =>
+              setBalanceMode(
+                balanceMode === "suggested" ? "alternate" : "suggested",
+              )
+            }
+          >
+            {balanceMode === "suggested"
+              ? "Ver otra combinación"
+              : "Usar balance recomendado"}
+          </button>
+          <p className="balance-note">
+            El sistema minimiza la diferencia total de Elo. Los dos jugadores
+            con mayor nivel siguen siendo capitanes.
+          </p>
+        </aside>
+      </div>
+      <div className="level-ladder">
+        <div>
+          <small>CALIBRACIÓN</small>
+          <strong>Staff revisa perfil, horas y experiencia</strong>
+          <span>Asignación inicial LVL 1–10</span>
+        </div>
+        <div>
+          <small>RESULTADO</small>
+          <strong>Victoria o derrota confirmada</strong>
+          <span>Ajuste según dificultad del rival</span>
+        </div>
+        <div>
+          <small>PROGRESIÓN</small>
+          <strong>Subes o bajas por tu Elo</strong>
+          <span>Sin cambios manuales ocultos</span>
+        </div>
       </div>
     </section>
   );

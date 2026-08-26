@@ -566,3 +566,68 @@ export const notificationPreferences = sqliteTable("notification_preferences", {
     .default(false),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
+
+export const playerRatings = sqliteTable(
+  "player_ratings",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => users.id),
+    seasonKey: text("season_key").notNull(),
+    elo: integer("elo").notNull().default(1000),
+    level: integer("level").notNull().default(1),
+    matches: integer("matches").notNull().default(0),
+    wins: integer("wins").notNull().default(0),
+    losses: integer("losses").notNull().default(0),
+    calibrationStatus: text("calibration_status", {
+      enum: ["pending", "staff_assigned", "established"],
+    })
+      .notNull()
+      .default("pending"),
+    calibratedById: text("calibrated_by_id").references(() => users.id),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_player_ratings_season_elo").on(table.seasonKey, table.elo),
+  ],
+);
+
+export const ratingChanges = sqliteTable(
+  "rating_changes",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    roomId: text("room_id").references(() => rooms.id),
+    beforeElo: integer("before_elo").notNull(),
+    delta: integer("delta").notNull(),
+    afterElo: integer("after_elo").notNull(),
+    reason: text("reason", {
+      enum: ["match", "calibration", "admin_correction"],
+    }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_rating_changes_user_created").on(table.userId, table.createdAt),
+  ],
+);
+
+export const teamBalanceSnapshots = sqliteTable(
+  "team_balance_snapshots",
+  {
+    id: text("id").primaryKey(),
+    roomId: text("room_id")
+      .notNull()
+      .references(() => rooms.id),
+    teamAElo: integer("team_a_elo").notNull(),
+    teamBElo: integer("team_b_elo").notNull(),
+    difference: integer("difference").notNull(),
+    algorithmVersion: text("algorithm_version").notNull().default("v1"),
+    teamsJson: text("teams_json").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_team_balance_room_created").on(table.roomId, table.createdAt),
+  ],
+);

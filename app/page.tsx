@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const players = [
   { name: "hoxhi", level: 10, tone: "from-fuchsia-500 to-violet-500" },
@@ -1428,6 +1428,59 @@ function EnhancedDashboard({
 
 function AccountPanel() {
   const [tab, setTab] = useState<"Cuenta" | "Steam">("Cuenta");
+  const [steamState, setSteamState] = useState<{
+    steam?: {
+      steamId64: string;
+      personaName: string | null;
+      avatarUrl: string | null;
+      status: string;
+      cs2Minutes: number;
+    };
+    lastCheck?: {
+      profilePublic: boolean;
+      gameDetailsPublic: boolean;
+      ownsCs2: boolean;
+      eligible: boolean;
+    };
+  } | null>(null);
+  const [steamStatus, setSteamStatus] = useState("");
+  const [checkingSteam, setCheckingSteam] = useState(false);
+  const loadSteam = async () => {
+    const response = await fetch("/api/me/steam/recheck");
+    if (response.ok) setSteamState(await response.json());
+  };
+  useEffect(() => {
+    void loadSteam();
+  }, []);
+  const recheckSteam = async () => {
+    setCheckingSteam(true);
+    setSteamStatus("");
+    try {
+      const response = await fetch("/api/me/steam/recheck", { method: "POST" });
+      const body = (await response.json()) as {
+        ok: boolean;
+        error?: string;
+        result?: { eligible: boolean; reason: string; cs2Minutes: number };
+      };
+      const labels: Record<string, string> = {
+        profile_private: "Steam todavía reporta el perfil como privado.",
+        game_details_private: "Los detalles de juego siguen privados.",
+        cs2_not_visible: "CS2 no aparece visible en la biblioteca.",
+        hours_below_minimum: "La cuenta tiene menos de 500 horas visibles.",
+        steam_api_unavailable: "Steam no respondió; inténtalo nuevamente.",
+        eligible: "Cuenta apta para revisión del staff.",
+      };
+      setSteamStatus(
+        body.ok && body.result
+          ? labels[body.result.reason]
+          : (labels[body.error ?? ""] ??
+              "No se pudo completar la comprobación."),
+      );
+      await loadSteam();
+    } finally {
+      setCheckingSteam(false);
+    }
+  };
   return (
     <section className="account-panel">
       <div className="account-tabs">
@@ -1502,27 +1555,57 @@ function AccountPanel() {
         <div className="account-surface">
           <div className="account-title">
             <div>
-              <span className="verified-badge">✓ STEAM VINCULADO</span>
+              <span className="verified-badge">
+                {steamState?.steam?.status === "verified"
+                  ? "✓ STEAM VERIFICADO"
+                  : "STEAM VINCULADO · REVISIÓN PENDIENTE"}
+              </span>
               <h2>Cuenta de Steam</h2>
               <p>Esta asociación protege tu identidad competitiva.</p>
             </div>
           </div>
           <div className="linked-steam">
             <img
-              src="https://api.dicebear.com/9.x/thumbs/svg?seed=Maddison&backgroundColor=2e1065,312e81"
+              src={
+                steamState?.steam?.avatarUrl ??
+                "https://api.dicebear.com/9.x/thumbs/svg?seed=Steam&backgroundColor=2e1065,312e81"
+              }
               alt="Avatar Steam"
             />
             <div>
-              <strong>Maddison</strong>
-              <span>76561198442891307</span>
-              <small>Vinculada el 25 ago. 2026 · Validada por moderación</small>
+              <strong>
+                {steamState?.steam?.personaName ?? "Cuenta vinculada"}
+              </strong>
+              <span>
+                {steamState?.steam?.steamId64 ?? "Cargando SteamID64…"}
+              </span>
+              <small>
+                {steamState?.steam?.status === "verified"
+                  ? "Requisitos automáticos aprobados"
+                  : "Pendiente de validación automática o staff"}
+              </small>
             </div>
             <b>LVL 5</b>
           </div>
           <div className="steam-validation">
-            <strong>✓ 2,341 horas de CS2 detectadas</strong>
-            <span>Perfil y detalles de juego públicos · AppID 730</span>
-            <button className="secondary-button">Volver a validar horas</button>
+            <strong>
+              {steamState?.steam
+                ? `${Math.floor(steamState.steam.cs2Minutes / 60).toLocaleString()} horas de CS2 detectadas`
+                : "Consultando Steam…"}
+            </strong>
+            <span>
+              {steamState?.lastCheck
+                ? `${steamState.lastCheck.profilePublic ? "Perfil público" : "Perfil privado"} · ${steamState.lastCheck.gameDetailsPublic ? "Juegos públicos" : "Juegos privados"} · ${steamState.lastCheck.ownsCs2 ? "CS2 visible" : "CS2 no visible"}`
+                : "Sin comprobación registrada"}
+            </span>
+            <button
+              className="secondary-button"
+              disabled={checkingSteam || !steamState?.steam}
+              onClick={recheckSteam}
+            >
+              {checkingSteam ? "Comprobando…" : "Volver a comprobar ahora"}
+            </button>
+            {steamStatus && <p className="steam-check-result">{steamStatus}</p>}
           </div>
           <p className="permanent-link">
             La vinculación es personal y no puede cambiarse sin revisión del

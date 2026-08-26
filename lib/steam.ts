@@ -36,24 +36,30 @@ export async function verifySteamOpenId(url: URL) {
 }
 
 export async function inspectSteamProfile(steamId64: string, apiKey?: string) {
-  if (!apiKey) return null;
+  if (!apiKey)
+    return { ok: false as const, reason: "api_key_missing" as const };
   const summaryUrl = new URL(
     "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/",
   );
-  summaryUrl.searchParams.set("key", apiKey);
   summaryUrl.searchParams.set("steamids", steamId64);
   const gamesUrl = new URL(
     "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/",
   );
-  gamesUrl.searchParams.set("key", apiKey);
-  gamesUrl.searchParams.set("steamid", steamId64);
-  gamesUrl.searchParams.set("include_played_free_games", "true");
-  gamesUrl.searchParams.set("appids_filter[0]", "730");
+  gamesUrl.searchParams.set(
+    "input_json",
+    JSON.stringify({
+      steamid: steamId64,
+      include_played_free_games: true,
+      appids_filter: [730],
+    }),
+  );
+  const requestInit = { headers: { "x-webapi-key": apiKey } };
   const [summaryResponse, gamesResponse] = await Promise.all([
-    fetch(summaryUrl),
-    fetch(gamesUrl),
+    fetch(summaryUrl, requestInit),
+    fetch(gamesUrl, requestInit),
   ]);
-  if (!summaryResponse.ok || !gamesResponse.ok) return null;
+  if (!summaryResponse.ok || !gamesResponse.ok)
+    return { ok: false as const, reason: "steam_api_unavailable" as const };
   const summary = (await summaryResponse.json()) as {
     response?: {
       players?: Array<{
@@ -70,11 +76,14 @@ export async function inspectSteamProfile(steamId64: string, apiKey?: string) {
     };
   };
   const player = summary.response?.players?.[0];
+  if (!player)
+    return { ok: false as const, reason: "profile_not_found" as const };
   const cs2 = games.response?.games?.find((game) => game.appid === 730);
   const profilePublic = player?.communityvisibilitystate === 3;
   const gameDetailsPublic = typeof games.response?.game_count === "number";
   const cs2Minutes = cs2?.playtime_forever ?? 0;
   return {
+    ok: true as const,
     profilePublic,
     gameDetailsPublic,
     ownsCs2: Boolean(cs2),
@@ -83,5 +92,14 @@ export async function inspectSteamProfile(steamId64: string, apiKey?: string) {
       profilePublic && gameDetailsPublic && Boolean(cs2) && cs2Minutes >= 30000,
     personaName: player?.personaname ?? null,
     avatarUrl: player?.avatarfull ?? null,
+    reason: !profilePublic
+      ? "profile_private"
+      : !gameDetailsPublic
+        ? "game_details_private"
+        : !cs2
+          ? "cs2_not_visible"
+          : cs2Minutes < 30000
+            ? "hours_below_minimum"
+            : "eligible",
   };
 }

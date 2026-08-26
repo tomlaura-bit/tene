@@ -4952,3 +4952,11 @@ button {
   cursor: not-allowed;
   opacity: 0.55;
 }
+.steam-check-result {
+  margin-top: 8px;
+  border-left: 2px solid #a78bfa;
+  background: #8b5cf60b;
+  padding: 9px;
+  color: #ffffff5c;
+  font-size: 8px;
+}

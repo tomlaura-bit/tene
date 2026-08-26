@@ -450,3 +450,50 @@ export const disputeEvidence = sqliteTable(
   },
   (table) => [index("idx_dispute_evidence_dispute").on(table.disputeId)],
 );
+
+export const chatMessages = sqliteTable(
+  "chat_messages",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    roomId: text("room_id").references(() => rooms.id),
+    channel: text("channel", {
+      enum: ["general", "looking_for_room", "support", "announcements", "room"],
+    }).notNull(),
+    body: text("body").notNull(),
+    deletedById: text("deleted_by_id").references(() => users.id),
+    deletedAt: integer("deleted_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_chat_messages_channel_created").on(
+      table.channel,
+      table.createdAt,
+    ),
+  ],
+);
+
+export const chatReports = sqliteTable(
+  "chat_reports",
+  {
+    id: text("id").primaryKey(),
+    messageId: text("message_id")
+      .notNull()
+      .references(() => chatMessages.id),
+    reporterId: text("reporter_id")
+      .notNull()
+      .references(() => users.id),
+    reason: text("reason").notNull(),
+    status: text("status", { enum: ["pending", "resolved", "dismissed"] })
+      .notNull()
+      .default("pending"),
+    reviewedById: text("reviewed_by_id").references(() => users.id),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    reviewedAt: integer("reviewed_at", { mode: "timestamp" }),
+  },
+  (table) => [
+    index("idx_chat_reports_status_created").on(table.status, table.createdAt),
+  ],
+);

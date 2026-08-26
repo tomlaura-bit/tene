@@ -1170,6 +1170,7 @@ function EnhancedDashboard({
     "Wallet",
     "Beneficios",
     "Conducta",
+    "Chat",
     "Historial",
     "Ranking",
     "Staff",
@@ -1220,6 +1221,7 @@ function EnhancedDashboard({
                       Wallet: "◈",
                       Beneficios: "★",
                       Conducta: "◆",
+                      Chat: "#",
                       Historial: "↺",
                       Ranking: "⌁",
                       Staff: "⚙",
@@ -1278,6 +1280,7 @@ function EnhancedDashboard({
         )}
         {activeTab === "Beneficios" && <BenefitsPanel notify={flash} />}
         {activeTab === "Conducta" && <ConductPanel notify={flash} />}
+        {activeTab === "Chat" && <CommunityChat notify={flash} />}
         {activeTab === "Historial" && <HistoryPanel />}
         {activeTab === "Ranking" && <RankingPanel />}
         {activeTab === "Staff" && <StaffPanel notify={flash} />}
@@ -1841,6 +1844,202 @@ function ConductPanel({ notify }: { notify: (message: string) => void }) {
           </section>
         </div>
       )}
+    </section>
+  );
+}
+
+type ChatMessage = {
+  id: number;
+  name: string;
+  role: string;
+  text: string;
+  time: string;
+  level: number;
+};
+function CommunityChat({ notify }: { notify: (message: string) => void }) {
+  const [channel, setChannel] = useState("General");
+  const [text, setText] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: 1,
+      name: "hoxhi",
+      role: "DUEÑO",
+      text: "Sala nocturna abierta, entren rápido.",
+      time: "11:32",
+      level: 10,
+    },
+    {
+      id: 2,
+      name: "Jericho",
+      role: "MOD",
+      text: "Recuerden tener perfil y horas públicas antes de solicitar revisión.",
+      time: "11:34",
+      level: 7,
+    },
+    {
+      id: 3,
+      name: "Maddison",
+      role: "SUB",
+      text: "¿Alguien para una sala LVL 6–8?",
+      time: "11:35",
+      level: 8,
+    },
+    {
+      id: 4,
+      name: "rayo",
+      role: "JUGADOR",
+      text: "Me apunto, tengo saldo listo.",
+      time: "11:36",
+      level: 4,
+    },
+  ]);
+  const send = () => {
+    if (!text.trim()) return;
+    setMessages([
+      ...messages,
+      {
+        id: Date.now(),
+        name: "Tom",
+        role: "DUEÑO",
+        text: text.trim(),
+        time: "Ahora",
+        level: 5,
+      },
+    ]);
+    setText("");
+  };
+  return (
+    <section className="community-panel">
+      <div className="chat-layout">
+        <aside className="channel-list">
+          <div>
+            <span className="brand-mark">T</span>
+            <strong>Comunidad TENE</strong>
+          </div>
+          <small>CANALES</small>
+          {["General", "Busco sala", "Soporte", "Anuncios"].map((item) => (
+            <button
+              className={channel === item ? "active" : ""}
+              onClick={() => setChannel(item)}
+              key={item}
+            >
+              <span>#</span>
+              {item}
+              {item === "Soporte" && <i>2</i>}
+            </button>
+          ))}
+          <small>SALAS ACTIVAS</small>
+          <button>
+            <span>●</span>Sala #184
+          </button>
+          <button>
+            <span>●</span>Sala #183
+          </button>
+          <div className="discord-card">
+            <b>Discord conectado</b>
+            <p>Los roles y prefijos se sincronizarán.</p>
+            <button
+              onClick={() =>
+                notify("Vinculación con Discord disponible próximamente")
+              }
+            >
+              Configurar
+            </button>
+          </div>
+        </aside>
+        <main className="chat-main">
+          <header>
+            <div>
+              <strong># {channel}</strong>
+              <small>
+                {channel === "General"
+                  ? "Conversación de la comunidad peruana"
+                  : "Canal de coordinación y soporte"}
+              </small>
+            </div>
+            <span>186 conectados</span>
+          </header>
+          <div className="message-stream">
+            {messages.map((message) => (
+              <article key={message.id}>
+                <PlayerProfile
+                  profile={{
+                    name: message.name,
+                    level: message.level,
+                    elo: 1298 + message.level * 20,
+                    hours: 600 + message.level * 210,
+                    conduct: "Buena",
+                  }}
+                  compact
+                />
+                <div>
+                  <div className="message-meta">
+                    <b className={`role-prefix ${message.role.toLowerCase()}`}>
+                      {message.role}
+                    </b>
+                    <strong>{message.name}</strong>
+                    <small>{message.time}</small>
+                    <button
+                      onClick={() =>
+                        notify(
+                          `${message.name}: reporte demo enviado a moderación`,
+                        )
+                      }
+                    >
+                      •••
+                    </button>
+                  </div>
+                  <p>{message.text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="chat-compose">
+            <input
+              value={text}
+              maxLength={240}
+              onChange={(event) => setText(event.target.value)}
+              onKeyDown={(event) => event.key === "Enter" && send()}
+              placeholder={`Enviar mensaje a #${channel.toLowerCase()}…`}
+            />
+            <span>{text.length}/240</span>
+            <button onClick={send}>Enviar</button>
+          </div>
+        </main>
+        <aside className="online-list">
+          <strong>EN LÍNEA — 6</strong>
+          {[
+            ["hoxhi", "DUEÑO", 10],
+            ["Tom", "DUEÑO", 5],
+            ["Jericho", "MOD", 7],
+            ["Maddison", "SUB", 8],
+            ["Shiro", "STREAMER", 7],
+            ["rayo", "JUGADOR", 4],
+          ].map(([name, role, level]) => (
+            <div key={String(name)}>
+              <span className="online-avatar">{String(name)[0]}</span>
+              <span>
+                <b>{name}</b>
+                <small className={`role-text ${String(role).toLowerCase()}`}>
+                  {role}
+                </small>
+              </span>
+              <i>LVL {level}</i>
+            </div>
+          ))}
+        </aside>
+      </div>
+      <div className="chat-safety">
+        <span>
+          Los moderadores pueden eliminar mensajes, mutear y banear. Todos los
+          reportes quedan registrados.
+        </span>
+        <button
+          onClick={() => notify("Reglas de comunidad abiertas en modo demo")}
+        >
+          Ver reglas del chat
+        </button>
+      </div>
     </section>
   );
 }

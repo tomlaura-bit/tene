@@ -2418,11 +2418,16 @@ function BenefitsPanel({ notify }: { notify: (message: string) => void }) {
 function ConductPanel({ notify }: { notify: (message: string) => void }) {
   const [appealing, setAppealing] = useState(false);
   const [sent, setSent] = useState(false);
+  const [appealReason, setAppealReason] = useState("");
+  const [selectedSanction, setSelectedSanction] = useState("");
+  const [conduct, setConduct] = useState<{ score: number; debtCents: number; activeSuspension: boolean; activeMutes: number; sanctions: Array<{ id: string; type: string; reason: string; penaltyCents: number; createdAt: string; revokedAt: string | null }> } | null>(null);
+  useEffect(() => { void fetch("/api/conduct").then(async (response) => { if (response.ok) setConduct(await response.json()); }); }, []);
+  const score = conduct?.score ?? 100;
   return (
     <section className="conduct-panel">
       <div className="conduct-hero">
         <div>
-          <span className="verified-badge">CONDUCTA BUENA</span>
+          <span className="verified-badge">CONDUCTA {score >= 80 ? "BUENA" : score >= 50 ? "EN OBSERVACIÓN" : "RESTRINGIDA"}</span>
           <h2>Tu reputación competitiva</h2>
           <p>
             La puntualidad, permanencia y comportamiento determinan si puedes
@@ -2430,9 +2435,9 @@ function ConductPanel({ notify }: { notify: (message: string) => void }) {
           </p>
         </div>
         <div className="conduct-score">
-          <strong>92</strong>
+          <strong>{score}</strong>
           <span>/ 100</span>
-          <small>Sin restricciones</small>
+          <small>{conduct?.activeSuspension ? "Suspensión activa" : "Sin restricciones"}</small>
         </div>
       </div>
       <div className="conduct-rules">
@@ -2467,39 +2472,22 @@ function ConductPanel({ notify }: { notify: (message: string) => void }) {
             <strong>Historial disciplinario</strong>
             <span>Últimos 90 días</span>
           </div>
-          <article>
-            <span className="sanction-dot resolved" />
-            <div>
-              <b>No-show · Sala #142</b>
-              <small>12 jul. 2026 · Llegaste después del límite</small>
-            </div>
-            <strong>− S/ 3</strong>
-            <i>Pagada</i>
-            <button onClick={() => setAppealing(true)}>Apelar</button>
-          </article>
-          <article>
-            <span className="sanction-dot good" />
-            <div>
-              <b>32 partidas sin incidentes</b>
-              <small>Racha actual de buena conducta</small>
-            </div>
-            <strong>+ 8 pts</strong>
-            <i>Activo</i>
-          </article>
+          {conduct?.sanctions.map((sanction) => <article key={sanction.id}><span className={`sanction-dot ${sanction.revokedAt ? "resolved" : "warning"}`} /><div><b>{sanction.type.replaceAll("_", " ")}</b><small>{new Date(sanction.createdAt).toLocaleDateString("es-PE")} · {sanction.reason}</small></div><strong>{sanction.penaltyCents ? `− S/ ${(sanction.penaltyCents / 100).toFixed(2)}` : "Aviso"}</strong><i>{sanction.revokedAt ? "Revocada" : "Activa"}</i><button onClick={() => { setSelectedSanction(sanction.id); setAppealing(true); }}>Apelar</button></article>)}
+          {conduct && !conduct.sanctions.length && <article><span className="sanction-dot good" /><div><b>Sin incidentes registrados</b><small>Mantén una conducta responsable en cada sala.</small></div><strong>100 pts</strong><i>Activo</i></article>}
         </div>
         <aside className="conduct-status">
           <span className="card-label">ESTADO ACTUAL</span>
           <div>
             <small>Deuda disciplinaria</small>
-            <strong>S/ 0.00</strong>
+            <strong>S/ {((conduct?.debtCents ?? 0) / 100).toFixed(2)}</strong>
           </div>
           <div>
             <small>Suspensión activa</small>
-            <strong>No</strong>
+            <strong>{conduct?.activeSuspension ? "Sí" : "No"}</strong>
           </div>
           <div>
             <small>Mutes activos</small>
-            <strong>0</strong>
+            <strong>{conduct?.activeMutes ?? 0}</strong>
           </div>
           <p>✓ Puedes entrar a salas y retirar saldo.</p>
         </aside>
@@ -2514,25 +2502,22 @@ function ConductPanel({ notify }: { notify: (message: string) => void }) {
               ×
             </button>
             <span className="staff-role">APELACIÓN</span>
-            <h2>No-show · Sala #142</h2>
+            <h2>Solicitar revisión de sanción</h2>
             <p>
               Explica por qué consideras que la sanción debe revisarse. La multa
               no se elimina mientras la apelación esté pendiente.
             </p>
             <label>
               Motivo
-              <textarea placeholder="Describe lo sucedido y cualquier evidencia…" />
+              <textarea value={appealReason} onChange={(event) => setAppealReason(event.target.value)} placeholder="Describe lo sucedido y cualquier evidencia…" />
             </label>
             <div className="evidence-box">
               ＋ Adjuntar captura o evidencia demo
             </div>
             <button
               className="primary-button w-full"
-              disabled={sent}
-              onClick={() => {
-                setSent(true);
-                notify("Apelación demo enviada al staff");
-              }}
+              disabled={sent || appealReason.trim().length < 10}
+              onClick={async () => { const response = await fetch("/api/conduct", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sanctionId: selectedSanction, reason: appealReason }) }); setSent(response.ok); notify(response.ok ? "Apelación enviada al staff" : "No se pudo enviar la apelación"); }}
             >
               {sent ? "✓ Apelación enviada" : "Enviar apelación"}
             </button>
@@ -2764,60 +2749,15 @@ function CommunityChat({
 
 function NotificationsPanel({ notify }: { notify: (message: string) => void }) {
   const [filter, setFilter] = useState("Todas");
-  const [read, setRead] = useState<number[]>([5]);
+  const [read, setRead] = useState<string[]>([]);
   const [prefs, setPrefs] = useState({
     rooms: true,
     money: true,
     staff: true,
     community: false,
   });
-  const items = [
-    {
-      id: 1,
-      type: "Partida",
-      icon: "▶",
-      title: "Tu servidor está listo",
-      copy: "Sala #184 · Conéctate antes de 5 minutos para evitar una multa.",
-      time: "Ahora",
-      action: "Abrir sala",
-    },
-    {
-      id: 2,
-      type: "Partida",
-      icon: "⚔",
-      title: "Es tu turno en el draft",
-      copy: "Eres Capitán A. Elige al siguiente jugador.",
-      time: "Hace 2 min",
-      action: "Ir al draft",
-    },
-    {
-      id: 3,
-      type: "Dinero",
-      icon: "S/",
-      title: "Recarga aprobada",
-      copy: "Se acreditaron S/ 20.00 a tu saldo disponible.",
-      time: "Hace 18 min",
-      action: "Ver movimiento",
-    },
-    {
-      id: 4,
-      type: "Staff",
-      icon: "✓",
-      title: "Cuenta verificada",
-      copy: "El staff aprobó tu perfil y te asignó LVL 5.",
-      time: "Hoy 10:41",
-      action: "Ver perfil",
-    },
-    {
-      id: 5,
-      type: "Comunidad",
-      icon: "#",
-      title: "Nueva respuesta en Soporte",
-      copy: "Jericho respondió tu consulta sobre la Sala #176.",
-      time: "Ayer",
-      action: "Abrir chat",
-    },
-  ];
+  const [items, setItems] = useState<Array<{ id: string; type: string; icon: string; title: string; copy: string; time: string; action: string }>>([]);
+  useEffect(() => { void fetch("/api/notifications").then(async (response) => { if (!response.ok) return; const data = await response.json() as { items: Array<{ id: string; type: string; title: string; body: string; createdAt: string; readAt: string | null }>; preferences: { matches: boolean; wallet: boolean; staff: boolean; community: boolean } }; setItems(data.items.map((item) => ({ id: item.id, type: ({ match: "Partida", wallet: "Dinero", staff: "Staff", community: "Comunidad", sanction: "Staff", birthday: "Comunidad", security: "Staff" } as Record<string,string>)[item.type] ?? "Comunidad", icon: item.type === "wallet" ? "S/" : item.type === "match" ? "▶" : item.type === "staff" ? "✓" : "#", title: item.title, copy: item.body, time: new Date(item.createdAt).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" }), action: "Abrir" }))); setRead(data.items.filter((item) => item.readAt).map((item) => item.id)); setPrefs({ rooms: data.preferences.matches, money: data.preferences.wallet, staff: data.preferences.staff, community: data.preferences.community }); }); }, []);
   const visible =
     filter === "Todas" ? items : items.filter((item) => item.type === filter);
   return (
@@ -2831,7 +2771,7 @@ function NotificationsPanel({ notify }: { notify: (message: string) => void }) {
             activos dentro de TENE.
           </p>
         </div>
-        <button onClick={() => setRead(items.map((item) => item.id))}>
+        <button onClick={() => { setRead(items.map((item) => item.id)); void fetch("/api/notifications", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ readAll: true }) }); }}>
           Marcar todas como leídas
         </button>
       </div>
@@ -2874,7 +2814,8 @@ function NotificationsPanel({ notify }: { notify: (message: string) => void }) {
                   onClick={(event) => {
                     event.stopPropagation();
                     setRead([...new Set([...read, item.id])]);
-                    notify(`${item.action} · demostración`);
+                    void fetch("/api/notifications", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ notificationId: item.id }) });
+                    notify(item.title);
                   }}
                 >
                   {item.action} →
@@ -2904,12 +2845,7 @@ function NotificationsPanel({ notify }: { notify: (message: string) => void }) {
               <input
                 type="checkbox"
                 checked={prefs[key as keyof typeof prefs]}
-                onChange={() =>
-                  setPrefs({
-                    ...prefs,
-                    [key]: !prefs[key as keyof typeof prefs],
-                  })
-                }
+                onChange={() => { const next = { ...prefs, [key]: !prefs[key as keyof typeof prefs] }; setPrefs(next); void fetch("/api/notifications", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ preferences: { matches: next.rooms, wallet: next.money, staff: next.staff, community: next.community } }) }); }}
               />
             </label>
           ))}
@@ -3211,11 +3147,13 @@ function PublicProfilePanel() {
 }
 
 function HistoryPanel() {
+  const [history, setHistory] = useState<Array<{ id: string; roomName: string | null; delta: number; map: string | null; teamAScore: number | null; teamBScore: number | null; createdAt: string }>>([]);
+  useEffect(() => { void fetch("/api/competitive").then(async (response) => { if (response.ok) setHistory(((await response.json()) as { history: typeof history }).history); }); }, []);
   return (
     <section className="section-panel">
       <div className="section-intro">
         <div>
-          <span className="verified-badge">19 PARTIDAS</span>
+          <span className="verified-badge">{history.length} PARTIDAS REGISTRADAS</span>
           <h2>Historial competitivo</h2>
           <p>
             Resultados, mapas y variación de Elo registrados por nuestros
@@ -3224,30 +3162,30 @@ function HistoryPanel() {
         </div>
       </div>
       <div className="match-history">
-        {[
-          ["#176", "Victoria", "Mirage", "13 — 9", "+18"],
-          ["#169", "Derrota", "Ancient", "11 — 13", "−14"],
-          ["#161", "Victoria", "Nuke", "13 — 7", "+16"],
-          ["#154", "Victoria", "Inferno", "13 — 11", "+12"],
-        ].map(([id, result, map, score, elo]) => (
-          <article key={id}>
+        {history.map((match) => {
+          const result = match.delta >= 0 ? "Victoria" : "Derrota";
+          return <article key={match.id}>
             <span
               className={result === "Victoria" ? "result-win" : "result-loss"}
             >
               {result}
             </span>
-            <strong>Sala {id}</strong>
-            <span>{map}</span>
-            <b>{score}</b>
-            <em>{elo} ELO</em>
-            <button>Ver demo</button>
-          </article>
-        ))}
+            <strong>{match.roomName ?? "Sala competitiva"}</strong>
+            <span>{match.map ?? "Mapa sin registrar"}</span>
+            <b>{match.teamAScore ?? 0} — {match.teamBScore ?? 0}</b>
+            <em>{match.delta > 0 ? "+" : ""}{match.delta} ELO</em>
+            <button disabled>Demo no disponible</button>
+          </article>;
+        })}
+        {!history.length && <p className="wallet-help">Todavía no tienes resultados competitivos confirmados.</p>}
       </div>
     </section>
   );
 }
 function RankingPanel() {
+  const [liveRanking, setLiveRanking] = useState<Array<{ userId: string; name: string; elo: number; level: number; position: number }>>([]);
+  const [myRating, setMyRating] = useState<{ userId: string; name: string; elo: number; level: number; matches: number; wins: number; losses: number; position: number } | null>(null);
+  useEffect(() => { void fetch("/api/competitive").then(async (response) => { if (!response.ok) return; const data = await response.json() as { ranking: typeof liveRanking; me: typeof myRating }; setLiveRanking(data.ranking); setMyRating(data.me); }); }, []);
   const [balanceMode, setBalanceMode] = useState<"suggested" | "alternate">(
     "suggested",
   );
@@ -3285,37 +3223,32 @@ function RankingPanel() {
           <article className="my-rating-card">
             <div className="rating-level">
               <small>NIVEL ACTUAL</small>
-              <strong>5</strong>
+              <strong>{myRating?.level ?? 1}</strong>
             </div>
             <div className="rating-progress">
-              <span>Tom · 1,298 ELO</span>
+              <span>{myRating?.name ?? "Jugador"} · {(myRating?.elo ?? 1000).toLocaleString()} ELO</span>
               <div>
                 <i style={{ width: "66%" }} />
               </div>
-              <small>52 ELO para alcanzar LVL 6</small>
+              <small>Posición #{myRating?.position ?? "—"} de la temporada</small>
             </div>
             <div className="season-record">
-              <b>19</b>
+              <b>{myRating?.matches ?? 0}</b>
               <small>PARTIDAS</small>
-              <b>12–7</b>
+              <b>{myRating?.wins ?? 0}–{myRating?.losses ?? 0}</b>
               <small>VICTORIAS</small>
             </div>
           </article>
           <div className="ranking-large">
-            {ranking
-              .concat([
-                ["05", "loko", "LVL 7", "1,472"],
-                ["06", "Tom", "LVL 5", "1,298"],
-              ])
-              .map(([place, name, level, elo]) => (
+            {liveRanking.map((player) => (
                 <div
-                  key={`${place}-${name}`}
-                  className={name === "Tom" ? "is-me" : ""}
+                  key={player.userId}
+                  className={player.userId === myRating?.userId ? "is-me" : ""}
                 >
-                  <span>#{place}</span>
-                  <strong>{name}</strong>
-                  <i>{level}</i>
-                  <b>{elo} ELO</b>
+                  <span>#{String(player.position).padStart(2, "0")}</span>
+                  <strong>{player.name}</strong>
+                  <i>LVL {player.level}</i>
+                  <b>{player.elo.toLocaleString()} ELO</b>
                 </div>
               ))}
           </div>

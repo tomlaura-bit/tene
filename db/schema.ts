@@ -497,3 +497,46 @@ export const chatReports = sqliteTable(
     index("idx_chat_reports_status_created").on(table.status, table.createdAt),
   ],
 );
+
+export const notifications = sqliteTable(
+  "notifications",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    type: text("type", {
+      enum: [
+        "match",
+        "wallet",
+        "staff",
+        "sanction",
+        "community",
+        "birthday",
+        "security",
+      ],
+    }).notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    actionUrl: text("action_url"),
+    readAt: integer("read_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_notifications_user_created").on(table.userId, table.createdAt),
+  ],
+);
+
+export const notificationPreferences = sqliteTable("notification_preferences", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id),
+  matches: integer("matches", { mode: "boolean" }).notNull().default(true),
+  wallet: integer("wallet", { mode: "boolean" }).notNull().default(true),
+  staff: integer("staff", { mode: "boolean" }).notNull().default(true),
+  community: integer("community", { mode: "boolean" }).notNull().default(false),
+  emailEnabled: integer("email_enabled", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});

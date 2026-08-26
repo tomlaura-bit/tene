@@ -1171,6 +1171,7 @@ function EnhancedDashboard({
     "Beneficios",
     "Conducta",
     "Chat",
+    "Alertas",
     "Historial",
     "Ranking",
     "Staff",
@@ -1222,6 +1223,7 @@ function EnhancedDashboard({
                       Beneficios: "★",
                       Conducta: "◆",
                       Chat: "#",
+                      Alertas: "●",
                       Historial: "↺",
                       Ranking: "⌁",
                       Staff: "⚙",
@@ -1281,6 +1283,7 @@ function EnhancedDashboard({
         {activeTab === "Beneficios" && <BenefitsPanel notify={flash} />}
         {activeTab === "Conducta" && <ConductPanel notify={flash} />}
         {activeTab === "Chat" && <CommunityChat notify={flash} />}
+        {activeTab === "Alertas" && <NotificationsPanel notify={flash} />}
         {activeTab === "Historial" && <HistoryPanel />}
         {activeTab === "Ranking" && <RankingPanel />}
         {activeTab === "Staff" && <StaffPanel notify={flash} />}
@@ -2039,6 +2042,167 @@ function CommunityChat({ notify }: { notify: (message: string) => void }) {
         >
           Ver reglas del chat
         </button>
+      </div>
+    </section>
+  );
+}
+
+function NotificationsPanel({ notify }: { notify: (message: string) => void }) {
+  const [filter, setFilter] = useState("Todas");
+  const [read, setRead] = useState<number[]>([5]);
+  const [prefs, setPrefs] = useState({
+    rooms: true,
+    money: true,
+    staff: true,
+    community: false,
+  });
+  const items = [
+    {
+      id: 1,
+      type: "Partida",
+      icon: "▶",
+      title: "Tu servidor está listo",
+      copy: "Sala #184 · Conéctate antes de 5 minutos para evitar una multa.",
+      time: "Ahora",
+      action: "Abrir sala",
+    },
+    {
+      id: 2,
+      type: "Partida",
+      icon: "⚔",
+      title: "Es tu turno en el draft",
+      copy: "Eres Capitán A. Elige al siguiente jugador.",
+      time: "Hace 2 min",
+      action: "Ir al draft",
+    },
+    {
+      id: 3,
+      type: "Dinero",
+      icon: "S/",
+      title: "Recarga aprobada",
+      copy: "Se acreditaron S/ 20.00 a tu saldo disponible.",
+      time: "Hace 18 min",
+      action: "Ver movimiento",
+    },
+    {
+      id: 4,
+      type: "Staff",
+      icon: "✓",
+      title: "Cuenta verificada",
+      copy: "El staff aprobó tu perfil y te asignó LVL 5.",
+      time: "Hoy 10:41",
+      action: "Ver perfil",
+    },
+    {
+      id: 5,
+      type: "Comunidad",
+      icon: "#",
+      title: "Nueva respuesta en Soporte",
+      copy: "Jericho respondió tu consulta sobre la Sala #176.",
+      time: "Ayer",
+      action: "Abrir chat",
+    },
+  ];
+  const visible =
+    filter === "Todas" ? items : items.filter((item) => item.type === filter);
+  return (
+    <section className="notifications-panel">
+      <div className="notification-head">
+        <div>
+          <span className="verified-badge">CENTRO DE ALERTAS</span>
+          <h2>No te pierdas tu partida</h2>
+          <p>
+            Los avisos críticos de conexión y sanciones siempre permanecen
+            activos dentro de TENE.
+          </p>
+        </div>
+        <button onClick={() => setRead(items.map((item) => item.id))}>
+          Marcar todas como leídas
+        </button>
+      </div>
+      <div className="notification-layout">
+        <main>
+          <div className="notification-filters">
+            {["Todas", "Partida", "Dinero", "Staff", "Comunidad"].map(
+              (item) => (
+                <button
+                  className={filter === item ? "active" : ""}
+                  onClick={() => setFilter(item)}
+                  key={item}
+                >
+                  {item}
+                </button>
+              ),
+            )}
+          </div>
+          <div className="notification-list">
+            {visible.map((item) => (
+              <article
+                className={read.includes(item.id) ? "read" : ""}
+                key={item.id}
+                onClick={() => setRead([...new Set([...read, item.id])])}
+              >
+                <span
+                  className={`notification-icon ${item.type.toLowerCase()}`}
+                >
+                  {item.icon}
+                </span>
+                <div>
+                  <div>
+                    <strong>{item.title}</strong>
+                    {!read.includes(item.id) && <i />}
+                  </div>
+                  <p>{item.copy}</p>
+                  <small>{item.time}</small>
+                </div>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setRead([...new Set([...read, item.id])]);
+                    notify(`${item.action} · demostración`);
+                  }}
+                >
+                  {item.action} →
+                </button>
+              </article>
+            ))}
+          </div>
+        </main>
+        <aside className="notification-prefs">
+          <span className="card-label">PREFERENCIAS</span>
+          <h3>Cómo avisarte</h3>
+          <p>
+            Las alertas en la web están activas. El correo será opcional para
+            eventos importantes.
+          </p>
+          {[
+            ["rooms", "Salas y partidas", "Ready, draft y servidor"],
+            ["money", "Dinero", "Recargas, retiros y premios"],
+            ["staff", "Staff y sanciones", "Verificación, reportes y mutes"],
+            ["community", "Comunidad", "Chat y anuncios generales"],
+          ].map(([key, title, copy]) => (
+            <label key={key}>
+              <span>
+                <b>{title}</b>
+                <small>{copy}</small>
+              </span>
+              <input
+                type="checkbox"
+                checked={prefs[key as keyof typeof prefs]}
+                onChange={() =>
+                  setPrefs({
+                    ...prefs,
+                    [key]: !prefs[key as keyof typeof prefs],
+                  })
+                }
+              />
+            </label>
+          ))}
+          <div className="critical-note">
+            Las alertas de conexión, sanciones y seguridad no se pueden
+            desactivar.
+          </div>
+        </aside>
       </div>
     </section>
   );

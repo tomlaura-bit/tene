@@ -1538,7 +1538,7 @@ function EnhancedDashboard({
         )}
         {activeTab === "Wallet" && (
           <WalletPanel
-            balance={balance}
+            setBalance={setBalance}
             action={(value) => setWalletAction(value)}
             session={session}
           />
@@ -2899,20 +2899,38 @@ function NotificationsPanel({ notify }: { notify: (message: string) => void }) {
 }
 
 function WalletPanel({
-  balance,
+  setBalance,
   action,
   session,
 }: {
-  balance: number;
+  setBalance: (value: number) => void;
   action: (value: "deposit" | "withdraw") => void;
   session: SessionData | null;
 }) {
+  const [liveWallet, setLiveWallet] = useState(
+    session?.wallet ?? { availableCents: 0, lockedCents: 0, debtCents: 0 },
+  );
+  useEffect(() => {
+    const refreshWallet = async () => {
+      const response = await fetch("/api/wallet", { cache: "no-store" });
+      if (!response.ok) return;
+      const body = (await response.json()) as WalletData;
+      if (body.wallet) {
+        setLiveWallet(body.wallet);
+        setBalance(body.wallet.availableCents / 100);
+      }
+    };
+    void refreshWallet();
+    window.addEventListener("focus", refreshWallet);
+    return () => window.removeEventListener("focus", refreshWallet);
+  }, [setBalance]);
+  const liveBalance = liveWallet.availableCents / 100;
   return (
     <section className="section-panel">
       <div className="wallet-hero">
         <div>
           <span className="card-label">SALDO TOTAL</span>
-          <strong>S/ {balance.toFixed(2)}</strong>
+          <strong>S/ {liveBalance.toFixed(2)}</strong>
           <p>Disponible para salas o retiro</p>
         </div>
         <div>
@@ -2930,21 +2948,17 @@ function WalletPanel({
       <div className="wallet-rules">
         <article>
           <b>Saldo disponible</b>
-          <strong>S/ {balance.toFixed(2)}</strong>
+          <strong>S/ {liveBalance.toFixed(2)}</strong>
           <p>Se puede usar o retirar.</p>
         </article>
         <article>
           <b>Saldo bloqueado</b>
-          <strong>
-            S/ {((session?.wallet?.lockedCents ?? 0) / 100).toFixed(2)}
-          </strong>
+          <strong>S/ {(liveWallet.lockedCents / 100).toFixed(2)}</strong>
           <p>Reservado en salas activas.</p>
         </article>
         <article>
           <b>Deuda disciplinaria</b>
-          <strong>
-            S/ {((session?.wallet?.debtCents ?? 0) / 100).toFixed(2)}
-          </strong>
+          <strong>S/ {(liveWallet.debtCents / 100).toFixed(2)}</strong>
           <p>Sin sanciones pendientes.</p>
         </article>
       </div>
@@ -2974,7 +2988,7 @@ function WalletActivity({ compact = false }: { compact?: boolean }) {
       date: request.requestedAt,
       amountCents:
         request.type === "deposit" ? request.amountCents : -request.amountCents,
-      pending: true,
+      pending: request.status === "pending",
     })),
     ...data.entries.map((entry) => ({
       id: entry.id,

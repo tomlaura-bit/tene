@@ -134,6 +134,7 @@ export const wallets = sqliteTable("wallets", {
 
 export const rooms = sqliteTable("rooms", {
   id: text("id").primaryKey(),
+  createdById: text("created_by_id").references(() => users.id),
   name: text("name").notNull(),
   status: text("status", {
     enum: ["open", "draft", "veto", "live", "review", "settled", "cancelled"],

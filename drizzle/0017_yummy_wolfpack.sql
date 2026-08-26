@@ -1,0 +1,1 @@
+ALTER TABLE `rooms` ADD `created_by_id` text REFERENCES users(id);

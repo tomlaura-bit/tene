@@ -67,6 +67,24 @@ type SessionData = {
   } | null;
 };
 
+type RoomData = {
+  id: string;
+  name: string;
+  status: string;
+  entryCents: number;
+  prizePerWinnerCents: number;
+  creator: { nickname: string; avatarUrl: string | null } | null;
+  players: Array<{
+    userId: string;
+    nickname: string;
+    avatarUrl: string | null;
+    hours: number;
+    level: number;
+    elo: number;
+    conduct: string;
+  }>;
+};
+
 export default function Home() {
   const [steamOpen, setSteamOpen] = useState(false);
   const [joined, setJoined] = useState(false);
@@ -1046,19 +1064,26 @@ function ProfileAvatar({
     elo: number;
     hours: number;
     conduct: string;
+    avatarUrl?: string | null;
   };
   compact?: boolean;
 }) {
   return (
     <span className={`profile-anchor ${compact ? "compact" : ""}`} tabIndex={0}>
       <img
-        src={`https://api.dicebear.com/9.x/thumbs/svg?seed=${profile.name}&backgroundColor=2e1065,312e81,164e63`}
+        src={
+          profile.avatarUrl ??
+          `https://api.dicebear.com/9.x/thumbs/svg?seed=${profile.name}&backgroundColor=2e1065,312e81,164e63`
+        }
         alt={`Avatar de ${profile.name}`}
       />
       <span className="profile-popover">
         <span className="profile-pop-head">
           <img
-            src={`https://api.dicebear.com/9.x/thumbs/svg?seed=${profile.name}&backgroundColor=2e1065,312e81,164e63`}
+            src={
+              profile.avatarUrl ??
+              `https://api.dicebear.com/9.x/thumbs/svg?seed=${profile.name}&backgroundColor=2e1065,312e81,164e63`
+            }
             alt=""
           />
           <span>
@@ -1447,7 +1472,14 @@ function EnhancedDashboard({
           />
         )}
         {activeTab === "Perfil" && <PublicProfilePanel />}
-        {activeTab === "Salas" && <RoomsPanel openRoom={openRoom} />}
+        {activeTab === "Salas" && (
+          <RoomsPanel
+            openRoom={openRoom}
+            session={session}
+            setBalance={setBalance}
+            notify={flash}
+          />
+        )}
         {activeTab === "Wallet" && (
           <WalletPanel
             balance={balance}
@@ -1890,12 +1922,84 @@ function HomePanel({
   );
 }
 
-function RoomsPanel({ openRoom }: { openRoom: () => void }) {
+function RoomsPanel({
+  openRoom,
+  session,
+  setBalance,
+  notify,
+}: {
+  openRoom: () => void;
+  session: SessionData | null;
+  setBalance: (value: number) => void;
+  notify: (message: string) => void;
+}) {
+  const [realRooms, setRealRooms] = useState<RoomData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const loadRooms = async () => {
+    const response = await fetch("/api/rooms");
+    if (response.ok) {
+      const body = (await response.json()) as { rooms: RoomData[] };
+      setRealRooms(body.rooms);
+    }
+    setLoading(false);
+  };
+  useEffect(() => {
+    void loadRooms();
+  }, []);
+  const createRoom = async () => {
+    const name = window.prompt("Nombre de la nueva sala", "Sala TENE");
+    if (!name) return;
+    const response = await fetch("/api/rooms", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    notify(
+      response.ok
+        ? "Sala creada correctamente"
+        : "No tienes permiso para crear salas",
+    );
+    if (response.ok) await loadRooms();
+  };
+  const join = async (roomId: string) => {
+    const response = await fetch(`/api/rooms/${roomId}/join`, {
+      method: "POST",
+    });
+    const body = (await response.json()) as {
+      error?: string;
+      wallet?: { availableCents: number };
+      alreadyJoined?: boolean;
+    };
+    const labels: Record<string, string> = {
+      insufficient_balance: "Saldo insuficiente: necesitas S/ 6 disponibles",
+      staff_verification_required:
+        "El staff debe verificar tu cuenta antes de jugar",
+      room_full: "La sala ya está completa",
+      room_unavailable: "La sala ya no está disponible",
+      authentication_required: "Inicia sesión para reservar",
+    };
+    if (!response.ok)
+      return notify(
+        labels[body.error ?? ""] ?? "No se pudo reservar el puesto",
+      );
+    if (body.wallet) setBalance(body.wallet.availableCents / 100);
+    notify(
+      body.alreadyJoined
+        ? "Ya tienes un puesto en esta sala"
+        : "Puesto reservado · S/ 6 bloqueados",
+    );
+    await loadRooms();
+    openRoom();
+  };
+  const canCreate =
+    session && ["owner", "admin", "mod"].includes(session.user.role);
   return (
     <section className="section-panel">
       <div className="section-intro">
         <div>
-          <span className="verified-badge">3 SALAS ABIERTAS</span>
+          <span className="verified-badge">
+            {realRooms.length} SALAS REGISTRADAS
+          </span>
           <h2>Elige dónde competir</h2>
           <p>
             Tu saldo se bloquea al reservar el puesto. Todos los niveles pueden
@@ -1906,29 +2010,100 @@ function RoomsPanel({ openRoom }: { openRoom: () => void }) {
           <button className="active">Todas</button>
           <button>LVL 1–5</button>
           <button>LVL 6–10</button>
+          {canCreate && <button onClick={createRoom}>＋ Crear sala</button>}
         </div>
       </div>
       <div className="rooms-catalog">
-        <RoomRow
-          name="Sala Violeta #184"
-          players="4 / 10"
-          average="LVL 6.8"
-          openRoom={openRoom}
-        />
-        <RoomRow
-          name="Sala Nocturna #183"
-          players="8 / 10"
-          average="LVL 8.2"
-          openRoom={openRoom}
-        />
-        <RoomRow
-          name="Sala Base #182"
-          players="2 / 10"
-          average="LVL 3.5"
-          openRoom={openRoom}
-        />
+        {loading && <p className="wallet-help">Cargando salas…</p>}
+        {!loading && !realRooms.length && (
+          <article className="account-surface">
+            <h3>Todavía no hay salas abiertas</h3>
+            <p className="wallet-help">
+              Cuando el staff cree la primera sala aparecerá aquí en tiempo
+              real.
+            </p>
+          </article>
+        )}
+        {realRooms.map((room) => (
+          <RealRoomRow key={room.id} room={room} join={() => join(room.id)} />
+        ))}
       </div>
     </section>
+  );
+}
+
+function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
+  const average = room.players.length
+    ? room.players.reduce((sum, player) => sum + player.level, 0) /
+      room.players.length
+    : 0;
+  const creatorName = room.creator?.nickname ?? "Staff TENE";
+  return (
+    <article className="room-row-rich">
+      <div className="room-info">
+        <div className="room-title-line">
+          <span className="room-symbol">T</span>
+          <div>
+            <strong>{room.name}</strong>
+            <small>
+              <i />{" "}
+              {room.status === "open" ? "Esperando jugadores" : room.status}
+            </small>
+          </div>
+        </div>
+        <div className="room-created">
+          Creada por <b>{creatorName}</b>
+        </div>
+        <div className="room-economy">
+          <span>
+            <small>ENTRADA</small>S/ {(room.entryCents / 100).toFixed(0)}
+          </span>
+          <span>
+            <small>PREMIO</small>S/{" "}
+            {(room.prizePerWinnerCents / 100).toFixed(0)}
+          </span>
+          <span>
+            <small>PROMEDIO</small>LVL {average.toFixed(1)}
+          </span>
+        </div>
+      </div>
+      <div className="room-people">
+        <div className="room-capacity">
+          <span>{room.players.length} / 10 jugadores</span>
+          <div className="mini-progress">
+            <i style={{ width: `${room.players.length * 10}%` }} />
+          </div>
+        </div>
+        <div className="avatar-strip">
+          {room.players.map((player) => (
+            <ProfileAvatar
+              key={player.userId}
+              profile={{
+                name: player.nickname,
+                level: player.level,
+                elo: player.elo,
+                hours: player.hours,
+                conduct: player.conduct,
+                avatarUrl: player.avatarUrl,
+              }}
+            />
+          ))}
+          {Array.from(
+            { length: Math.max(0, 10 - room.players.length) },
+            (_, i) => (
+              <span className="vacant-avatar" key={i} />
+            ),
+          )}
+        </div>
+      </div>
+      <button
+        className="room-enter"
+        onClick={join}
+        disabled={room.players.length >= 10}
+      >
+        Reservar S/ 6 <span>→</span>
+      </button>
+    </article>
   );
 }
 function BenefitsPanel({ notify }: { notify: (message: string) => void }) {

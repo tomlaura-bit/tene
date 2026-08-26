@@ -288,6 +288,32 @@ export const auditLogs = sqliteTable(
   ],
 );
 
+export const roleAssignments = sqliteTable(
+  "role_assignments",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    assignedById: text("assigned_by_id")
+      .notNull()
+      .references(() => users.id),
+    role: text("role", {
+      enum: ["player", "sub", "streamer", "mod", "admin", "owner"],
+    }).notNull(),
+    previousRole: text("previous_role"),
+    reason: text("reason").notNull(),
+    revokedAt: integer("revoked_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("idx_role_assignments_user_created").on(
+      table.userId,
+      table.createdAt,
+    ),
+  ],
+);
+
 export const paymentRequests = sqliteTable(
   "payment_requests",
   {

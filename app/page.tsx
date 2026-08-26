@@ -2870,17 +2870,22 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
         </div>
       </div>
       <div className="staff-tabs">
-        {["Solicitudes", "Disputas", "Usuarios", "Sanciones", "Auditoría"].map(
-          (tab) => (
-            <button
-              className={staffTab === tab ? "active" : ""}
-              onClick={() => setStaffTab(tab)}
-              key={tab}
-            >
-              {tab}
-            </button>
-          ),
-        )}
+        {[
+          "Solicitudes",
+          "Disputas",
+          "Usuarios",
+          "Roles",
+          "Sanciones",
+          "Auditoría",
+        ].map((tab) => (
+          <button
+            className={staffTab === tab ? "active" : ""}
+            onClick={() => setStaffTab(tab)}
+            key={tab}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
       {staffTab === "Solicitudes" && (
         <div className="staff-workspace">
@@ -3005,6 +3010,7 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
           ]}
         />
       )}
+      {staffTab === "Roles" && <RolesManager notify={notify} />}
       {staffTab === "Sanciones" && (
         <StaffTable
           title="Sanciones recientes"
@@ -3025,6 +3031,139 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
           ]}
         />
       )}
+    </section>
+  );
+}
+
+function RolesManager({ notify }: { notify: (message: string) => void }) {
+  const [roles, setRoles] = useState([
+    { name: "Tom", role: "Dueño" },
+    { name: "hoxhi", role: "Admin" },
+    { name: "Jericho", role: "Mod" },
+    { name: "Shiro", role: "Streamer" },
+    { name: "Maddison", role: "Sub" },
+  ]);
+  const permissions = [
+    {
+      role: "Dueño",
+      tone: "owner",
+      items: [true, true, true, true, true, true],
+      note: "Acceso total y único rol que gestiona administradores.",
+    },
+    {
+      role: "Admin",
+      tone: "admin",
+      items: [true, true, true, true, true, false],
+      note: "Opera plataforma, finanzas, salas y moderación.",
+    },
+    {
+      role: "Mod",
+      tone: "mod",
+      items: [false, true, true, true, false, false],
+      note: "Crea salas, modera chat y aplica sanciones.",
+    },
+    {
+      role: "Streamer",
+      tone: "streamer",
+      items: [false, false, false, false, false, false],
+      note: "Prefijo visible y beneficios promocionales.",
+    },
+    {
+      role: "Sub",
+      tone: "sub",
+      items: [false, false, false, false, false, false],
+      note: "Prefijo y una sala gratuita diaria.",
+    },
+  ];
+  const columns = [
+    "Saldos",
+    "Salas",
+    "Ban / mute",
+    "Verificaciones",
+    "Roles",
+    "Admins",
+  ];
+  const change = (name: string, role: string) => {
+    setRoles(
+      roles.map((item) => (item.name === name ? { ...item, role } : item)),
+    );
+    notify(`${name}: rol demo cambiado a ${role}`);
+  };
+  return (
+    <section className="roles-manager">
+      <div className="roles-intro">
+        <div>
+          <span className="staff-role">CONTROL DE ACCESO</span>
+          <h3>Roles y permisos</h3>
+          <p>
+            Cada cambio requiere un motivo y queda registrado. Nadie puede
+            otorgarse permisos a sí mismo.
+          </p>
+        </div>
+        <span>
+          <small>STAFF ACTIVO</small>4 personas
+        </span>
+      </div>
+      <div className="permissions-table">
+        <div className="permissions-head">
+          <strong>ROL</strong>
+          {columns.map((column) => (
+            <span key={column}>{column}</span>
+          ))}
+        </div>
+        {permissions.map((row) => (
+          <div key={row.role}>
+            <span className={`role-card ${row.tone}`}>
+              <b>{row.role}</b>
+              <small>{row.note}</small>
+            </span>
+            {row.items.map((allowed, index) => (
+              <i
+                className={allowed ? "allowed" : "denied"}
+                key={`${row.role}-${index}`}
+              >
+                {allowed ? "✓" : "—"}
+              </i>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="role-assignments">
+        <div className="panel-title">
+          <strong>Asignaciones actuales</strong>
+          <span>Solo Dueño y Admin autorizados</span>
+        </div>
+        {roles.map((item) => (
+          <article key={item.name}>
+            <span className="online-avatar">{item.name[0]}</span>
+            <div>
+              <strong>{item.name}</strong>
+              <small>Cuenta verificada · Sin restricciones</small>
+            </div>
+            <select
+              value={item.role}
+              disabled={item.role === "Dueño"}
+              onChange={(event) => change(item.name, event.target.value)}
+            >
+              {["Jugador", "Sub", "Streamer", "Mod", "Admin", "Dueño"].map(
+                (role) => (
+                  <option key={role}>{role}</option>
+                ),
+              )}
+            </select>
+            <button
+              disabled={item.role === "Dueño"}
+              onClick={() => notify(`${item.name}: permisos revisados`)}
+            >
+              Revisar
+            </button>
+          </article>
+        ))}
+      </div>
+      <div className="role-warning">
+        El rol Streamer y Sub no recibe permisos administrativos. Sus beneficios
+        son únicamente visuales o promocionales.
+      </div>
     </section>
   );
 }

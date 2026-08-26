@@ -78,6 +78,13 @@
       "when": 1787708252346,
       "tag": "0010_salty_exodus",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1787708773205,
+      "tag": "0011_spicy_mentor",
+      "breakpoints": true
     }
   ]
 }

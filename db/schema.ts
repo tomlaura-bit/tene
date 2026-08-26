@@ -674,3 +674,20 @@ export const seasonPlacements = sqliteTable(
     ),
   ],
 );
+
+export const publicPlayerProfiles = sqliteTable("public_player_profiles", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id),
+  location: text("location"),
+  bio: text("bio"),
+  preferredMapsJson: text("preferred_maps_json").notNull().default("[]"),
+  badgesJson: text("badges_json").notNull().default("[]"),
+  profileVisible: integer("profile_visible", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  matchHistoryVisible: integer("match_history_visible", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});

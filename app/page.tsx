@@ -593,6 +593,7 @@ function Dashboard({
 }) {
   const tabs = [
     "Inicio",
+    "Perfil",
     "Cuenta",
     "Salas",
     "Wallet",
@@ -1217,6 +1218,7 @@ function EnhancedDashboard({
                   (
                     {
                       Inicio: "⌂",
+                      Perfil: "◉",
                       Cuenta: "◎",
                       Salas: "◫",
                       Wallet: "◈",
@@ -1273,6 +1275,7 @@ function EnhancedDashboard({
             wallet={(action) => setWalletAction(action)}
           />
         )}
+        {activeTab === "Perfil" && <PublicProfilePanel />}
         {activeTab === "Salas" && <RoomsPanel openRoom={openRoom} />}
         {activeTab === "Wallet" && (
           <WalletPanel
@@ -2262,6 +2265,163 @@ function WalletPanel({
     </section>
   );
 }
+function PublicProfilePanel() {
+  const [profileSection, setProfileSection] = useState<"general" | "matches">(
+    "general",
+  );
+  return (
+    <section className="public-profile-panel">
+      <article className="profile-cover">
+        <div className="profile-identity">
+          <img
+            src="https://api.dicebear.com/9.x/thumbs/svg?seed=Tom&backgroundColor=2e1065,312e81,164e63"
+            alt="Avatar de Tom"
+          />
+          <div>
+            <span className="verified-badge">✓ STEAM VERIFICADO</span>
+            <h2>Tom</h2>
+            <p>Miembro desde agosto de 2026 · Lima, Perú</p>
+            <div className="profile-tags">
+              <b>Dueño</b>
+              <b>Fundador</b>
+              <b>Temporada 01</b>
+            </div>
+          </div>
+        </div>
+        <div className="profile-main-rating">
+          <small>RATING COMPETITIVO</small>
+          <strong>LVL 5</strong>
+          <b>1,298 ELO</b>
+          <span>#6 esta temporada</span>
+        </div>
+      </article>
+      <nav className="profile-subnav">
+        <button
+          className={profileSection === "general" ? "active" : ""}
+          onClick={() => setProfileSection("general")}
+        >
+          Resumen
+        </button>
+        <button
+          className={profileSection === "matches" ? "active" : ""}
+          onClick={() => setProfileSection("matches")}
+        >
+          Últimas partidas
+        </button>
+        <a href="https://steamcommunity.com/" target="_blank" rel="noreferrer">
+          Ver Steam ↗
+        </a>
+      </nav>
+      {profileSection === "general" ? (
+        <div className="profile-dashboard">
+          <div className="profile-left">
+            <div className="profile-kpis">
+              <article>
+                <small>PARTIDAS</small>
+                <strong>19</strong>
+                <span>12 ganadas · 7 perdidas</span>
+              </article>
+              <article>
+                <small>WIN RATE</small>
+                <strong>63%</strong>
+                <span>+8% últimas 10</span>
+              </article>
+              <article>
+                <small>HORAS CS2</small>
+                <strong>1,284</strong>
+                <span>Perfil público</span>
+              </article>
+              <article>
+                <small>RACHA</small>
+                <strong>3 W</strong>
+                <span>Mejor: 6 victorias</span>
+              </article>
+            </div>
+            <article className="map-performance">
+              <header>
+                <div>
+                  <small>RENDIMIENTO POR MAPA</small>
+                  <h3>Mapas destacados</h3>
+                </div>
+                <span>Últimas 20 partidas</span>
+              </header>
+              {[
+                ["Mirage", "72%", 72],
+                ["Ancient", "65%", 65],
+                ["Inferno", "58%", 58],
+                ["Nuke", "50%", 50],
+              ].map(([map, rate, width]) => (
+                <div key={String(map)}>
+                  <strong>{map}</strong>
+                  <span>
+                    <i style={{ width: `${width}%` }} />
+                  </span>
+                  <b>{rate}</b>
+                </div>
+              ))}
+            </article>
+          </div>
+          <aside className="profile-reputation">
+            <span>CONDUCTA</span>
+            <div className="conduct-score">
+              <strong>96</strong>
+              <small>/ 100</small>
+            </div>
+            <b>Excelente</b>
+            <p>
+              Sin abandonos ni sanciones activas. Tus compañeros pueden revisar
+              esta información antes de entrar a una sala.
+            </p>
+            <div className="reputation-list">
+              <span>
+                <i>✓</i>18 partidas sin reportes
+              </span>
+              <span>
+                <i>✓</i>100% ready a tiempo
+              </span>
+              <span>
+                <i>✓</i>Steam y horas verificadas
+              </span>
+            </div>
+            <div className="badge-shelf">
+              <small>INSIGNIAS</small>
+              <div>
+                <b title="Cuenta fundadora">F</b>
+                <b title="Conducta excelente">96</b>
+                <b title="Temporada 01">S1</b>
+              </div>
+            </div>
+          </aside>
+        </div>
+      ) : (
+        <div className="public-match-list">
+          {[
+            ["Victoria", "Sala #176", "Mirage", "13 — 9", "+18"],
+            ["Derrota", "Sala #169", "Ancient", "11 — 13", "−14"],
+            ["Victoria", "Sala #161", "Nuke", "13 — 7", "+16"],
+          ].map(([result, room, map, score, delta]) => (
+            <article key={room}>
+              <span
+                className={result === "Victoria" ? "result-win" : "result-loss"}
+              >
+                {result}
+              </span>
+              <strong>{room}</strong>
+              <small>{map}</small>
+              <b>{score}</b>
+              <em>{delta} ELO</em>
+            </article>
+          ))}
+        </div>
+      )}
+      <p className="profile-privacy">
+        El correo, nombre completo, fecha de nacimiento, saldo y movimientos
+        nunca aparecen en el perfil público.
+      </p>
+    </section>
+  );
+}
+
 function HistoryPanel() {
   return (
     <section className="section-panel">

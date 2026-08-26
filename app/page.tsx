@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 const players = [
   { name: "hoxhi", level: 10, tone: "from-fuchsia-500 to-violet-500" },
@@ -38,16 +38,61 @@ const draftPool = [
 ];
 type Screen = "landing" | "dashboard" | "room";
 
+type SessionData = {
+  user: {
+    email: string | null;
+    fullName: string | null;
+    birthDate: string | null;
+    nickname: string;
+    steamId64: string | null;
+    steamPersonaName: string | null;
+    steamAvatarUrl: string | null;
+    cs2Minutes: number;
+    level: number;
+    status: "pending" | "verified" | "rejected" | "suspended" | "banned";
+    role: "player" | "sub" | "streamer" | "mod" | "admin" | "owner";
+  };
+  wallet: {
+    availableCents: number;
+    lockedCents: number;
+    debtCents: number;
+  } | null;
+  rating: {
+    elo: number;
+    level: number;
+    matches: number;
+    wins: number;
+    losses: number;
+    calibrationStatus: "pending" | "staff_assigned" | "established";
+  } | null;
+};
+
 export default function Home() {
   const [steamOpen, setSteamOpen] = useState(false);
   const [joined, setJoined] = useState(false);
   const [notice, setNotice] = useState("");
   const [screen, setScreen] = useState<Screen>("landing");
-  const [balance, setBalance] = useState(24);
+  const [balance, setBalance] = useState(0);
+  const [session, setSession] = useState<SessionData | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Inicio");
   const [bannedMaps, setBannedMaps] = useState<string[]>([]);
 
   useEffect(() => {
+    void fetch("/api/me")
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const body = (await response.json()) as SessionData & {
+          onboardingRequired?: boolean;
+        };
+        return body.onboardingRequired ? null : body;
+      })
+      .then((data) => {
+        setSession(data);
+        if (data?.wallet) setBalance(data.wallet.availableCents / 100);
+      })
+      .finally(() => setSessionLoading(false));
+
     const steamResult = new URLSearchParams(window.location.search).get(
       "steam",
     );
@@ -87,6 +132,7 @@ export default function Home() {
         goHome={() => setScreen("landing")}
         notice={notice}
         setNotice={setNotice}
+        session={session}
       />
     );
   if (screen === "room")
@@ -133,8 +179,21 @@ export default function Home() {
             Cómo jugar
           </a>
         </nav>
-        <button className="steam-button" onClick={() => setSteamOpen(true)}>
-          <span className="steam-dot">T</span>Iniciar sesión / Registrarme
+        <button
+          className="steam-button"
+          disabled={sessionLoading}
+          onClick={() =>
+            session ? setScreen("dashboard") : setSteamOpen(true)
+          }
+        >
+          <span className="steam-dot">
+            {session?.user.nickname?.slice(0, 1).toUpperCase() ?? "T"}
+          </span>
+          {sessionLoading
+            ? "Comprobando sesión…"
+            : session
+              ? "Ir a mi cuenta"
+              : "Iniciar sesión / Registrarme"}
         </button>
       </header>
 
@@ -1240,6 +1299,7 @@ function EnhancedDashboard({
   goHome,
   notice,
   setNotice,
+  session,
 }: {
   balance: number;
   setBalance: (value: number | ((value: number) => number)) => void;
@@ -1249,7 +1309,17 @@ function EnhancedDashboard({
   goHome: () => void;
   notice: string;
   setNotice: (value: string) => void;
+  session: SessionData | null;
 }) {
+  const nickname = session?.user.nickname ?? "Jugador";
+  const roleLabels: Record<SessionData["user"]["role"], string> = {
+    player: "Jugador",
+    sub: "Sub",
+    streamer: "Streamer",
+    mod: "Moderador",
+    admin: "Administrador",
+    owner: "Dueño",
+  };
   const tabs = [
     "Inicio",
     "Cuenta",
@@ -1325,12 +1395,24 @@ function EnhancedDashboard({
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <span className="avatar small bg-gradient-to-br from-violet-500 to-fuchsia-500">
-            T
-          </span>
+          {session?.user.steamAvatarUrl ? (
+            <img
+              className="avatar small"
+              src={session.user.steamAvatarUrl}
+              alt={`Avatar de ${nickname}`}
+            />
+          ) : (
+            <span className="avatar small bg-gradient-to-br from-violet-500 to-fuchsia-500">
+              {nickname.slice(0, 1).toUpperCase()}
+            </span>
+          )}
           <div>
-            <strong>Tom</strong>
-            <small>Dueño · Acceso total</small>
+            <strong>{nickname}</strong>
+            <small>
+              {session
+                ? roleLabels[session.user.role]
+                : "Sesión de demostración"}
+            </small>
           </div>
         </div>
       </aside>
@@ -1340,7 +1422,9 @@ function EnhancedDashboard({
             <p className="eyebrow">
               <span /> PANEL DEL JUGADOR
             </p>
-            <h1>{activeTab === "Inicio" ? "Buenos días, Tom" : activeTab}</h1>
+            <h1>
+              {activeTab === "Inicio" ? `Buenos días, ${nickname}` : activeTab}
+            </h1>
           </div>
           <div className="header-actions">
             <button
@@ -1359,6 +1443,7 @@ function EnhancedDashboard({
             openRoom={openRoom}
             setActiveTab={setActiveTab}
             wallet={(action) => setWalletAction(action)}
+            session={session}
           />
         )}
         {activeTab === "Perfil" && <PublicProfilePanel />}
@@ -1431,7 +1516,7 @@ function EnhancedDashboard({
           </section>
         </div>
       )}
-      {activeTab === "Cuenta" && <AccountPanel />}
+      {activeTab === "Cuenta" && <AccountPanel session={session} />}
       {notice && (
         <div className="toast">
           <span className="live-pulse" />
@@ -1442,7 +1527,7 @@ function EnhancedDashboard({
   );
 }
 
-function AccountPanel() {
+function AccountPanel({ session }: { session: SessionData | null }) {
   const [tab, setTab] = useState<"Cuenta" | "Steam">("Cuenta");
   const [steamState, setSteamState] = useState<{
     steam?: {
@@ -1461,6 +1546,7 @@ function AccountPanel() {
   } | null>(null);
   const [steamStatus, setSteamStatus] = useState("");
   const [checkingSteam, setCheckingSteam] = useState(false);
+  const [profileStatus, setProfileStatus] = useState("");
   const loadSteam = async () => {
     const response = await fetch("/api/me/steam/recheck");
     if (response.ok) setSteamState(await response.json());
@@ -1504,6 +1590,26 @@ function AccountPanel() {
       setCheckingSteam(false);
     }
   };
+  const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setProfileStatus("Guardando…");
+    const form = new FormData(event.currentTarget);
+    const response = await fetch("/api/me", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        fullName: form.get("fullName"),
+        nickname: form.get("nickname"),
+        email: form.get("email"),
+        birthDate: form.get("birthDate"),
+      }),
+    });
+    setProfileStatus(
+      response.ok
+        ? "Cambios guardados."
+        : "No se pudieron guardar los cambios.",
+    );
+  };
   return (
     <section className="account-panel">
       <div className="account-tabs">
@@ -1536,42 +1642,58 @@ function AccountPanel() {
               🎁 2 salas gratis en tu cumpleaños
             </span>
           </div>
-          <div className="profile-fields">
-            <label>
-              Nombre completo
-              <input defaultValue="Tom Laura" />
-            </label>
-            <label>
-              Nickname
-              <input defaultValue="Tom" />
-            </label>
-            <label>
-              Correo electrónico
-              <input type="email" defaultValue="tom@correo.com" />
-            </label>
-            <label>
-              Fecha de nacimiento
-              <input type="date" defaultValue="2000-08-25" />
-            </label>
-          </div>
-          <button className="primary-button">Guardar cambios demo</button>
-          <div className="password-section">
-            <h3>Cambiar contraseña</h3>
-            <div>
+          <form onSubmit={saveProfile}>
+            <div className="profile-fields">
               <label>
-                Contraseña actual
-                <input type="password" placeholder="••••••••" />
+                Nombre completo
+                <input
+                  name="fullName"
+                  defaultValue={session?.user.fullName ?? ""}
+                />
               </label>
               <label>
-                Nueva contraseña
-                <input type="password" placeholder="••••••••" />
+                Nickname
+                <input
+                  name="nickname"
+                  defaultValue={session?.user.nickname ?? ""}
+                />
               </label>
               <label>
-                Confirmar contraseña
-                <input type="password" placeholder="••••••••" />
+                Correo electrónico
+                <input
+                  name="email"
+                  type="email"
+                  defaultValue={session?.user.email ?? ""}
+                />
+              </label>
+              <label>
+                Fecha de nacimiento
+                <input
+                  name="birthDate"
+                  type="date"
+                  defaultValue={session?.user.birthDate ?? ""}
+                />
               </label>
             </div>
-            <button className="secondary-button">Cambiar contraseña</button>
+            <button className="primary-button" type="submit">
+              Guardar cambios
+            </button>
+            {profileStatus && (
+              <p className="steam-check-result">{profileStatus}</p>
+            )}
+          </form>
+          <div className="password-section">
+            <h3>Sesión y seguridad</h3>
+            <p className="wallet-help">
+              Tu acceso está protegido por ChatGPT. TENE no almacena tu
+              contraseña.
+            </p>
+            <a
+              className="secondary-button"
+              href="/signout-with-chatgpt?return_to=/"
+            >
+              Cerrar sesión
+            </a>
           </div>
         </div>
       ) : (
@@ -1608,7 +1730,7 @@ function AccountPanel() {
                   : "Pendiente de validación automática o staff"}
               </small>
             </div>
-            <b>LVL 5</b>
+            <b>LVL {session?.rating?.level ?? session?.user.level ?? 1}</b>
           </div>
           <div className="steam-validation">
             <strong>
@@ -1645,28 +1767,51 @@ function HomePanel({
   openRoom,
   setActiveTab,
   wallet,
+  session,
 }: {
   balance: number;
   openRoom: () => void;
   setActiveTab: (tab: string) => void;
   wallet: (action: "deposit" | "withdraw") => void;
+  session: SessionData | null;
 }) {
+  const rating = session?.rating;
+  const user = session?.user;
+  const statusCopy = user
+    ? user.status === "verified"
+      ? "Cuenta verificada"
+      : user.steamId64
+        ? "Pendiente de revisión del staff"
+        : "Vincula tu cuenta de Steam"
+    : "Sesión de demostración";
+  const hours = Math.floor((user?.cs2Minutes ?? 0) / 60);
+  const winRate = rating?.matches
+    ? Math.round((rating.wins / rating.matches) * 100)
+    : 0;
   return (
     <section className="dashboard-grid">
       <article className="verification-card">
         <div>
-          <span className="verified-badge">✓ CUENTA VERIFICADA</span>
-          <h2>Listo para competir</h2>
+          <span className="verified-badge">{statusCopy.toUpperCase()}</span>
+          <h2>
+            {user?.status === "verified" ? "Listo para competir" : statusCopy}
+          </h2>
           <p>
-            SteamID64 verificado · Perfil público · 1,284 horas de CS2 ·
-            Revisión del staff completada.
+            {user?.steamId64
+              ? `SteamID64 ${user.steamId64} · ${hours.toLocaleString()} horas de CS2`
+              : "Completa la vinculación de Steam para validar tu perfil y horas de CS2."}
           </p>
-          <button className="text-action">Ver datos de verificación →</button>
+          <button
+            className="text-action"
+            onClick={() => setActiveTab("Cuenta")}
+          >
+            Ver datos de verificación →
+          </button>
         </div>
         <div className="level-orbit">
           <small>NIVEL</small>
-          <strong>5</strong>
-          <span>1,298 ELO</span>
+          <strong>{rating?.level ?? user?.level ?? 1}</strong>
+          <span>{(rating?.elo ?? 1000).toLocaleString()} ELO</span>
         </div>
       </article>
       <article className="wallet-card">
@@ -1677,7 +1822,8 @@ function HomePanel({
             <small>Disponible</small>S/ {balance.toFixed(2)}
           </span>
           <span>
-            <small>Bloqueado</small>S/ 0.00
+            <small>Bloqueado</small>S/{" "}
+            {((session?.wallet?.lockedCents ?? 0) / 100).toFixed(2)}
           </span>
         </div>
         <div className="wallet-actions">
@@ -1715,18 +1861,21 @@ function HomePanel({
       <article className="stats-card">
         <div className="card-label">TU TEMPORADA</div>
         <div className="stat-big">
-          <strong>68%</strong>
+          <strong>{winRate}%</strong>
           <span>WIN RATE</span>
         </div>
         <div className="stats-line">
           <span>
-            <small>Partidas</small>19
+            <small>Partidas</small>
+            {rating?.matches ?? 0}
           </span>
           <span>
-            <small>Victorias</small>13
+            <small>Victorias</small>
+            {rating?.wins ?? 0}
           </span>
           <span>
-            <small>Racha</small>W3
+            <small>Derrotas</small>
+            {rating?.losses ?? 0}
           </span>
         </div>
       </article>

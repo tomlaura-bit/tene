@@ -8,7 +8,11 @@ import {
 
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
-  steamId64: text("steam_id_64").notNull().unique(),
+  authSubjectId: text("auth_subject_id").unique(),
+  email: text("email").unique(),
+  fullName: text("full_name"),
+  birthDate: text("birth_date"),
+  steamId64: text("steam_id_64").unique(),
   nickname: text("nickname").notNull(),
   cs2Minutes: integer("cs2_minutes").notNull().default(0),
   level: integer("level").notNull().default(1),

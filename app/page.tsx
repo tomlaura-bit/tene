@@ -340,7 +340,56 @@ function SteamRegistrationModal({
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState<"register" | "login">("register");
   const [steamId, setSteamId] = useState("76561198442891307");
+  const [fullName, setFullName] = useState("Tom Laura");
+  const [nickname, setNickname] = useState("Tom");
+  const [email, setEmail] = useState("tom@correo.com");
+  const [birthDate, setBirthDate] = useState("2000-08-25");
+  const [backendMessage, setBackendMessage] = useState("");
+  const [saving, setSaving] = useState(false);
   const validId = /^7656119\d{10}$/.test(steamId);
+  const saveProfile = async () => {
+    setSaving(true);
+    setBackendMessage("");
+    try {
+      const response = await fetch("/api/me", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ fullName, nickname, email, birthDate }),
+      });
+      if (response.status === 401) {
+        window.location.href = "/signin-with-chatgpt?return_to=/";
+        return;
+      }
+      if (!response.ok) throw new Error("No se pudo guardar el perfil");
+      setStep(1);
+    } catch {
+      setBackendMessage("Revisa los datos e inténtalo nuevamente.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const saveSteam = async () => {
+    if (!validId) return;
+    setSaving(true);
+    setBackendMessage("");
+    try {
+      const response = await fetch("/api/me/steam", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ steamId64: steamId }),
+      });
+      if (response.status === 401) {
+        window.location.href = "/signin-with-chatgpt?return_to=/";
+        return;
+      }
+      if (!response.ok) throw new Error("No se pudo registrar Steam");
+      setStep(2);
+    } catch {
+      setBackendMessage("No pudimos registrar ese SteamID64.");
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={close}>
       <section
@@ -399,11 +448,18 @@ function SteamRegistrationModal({
                 <>
                   <label>
                     Nombre completo
-                    <input defaultValue="Tom Laura" autoComplete="name" />
+                    <input
+                      value={fullName}
+                      onChange={(event) => setFullName(event.target.value)}
+                      autoComplete="name"
+                    />
                   </label>
                   <label>
                     Nickname
-                    <input defaultValue="Tom" />
+                    <input
+                      value={nickname}
+                      onChange={(event) => setNickname(event.target.value)}
+                    />
                   </label>
                 </>
               )}
@@ -411,24 +467,23 @@ function SteamRegistrationModal({
                 Correo electrónico
                 <input
                   type="email"
-                  defaultValue="tom@correo.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   autoComplete="email"
                 />
               </label>
               <label>
-                Contraseña
-                <input
-                  type="password"
-                  defaultValue="demostracion"
-                  autoComplete={
-                    mode === "register" ? "new-password" : "current-password"
-                  }
-                />
+                Seguridad
+                <input value="Protegida por ChatGPT" disabled />
               </label>
               {mode === "register" && (
                 <label>
                   Fecha de nacimiento
-                  <input type="date" defaultValue="2000-08-25" />
+                  <input
+                    type="date"
+                    value={birthDate}
+                    onChange={(event) => setBirthDate(event.target.value)}
+                  />
                   <small>
                     Debes ser mayor de 18 años. En tu cumpleaños recibes 2 salas
                     gratis.
@@ -438,15 +493,24 @@ function SteamRegistrationModal({
             </div>
             <button
               className="primary-button w-full"
-              onClick={() => (mode === "register" ? setStep(1) : complete())}
+              disabled={saving}
+              onClick={() =>
+                mode === "register"
+                  ? saveProfile()
+                  : window.location.assign("/signin-with-chatgpt?return_to=/")
+              }
             >
               {mode === "register"
                 ? "Siguiente: vincular Steam →"
-                : "Iniciar sesión demo"}
+                : "Iniciar sesión segura"}
             </button>
             <p className="auth-security">
-              Demostración visual: no se envían ni almacenan credenciales.
+              TENE no recibe ni almacena contraseñas. La sesión se valida de
+              forma segura.
             </p>
+            {backendMessage && (
+              <p className="backend-error">{backendMessage}</p>
+            )}
           </>
         )}
         {step === 1 && (
@@ -475,7 +539,7 @@ function SteamRegistrationModal({
                 ¿No sabes tu SteamID64? Encuéntralo aquí ↗
               </a>
             </label>
-            <button className="steam-openid-button" onClick={() => setStep(2)}>
+            <button className="steam-openid-button" onClick={saveSteam}>
               <span className="steam-dot">S</span>
               <span>
                 <b>Vincular con Steam</b>
@@ -488,10 +552,13 @@ function SteamRegistrationModal({
             <button
               className="primary-button w-full"
               disabled={!validId}
-              onClick={() => setStep(2)}
+              onClick={saveSteam}
             >
-              Continuar con Steam
+              {saving ? "Guardando…" : "Continuar con Steam"}
             </button>
+            {backendMessage && (
+              <p className="backend-error">{backendMessage}</p>
+            )}
           </>
         )}
         {step === 2 && (

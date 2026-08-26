@@ -4938,3 +4938,17 @@ button {
     display: none;
   }
 }
+.backend-error {
+  margin-top: 9px;
+  border: 1px solid #fb71852b;
+  border-radius: 8px;
+  background: #fb71850c;
+  padding: 9px;
+  color: #fda4af;
+  font-size: 8px;
+  text-align: center;
+}
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}

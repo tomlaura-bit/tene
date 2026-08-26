@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { playerRatings, users, wallets } from "../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../lib/auth";
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const identity = getAuthenticatedUser(request);
   if (!identity) return unauthorized();
   const db = getDb();
-  const [record] = await db
+  let [record] = await db
     .select()
     .from(users)
     .where(eq(users.authSubjectId, identity.id))
@@ -20,6 +20,28 @@ export async function GET(request: Request) {
       onboardingRequired: true,
       identity: { email: identity.email, fullName: identity.fullName },
     });
+  if (record.role === "player") {
+    const [owner] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.role, "owner"))
+      .limit(1);
+    if (!owner) {
+      const [firstUser] = await db
+        .select({ id: users.id })
+        .from(users)
+        .orderBy(asc(users.createdAt))
+        .limit(1);
+      if (firstUser?.id === record.id) {
+        const [promoted] = await db
+          .update(users)
+          .set({ role: "owner" })
+          .where(eq(users.id, record.id))
+          .returning();
+        if (promoted) record = promoted;
+      }
+    }
+  }
   const [wallet] = await db
     .select()
     .from(wallets)

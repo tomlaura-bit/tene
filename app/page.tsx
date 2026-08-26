@@ -1381,7 +1381,13 @@ function EnhancedDashboard({
     "Ranking",
     "Staff",
     "Finanzas",
-  ];
+  ].filter((tab) => {
+    if (tab === "Finanzas")
+      return session?.user.role === "owner" || session?.user.role === "admin";
+    if (tab === "Staff")
+      return ["owner", "admin", "mod"].includes(session?.user.role ?? "");
+    return true;
+  });
   const [walletAction, setWalletAction] = useState<
     "deposit" | "withdraw" | null
   >(null);
@@ -4491,6 +4497,14 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
     financeTab === "Pendientes"
       ? requests.filter((item) => item.status === "Pendiente")
       : requests.filter((item) => item.status !== "Pendiente");
+  const pending = requests.filter((item) => item.status === "Pendiente");
+  const pendingTotal = pending.reduce((sum, item) => sum + item.amount, 0);
+  const approvedDeposits = requests
+    .filter((item) => item.status === "Aprobada" && item.type === "Recarga")
+    .reduce((sum, item) => sum + item.amount, 0);
+  const approvedWithdrawals = requests
+    .filter((item) => item.status === "Aprobada" && item.type === "Retiro")
+    .reduce((sum, item) => sum + item.amount, 0);
   return (
     <section className="finance-panel">
       <div className="staff-top">
@@ -4504,13 +4518,15 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
         </div>
         <div className="staff-kpis">
           <span>
-            <small>SALDO DE USUARIOS</small>S/ 428
+            <small>SOLICITUDES</small>
+            {requests.length}
           </span>
           <span>
-            <small>FONDOS BLOQUEADOS</small>S/ 84
+            <small>PENDIENTES</small>
+            {pending.length}
           </span>
           <span>
-            <small>COMISIÓN HOY</small>S/ 37
+            <small>EN REVISIÓN</small>S/ {pendingTotal.toFixed(2)}
           </span>
         </div>
       </div>
@@ -4518,23 +4534,25 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
       <div className="finance-summary">
         <article>
           <span>Entradas de hoy</span>
-          <strong>+ S/ 312.00</strong>
-          <small>21 recargas confirmadas</small>
+          <strong>+ S/ {approvedDeposits.toFixed(2)}</strong>
+          <small>Recargas confirmadas</small>
         </article>
         <article>
           <span>Salidas de hoy</span>
-          <strong>− S/ 180.00</strong>
-          <small>9 retiros procesados</small>
+          <strong>− S/ {approvedWithdrawals.toFixed(2)}</strong>
+          <small>Retiros procesados</small>
         </article>
         <article>
           <span>Cuadre esperado</span>
-          <strong>S/ 132.00</strong>
+          <strong>
+            S/ {(approvedDeposits - approvedWithdrawals).toFixed(2)}
+          </strong>
           <small className="reconciled">✓ Conciliado</small>
         </article>
         <article>
           <span>Fondos en revisión</span>
-          <strong>S/ 82.00</strong>
-          <small>4 solicitudes pendientes</small>
+          <strong>S/ {pendingTotal.toFixed(2)}</strong>
+          <small>{pending.length} solicitudes pendientes</small>
         </article>
       </div>
       <div className="staff-tabs">

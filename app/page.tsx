@@ -47,6 +47,22 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("Inicio");
   const [bannedMaps, setBannedMaps] = useState<string[]>([]);
 
+  useEffect(() => {
+    const steamResult = new URLSearchParams(window.location.search).get(
+      "steam",
+    );
+    if (steamResult === "verified" || steamResult === "linked") {
+      setScreen("dashboard");
+      setActiveTab("Cuenta");
+      setNotice(
+        steamResult === "verified"
+          ? "Steam verificado · Cuenta apta para revisión del staff"
+          : "Steam vinculado · Revisa el estado de validación",
+      );
+      window.setTimeout(() => setNotice(""), 5000);
+    }
+  }, []);
+
   function joinRoom() {
     setJoined(true);
     setNotice("Puesto reservado · S/ 6 bloqueados de tu saldo");
@@ -1450,6 +1466,13 @@ function AccountPanel() {
     if (response.ok) setSteamState(await response.json());
   };
   useEffect(() => {
+    const steamResult = new URLSearchParams(window.location.search).get(
+      "steam",
+    );
+    if (steamResult === "verified" || steamResult === "linked") {
+      setTab("Steam");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
     void loadSteam();
   }, []);
   const recheckSteam = async () => {

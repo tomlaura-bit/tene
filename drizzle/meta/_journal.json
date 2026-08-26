@@ -127,6 +127,13 @@
       "when": 1787756164135,
       "tag": "0017_yummy_wolfpack",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1787757265340,
+      "tag": "0018_cheerful_dragon_man",
+      "breakpoints": true
     }
   ]
 }

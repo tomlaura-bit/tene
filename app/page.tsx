@@ -4426,18 +4426,66 @@ const seedPayments: PaymentRequest[] = [
   },
 ];
 function FinancePanel({ notify }: { notify: (message: string) => void }) {
-  const [requests, setRequests] = useState(seedPayments);
-  const [selectedId, setSelectedId] = useState(seedPayments[0].id);
+  const [requests, setRequests] = useState(seedPayments.slice(0, 0));
+  const [selectedId, setSelectedId] = useState("");
   const [financeTab, setFinanceTab] = useState("Pendientes");
+  const [financeError, setFinanceError] = useState("");
+  const loadPayments = async () => {
+    const response = await fetch("/api/staff/payments");
+    if (!response.ok) {
+      setFinanceError(
+        "Solo Dueño y Admin pueden gestionar solicitudes financieras.",
+      );
+      return;
+    }
+    const body = (await response.json()) as {
+      requests: Array<{
+        id: string;
+        type: "deposit" | "withdrawal";
+        method: "yape" | "plin";
+        amountCents: number;
+        operationCode: string | null;
+        status: string;
+        nickname: string;
+      }>;
+    };
+    const mapped = body.requests.map((item) => ({
+      id: item.id,
+      user: item.nickname,
+      type: item.type === "deposit" ? "Recarga" : "Retiro",
+      method: item.method === "yape" ? "Yape" : "Plin",
+      amount: item.amountCents / 100,
+      operation: item.operationCode ?? "—",
+      status:
+        item.status === "pending"
+          ? "Pendiente"
+          : item.status === "rejected"
+            ? "Rechazada"
+            : "Aprobada",
+    }));
+    setRequests(mapped);
+    setSelectedId((current) => current || mapped[0]?.id || "");
+  };
+  useEffect(() => {
+    void loadPayments();
+  }, []);
   const selected =
-    requests.find((item) => item.id === selectedId) || requests[0];
-  const resolve = (status: "Aprobada" | "Rechazada") => {
-    setRequests((items) =>
-      items.map((item) =>
-        item.id === selected.id ? { ...item, status } : item,
-      ),
+    requests.find((item) => item.id === selectedId) || requests[0] || null;
+  const resolve = async (status: "Aprobada" | "Rechazada") => {
+    if (!selected) return;
+    const response = await fetch(`/api/staff/payments/${selected.id}/review`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        decision: status === "Aprobada" ? "approve" : "reject",
+      }),
+    });
+    notify(
+      response.ok
+        ? `${selected.id}: operación ${status.toLowerCase()}`
+        : "No se pudo procesar la solicitud",
     );
-    notify(`${selected.id}: operación ${status.toLowerCase()}`);
+    if (response.ok) await loadPayments();
   };
   const visible =
     financeTab === "Pendientes"
@@ -4447,7 +4495,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
     <section className="finance-panel">
       <div className="staff-top">
         <div>
-          <span className="staff-role">CONTROL FINANCIERO · DEMO</span>
+          <span className="staff-role">CONTROL FINANCIERO · EN VIVO</span>
           <h2>Wallet y conciliación</h2>
           <p>
             Cada cambio genera un movimiento contable. Los administradores
@@ -4466,6 +4514,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
           </span>
         </div>
       </div>
+      {financeError && <div className="payment-warning">{financeError}</div>}
       <div className="finance-summary">
         <article>
           <span>Entradas de hoy</span>
@@ -4531,75 +4580,79 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
               <p className="empty-finance">No hay operaciones en esta vista.</p>
             )}
           </aside>
-          <article className="payment-review">
-            <div className="payment-review-head">
-              <div>
-                <span className={`payment-type ${selected.type.toLowerCase()}`}>
-                  {selected.type === "Recarga" ? "+" : "↗"}
-                </span>
+          {selected && (
+            <article className="payment-review">
+              <div className="payment-review-head">
                 <div>
-                  <small>{selected.id}</small>
-                  <h3>
-                    {selected.type} de {selected.user}
-                  </h3>
+                  <span
+                    className={`payment-type ${selected.type.toLowerCase()}`}
+                  >
+                    {selected.type === "Recarga" ? "+" : "↗"}
+                  </span>
+                  <div>
+                    <small>{selected.id}</small>
+                    <h3>
+                      {selected.type} de {selected.user}
+                    </h3>
+                  </div>
                 </div>
+                <strong>S/ {selected.amount.toFixed(2)}</strong>
               </div>
-              <strong>S/ {selected.amount.toFixed(2)}</strong>
-            </div>
-            <div className="payment-data">
-              <span>
-                <small>MÉTODO</small>
-                {selected.method}
-              </span>
-              <span>
-                <small>OPERACIÓN</small>
-                {selected.operation}
-              </span>
-              <span>
-                <small>TITULAR</small>
-                {selected.user}
-              </span>
-              <span>
-                <small>ESTADO</small>
-                {selected.status}
-              </span>
-            </div>
-            {selected.type === "Recarga" ? (
-              <div className="receipt-demo">
-                <span>COMPROBANTE DEMO</span>
-                <strong>{selected.method}</strong>
-                <b>S/ {selected.amount.toFixed(2)}</b>
-                <small>Operación {selected.operation} · Hoy 10:24</small>
+              <div className="payment-data">
+                <span>
+                  <small>MÉTODO</small>
+                  {selected.method}
+                </span>
+                <span>
+                  <small>OPERACIÓN</small>
+                  {selected.operation}
+                </span>
+                <span>
+                  <small>TITULAR</small>
+                  {selected.user}
+                </span>
+                <span>
+                  <small>ESTADO</small>
+                  {selected.status}
+                </span>
               </div>
-            ) : (
-              <div className="withdraw-checks">
-                <span>✓ Jugó al menos una sala</span>
-                <span>✓ Saldo disponible suficiente</span>
-                <span>✓ Titular verificado</span>
-                <span>✓ Sin deuda disciplinaria</span>
+              {selected.type === "Recarga" ? (
+                <div className="receipt-demo">
+                  <span>COMPROBANTE DEMO</span>
+                  <strong>{selected.method}</strong>
+                  <b>S/ {selected.amount.toFixed(2)}</b>
+                  <small>Operación {selected.operation} · Hoy 10:24</small>
+                </div>
+              ) : (
+                <div className="withdraw-checks">
+                  <span>✓ Jugó al menos una sala</span>
+                  <span>✓ Saldo disponible suficiente</span>
+                  <span>✓ Titular verificado</span>
+                  <span>✓ Sin deuda disciplinaria</span>
+                </div>
+              )}
+              <div className="payment-warning">
+                Verificar que el número de operación no haya sido utilizado
+                previamente y que el titular coincida con la cuenta.
               </div>
-            )}
-            <div className="payment-warning">
-              Verificar que el número de operación no haya sido utilizado
-              previamente y que el titular coincida con la cuenta.
-            </div>
-            <div className="review-actions">
-              <button
-                className="reject"
-                disabled={selected.status !== "Pendiente"}
-                onClick={() => resolve("Rechazada")}
-              >
-                Rechazar
-              </button>
-              <button
-                className="approve"
-                disabled={selected.status !== "Pendiente"}
-                onClick={() => resolve("Aprobada")}
-              >
-                Aprobar y registrar
-              </button>
-            </div>
-          </article>
+              <div className="review-actions">
+                <button
+                  className="reject"
+                  disabled={selected.status !== "Pendiente"}
+                  onClick={() => resolve("Rechazada")}
+                >
+                  Rechazar
+                </button>
+                <button
+                  className="approve"
+                  disabled={selected.status !== "Pendiente"}
+                  onClick={() => resolve("Aprobada")}
+                >
+                  Aprobar y registrar
+                </button>
+              </div>
+            </article>
+          )}
         </div>
       ) : (
         <LedgerPanel />

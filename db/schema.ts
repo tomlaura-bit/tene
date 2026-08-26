@@ -173,6 +173,7 @@ export const roomPlayers = sqliteTable(
 
 export const ledgerEntries = sqliteTable("ledger_entries", {
   id: text("id").primaryKey(),
+  paymentRequestId: text("payment_request_id").unique(),
   userId: text("user_id")
     .notNull()
     .references(() => users.id),

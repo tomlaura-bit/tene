@@ -2696,11 +2696,11 @@ function CommunityChat({
                       })}
                     </small>
                     <button
-                      onClick={() =>
-                        notify(
-                          `${message.name}: reporte demo enviado a moderación`,
-                        )
-                      }
+                      aria-label={`Reportar mensaje de ${message.name}`}
+                      onClick={async () => {
+                        const response = await fetch(`/api/chat/${message.id}/report`, { method: "POST" });
+                        notify(response.ok ? `${message.name}: reporte enviado a moderación` : "No se pudo enviar el reporte");
+                      }}
                     >
                       •••
                     </button>
@@ -4068,6 +4068,7 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
         {[
           "Solicitudes",
           "Disputas",
+          "Reportes chat",
           "Usuarios",
           "Roles",
           "Sanciones",
@@ -4205,6 +4206,7 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
         </div>
       )}
       {staffTab === "Disputas" && <DisputeReview notify={notify} />}
+      {staffTab === "Reportes chat" && <ChatReportsManager notify={notify} />}
       {staffTab === "Usuarios" && (
         <StaffTable
           title="Usuarios verificados"
@@ -4238,6 +4240,65 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
         />
       )}
     </section>
+  );
+}
+
+type ChatReportItem = {
+  id: string;
+  reason: string;
+  status: string;
+  createdAt: string;
+  message: string;
+  author: string;
+  reporter: string;
+};
+
+function ChatReportsManager({ notify }: { notify: (message: string) => void }) {
+  const [reports, setReports] = useState<ChatReportItem[]>([]);
+  const [selectedId, setSelectedId] = useState("");
+  const load = async () => {
+    const response = await fetch("/api/staff/chat-reports");
+    if (!response.ok) return;
+    const body = (await response.json()) as { reports: ChatReportItem[] };
+    setReports(body.reports);
+    setSelectedId((current) => current || body.reports[0]?.id || "");
+  };
+  useEffect(() => { void load(); }, []);
+  const selected = reports.find((report) => report.id === selectedId) ?? reports[0];
+  const review = async (decision: "remove" | "dismiss") => {
+    if (!selected) return;
+    const response = await fetch(`/api/staff/chat-reports/${selected.id}/review`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ decision }),
+    });
+    notify(response.ok ? (decision === "remove" ? "Mensaje retirado y reporte resuelto" : "Reporte descartado") : "No se pudo resolver el reporte");
+    if (response.ok) await load();
+  };
+  return (
+    <div className="staff-workspace">
+      <aside className="candidate-list">
+        <div className="candidate-filter"><strong>Reportes del chat</strong><span>{reports.filter((r) => r.status === "pending").length} pendientes</span></div>
+        {reports.map((report) => (
+          <button key={report.id} className={selected?.id === report.id ? "active" : ""} onClick={() => setSelectedId(report.id)}>
+            <span className="case-alert">!</span>
+            <span><strong>{report.author}</strong><small>Reportado por {report.reporter}</small></span>
+            <i className={`request-status ${report.status}`}>{report.status}</i>
+          </button>
+        ))}
+      </aside>
+      <article className="review-card">
+        {selected ? (
+          <>
+            <span className="staff-role">MODERACIÓN DE COMUNIDAD</span>
+            <h3>Mensaje de {selected.author}</h3>
+            <p className="wallet-help">“{selected.message}”</p>
+            <div className="case-policy"><strong>Motivo del reporte</strong><span>{selected.reason}</span><span>Reportado por {selected.reporter}</span></div>
+            {selected.status === "pending" && <div className="review-actions"><button className="reject" onClick={() => void review("dismiss")}>Descartar</button><button className="approve" onClick={() => void review("remove")}>Retirar mensaje</button></div>}
+          </>
+        ) : <><h3>No hay reportes de chat</h3><p className="wallet-help">Los mensajes denunciados aparecerán aquí.</p></>}
+      </article>
+    </div>
   );
 }
 

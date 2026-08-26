@@ -240,6 +240,33 @@ export const sanctions = sqliteTable(
   ],
 );
 
+export const sanctionAppeals = sqliteTable(
+  "sanction_appeals",
+  {
+    id: text("id").primaryKey(),
+    sanctionId: text("sanction_id")
+      .notNull()
+      .references(() => sanctions.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    reviewedById: text("reviewed_by_id").references(() => users.id),
+    reason: text("reason").notNull(),
+    status: text("status", { enum: ["pending", "accepted", "rejected"] })
+      .notNull()
+      .default("pending"),
+    resolution: text("resolution"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    reviewedAt: integer("reviewed_at", { mode: "timestamp" }),
+  },
+  (table) => [
+    index("idx_sanction_appeals_status_created").on(
+      table.status,
+      table.createdAt,
+    ),
+  ],
+);
+
 export const auditLogs = sqliteTable(
   "audit_logs",
   {

@@ -597,6 +597,7 @@ function Dashboard({
     "Salas",
     "Wallet",
     "Beneficios",
+    "Conducta",
     "Historial",
     "Ranking",
     "Staff",
@@ -624,6 +625,7 @@ function Dashboard({
                       Salas: "◫",
                       Wallet: "◈",
                       Beneficios: "★",
+                      Conducta: "◆",
                       Historial: "↺",
                       Ranking: "⌁",
                       Staff: "⚙",
@@ -1167,6 +1169,7 @@ function EnhancedDashboard({
     "Salas",
     "Wallet",
     "Beneficios",
+    "Conducta",
     "Historial",
     "Ranking",
     "Staff",
@@ -1216,6 +1219,7 @@ function EnhancedDashboard({
                       Salas: "◫",
                       Wallet: "◈",
                       Beneficios: "★",
+                      Conducta: "◆",
                       Historial: "↺",
                       Ranking: "⌁",
                       Staff: "⚙",
@@ -1273,6 +1277,7 @@ function EnhancedDashboard({
           />
         )}
         {activeTab === "Beneficios" && <BenefitsPanel notify={flash} />}
+        {activeTab === "Conducta" && <ConductPanel notify={flash} />}
         {activeTab === "Historial" && <HistoryPanel />}
         {activeTab === "Ranking" && <RankingPanel />}
         {activeTab === "Staff" && <StaffPanel notify={flash} />}
@@ -1708,6 +1713,134 @@ function BenefitsPanel({ notify }: { notify: (message: string) => void }) {
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+
+function ConductPanel({ notify }: { notify: (message: string) => void }) {
+  const [appealing, setAppealing] = useState(false);
+  const [sent, setSent] = useState(false);
+  return (
+    <section className="conduct-panel">
+      <div className="conduct-hero">
+        <div>
+          <span className="verified-badge">CONDUCTA BUENA</span>
+          <h2>Tu reputación competitiva</h2>
+          <p>
+            La puntualidad, permanencia y comportamiento determinan si puedes
+            participar en las salas.
+          </p>
+        </div>
+        <div className="conduct-score">
+          <strong>92</strong>
+          <span>/ 100</span>
+          <small>Sin restricciones</small>
+        </div>
+      </div>
+      <div className="conduct-rules">
+        <article>
+          <span className="rule-icon warning">½</span>
+          <div>
+            <h3>No conectarse a tiempo</h3>
+            <p>Multa de la mitad del precio de entrada.</p>
+          </div>
+          <strong>S/ 3</strong>
+        </article>
+        <article>
+          <span className="rule-icon danger">×2</span>
+          <div>
+            <h3>Abandonar la partida</h3>
+            <p>Multa equivalente al doble de la entrada.</p>
+          </div>
+          <strong>S/ 12</strong>
+        </article>
+        <article>
+          <span className="rule-icon ban">⊘</span>
+          <div>
+            <h3>Hack, mafia o manipulación</h3>
+            <p>Cancelación, pérdida de entrada y suspensión o ban.</p>
+          </div>
+          <strong>Ban</strong>
+        </article>
+      </div>
+      <div className="conduct-grid">
+        <div className="sanction-history">
+          <div className="panel-title">
+            <strong>Historial disciplinario</strong>
+            <span>Últimos 90 días</span>
+          </div>
+          <article>
+            <span className="sanction-dot resolved" />
+            <div>
+              <b>No-show · Sala #142</b>
+              <small>12 jul. 2026 · Llegaste después del límite</small>
+            </div>
+            <strong>− S/ 3</strong>
+            <i>Pagada</i>
+            <button onClick={() => setAppealing(true)}>Apelar</button>
+          </article>
+          <article>
+            <span className="sanction-dot good" />
+            <div>
+              <b>32 partidas sin incidentes</b>
+              <small>Racha actual de buena conducta</small>
+            </div>
+            <strong>+ 8 pts</strong>
+            <i>Activo</i>
+          </article>
+        </div>
+        <aside className="conduct-status">
+          <span className="card-label">ESTADO ACTUAL</span>
+          <div>
+            <small>Deuda disciplinaria</small>
+            <strong>S/ 0.00</strong>
+          </div>
+          <div>
+            <small>Suspensión activa</small>
+            <strong>No</strong>
+          </div>
+          <div>
+            <small>Mutes activos</small>
+            <strong>0</strong>
+          </div>
+          <p>✓ Puedes entrar a salas y retirar saldo.</p>
+        </aside>
+      </div>
+      {appealing && (
+        <div className="modal-backdrop" onMouseDown={() => setAppealing(false)}>
+          <section
+            className="appeal-modal"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button className="modal-close" onClick={() => setAppealing(false)}>
+              ×
+            </button>
+            <span className="staff-role">APELACIÓN</span>
+            <h2>No-show · Sala #142</h2>
+            <p>
+              Explica por qué consideras que la sanción debe revisarse. La multa
+              no se elimina mientras la apelación esté pendiente.
+            </p>
+            <label>
+              Motivo
+              <textarea placeholder="Describe lo sucedido y cualquier evidencia…" />
+            </label>
+            <div className="evidence-box">
+              ＋ Adjuntar captura o evidencia demo
+            </div>
+            <button
+              className="primary-button w-full"
+              disabled={sent}
+              onClick={() => {
+                setSent(true);
+                notify("Apelación demo enviada al staff");
+              }}
+            >
+              {sent ? "✓ Apelación enviada" : "Enviar apelación"}
+            </button>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

@@ -57,6 +57,13 @@
       "when": 1787675424950,
       "tag": "0007_open_leopardon",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1787707584206,
+      "tag": "0008_sturdy_lenny_balinger",
+      "breakpoints": true
     }
   ]
 }

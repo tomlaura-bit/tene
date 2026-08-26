@@ -181,6 +181,7 @@ export default function Home() {
     return (
       <EnhancedRoomFlow
         roomId={selectedRoomId}
+        session={session}
         balance={balance}
         bannedMaps={bannedMaps}
         setBannedMaps={setBannedMaps}
@@ -3437,11 +3438,12 @@ type LiveRoomState = {
   room: { id: string; name: string; status: string };
   players: Array<{ userId: string; nickname: string; avatarUrl: string | null; level: number; elo: number; team: "pool" | "a" | "b"; isCaptain: boolean }>;
   viewer: { userId: string; team: "pool" | "a" | "b"; isCaptain: boolean } | null;
-  server: { map: string | null; status: string } | null;
+  server: { map: string | null; status: string; teamAScore: number; teamBScore: number } | null;
+  disputes: Array<{ id: string; reporterId: string; accusedUserId: string | null; reason: string; description: string; status: string; resolution: string | null }>;
   events: Array<{ id: string; type: string; payload: Record<string, string | number> }>;
 };
 
-function LiveRoomFlow({ roomId, balance, goBack, notice }: { roomId: string; balance: number; goBack: () => void; notice: string }) {
+function LiveRoomFlow({ roomId, balance, goBack, notice, session }: { roomId: string; balance: number; goBack: () => void; notice: string; session: SessionData | null }) {
   const [data, setData] = useState<LiveRoomState | null>(null);
   const [busy, setBusy] = useState(false);
   const load = async () => { const response = await fetch(`/api/rooms/${roomId}/state`, { cache: "no-store" }); if (response.ok) setData(await response.json()); };
@@ -3463,13 +3465,14 @@ function LiveRoomFlow({ roomId, balance, goBack, notice }: { roomId: string; bal
       {data.room.status === "open" && <article className="reserve-card"><h3>Tu puesto está reservado</h3><p>El draft comienza automáticamente cuando se completa la sala.</p></article>}
       {data.room.status === "draft" && <article className="draft-board"><div className="veto-head"><div><small>TURNO ACTUAL</small><strong>{expectedDraftTeam ? `Capitán ${expectedDraftTeam.toUpperCase()} elige` : "Equipos completos"}</strong></div><span>{picks.length}/8 elecciones</span></div><div className="draft-columns"><div><span className="team-label a">EQUIPO A</span>{data.players.filter((p) => p.team === "a").map((p) => <b key={p.userId}>{p.nickname}{p.isCaptain ? " · CAP" : ""}</b>)}</div><div className="draft-pool"><small>JUGADORES DISPONIBLES</small>{data.players.filter((p) => p.team === "pool").map((p) => <button disabled={busy || !data.viewer?.isCaptain || data.viewer.team !== expectedDraftTeam} key={p.userId} onClick={() => void act("draft", { playerId: p.userId })}><span>{p.nickname[0]}</span><b>{p.nickname}</b><i>LVL {p.level}</i></button>)}</div><div><span className="team-label b">EQUIPO B</span>{data.players.filter((p) => p.team === "b").map((p) => <b key={p.userId}>{p.nickname}{p.isCaptain ? " · CAP" : ""}</b>)}</div></div></article>}
       {data.room.status === "veto" && <article className="veto-card"><div className="veto-head"><div><small>TURNO ACTUAL</small><strong>{bans.length < 6 ? `Capitán ${expectedVetoTeam.toUpperCase()} banea` : `Capitán ${sideChooser.toUpperCase()} elige lado`}</strong></div><span>{bans.length}/6 baneos</span></div>{bans.length < 6 ? <div className="maps-grid">{mapPool.map((map) => <button key={map} className={bans.includes(map) ? "banned" : ""} disabled={busy || bans.includes(map) || !data.viewer?.isCaptain || data.viewer.team !== expectedVetoTeam} onClick={() => void act("veto", { map })}><span>{map.slice(0,2).toUpperCase()}</span><strong>{map}</strong><small>{bans.includes(map) ? "BANEADO" : "BANEAR"}</small></button>)}</div> : <div className="veto-next"><strong>{remainingMaps[0]} será el mapa</strong><button disabled={busy || !data.viewer?.isCaptain || data.viewer.team !== sideChooser} className="primary-button" onClick={() => void act("veto", { side: "ct" })}>Elegir CT</button><button disabled={busy || !data.viewer?.isCaptain || data.viewer.team !== sideChooser} className="secondary-button" onClick={() => void act("veto", { side: "t" })}>Elegir T</button></div>}</article>}
-      {["live", "review", "settled"].includes(data.room.status) && <MatchOperations map={data.server?.map ?? remainingMaps[0] ?? "Por definir"} />}
+      {["live", "review", "settled", "cancelled"].includes(data.room.status) && <LiveMatchOperations roomId={roomId} data={data} session={session} reload={load} />}
     </div><aside className="room-side"><div className="side-title"><strong>Jugadores</strong><span>{data.players.length}/10</span></div>{data.players.map((player) => <div className="side-player" key={player.userId}>{player.avatarUrl ? <img className="avatar small" src={player.avatarUrl} alt="" /> : <span className="avatar small">{player.nickname[0]}</span>}<div><strong>{player.nickname}</strong><small>{player.isCaptain ? `Capitán ${player.team.toUpperCase()}` : player.team === "pool" ? "Disponible" : `Equipo ${player.team.toUpperCase()}`}</small></div><span className="level">LVL {player.level}</span></div>)}</aside></section>{notice && <div className="toast"><span className="live-pulse" />{notice}</div>}
   </main>;
 }
 
 function EnhancedRoomFlow({
   roomId,
+  session,
   balance,
   bannedMaps,
   setBannedMaps,
@@ -3479,6 +3482,7 @@ function EnhancedRoomFlow({
   notice,
 }: {
   roomId: string | null;
+  session: SessionData | null;
   balance: number;
   bannedMaps: string[];
   setBannedMaps: (maps: string[]) => void;
@@ -3489,7 +3493,7 @@ function EnhancedRoomFlow({
 }) {
   const [draftPicks, setDraftPicks] = useState<string[]>([]);
   const [phase, setPhase] = useState<"draft" | "veto" | "match">("draft");
-  if (roomId) return <LiveRoomFlow roomId={roomId} balance={balance} goBack={goBack} notice={notice} />;
+  if (roomId) return <LiveRoomFlow roomId={roomId} balance={balance} goBack={goBack} notice={notice} session={session} />;
   const sequence = ["A", "B", "B", "A", "A", "B", "B", "A"];
   const remainingMaps = mapPool.filter((map) => !bannedMaps.includes(map));
   const currentCaptain =
@@ -3631,6 +3635,39 @@ function EnhancedRoomFlow({
       )}
     </main>
   );
+}
+
+function LiveMatchOperations({ roomId, data, session, reload }: { roomId: string; data: LiveRoomState; session: SessionData | null; reload: () => Promise<void> }) {
+  const [scoreA, setScoreA] = useState(13);
+  const [scoreB, setScoreB] = useState(9);
+  const [reason, setReason] = useState("hacking");
+  const [description, setDescription] = useState("");
+  const [accusedUserId, setAccusedUserId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const isFinanceStaff = ["owner", "admin"].includes(session?.user.role ?? "");
+  const pending = data.disputes.find((item) => item.status === "pending");
+  const send = async (url: string, body: Record<string, unknown>) => {
+    setBusy(true); setMessage("");
+    const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const result = await response.json().catch(() => ({}));
+    setBusy(false);
+    setMessage(response.ok ? "Operación guardada correctamente." : `No se pudo completar: ${result.error ?? "error"}`);
+    await reload();
+  };
+  const statusLabel = data.room.status === "settled" ? "Resultado liquidado" : data.room.status === "review" ? "Liquidación congelada" : data.room.status === "cancelled" ? "Sala cancelada" : "Partida en vivo";
+  return <article className="match-ops">
+    <div className="server-head"><div><span className={`server-light ${data.server?.status ?? data.room.status}`} /><div><small>SERVIDOR PERÚ · MATCHZY</small><strong>{statusLabel}</strong></div></div><span>{data.server?.map ?? "Por definir"} · MR12</span></div>
+    {data.room.status === "settled" && <div className="result-confirm"><span>✓</span><h3>Equipo {data.server!.teamAScore > data.server!.teamBScore ? "A" : "B"} ganó {data.server!.teamAScore} — {data.server!.teamBScore}</h3><p>La entrada bloqueada fue liquidada, cada ganador recibió S/ 10 y el ranking fue actualizado.</p><div className="settlement-status"><small>LIQUIDACIÓN COMPLETA</small><b>S/ 50 en premios · S/ 10 de servicio</b></div></div>}
+    {data.room.status === "cancelled" && <div className="result-confirm"><span>×</span><h3>Partida cancelada</h3><p>Las entradas de jugadores no sancionados fueron devueltas automáticamente.</p></div>}
+    {data.room.status === "review" && <div className="result-confirm"><span>⌛</span><h3>Resultado congelado por revisión</h3><p>Ningún premio ni entrada se liquidará mientras exista una impugnación pendiente.</p>{pending && <div className="settlement-status"><small>CASO {pending.id.slice(-8).toUpperCase()}</small><b>{pending.description}</b></div>}</div>}
+    {data.room.status === "review" && pending && isFinanceStaff && <div className="admin-result-controls"><h3>Resolver impugnación</h3><p>Descartar devuelve la partida a estado en vivo. Confirmar mantiene el dinero congelado para cancelar y sancionar.</p><button disabled={busy} className="secondary-button" onClick={() => void send(`/api/staff/disputes/${pending.id}/review`, { decision: "dismissed", resolution: "Reporte revisado por staff; no se encontró una infracción suficiente." })}>Descartar y reanudar</button><button disabled={busy} className="primary-button" onClick={() => void send(`/api/staff/disputes/${pending.id}/review`, { decision: "upheld", resolution: "Infracción confirmada por el staff. La sala debe cancelarse y aplicar la retención correspondiente." })}>Confirmar infracción</button></div>}
+    {data.room.status === "live" && <div className="live-score"><div><small>EQUIPO A</small><strong>{scoreA}</strong></div><span><b>MARCADOR</b><i>STAFF</i><em>EN VIVO</em></span><div><small>EQUIPO B</small><strong>{scoreB}</strong></div></div>}
+    {data.room.status === "live" && isFinanceStaff && <div className="admin-result-controls"><h3>Confirmar resultado y liquidar</h3><p>Esta acción libera los S/ 6 bloqueados, acredita S/ 10 a cada ganador y actualiza el ELO.</p><div className="score-inputs"><label>Equipo A<input type="number" min="0" value={scoreA} onChange={(e) => setScoreA(Number(e.target.value))} /></label><label>Equipo B<input type="number" min="0" value={scoreB} onChange={(e) => setScoreB(Number(e.target.value))} /></label></div><button disabled={busy} className="primary-button" onClick={() => void send(`/api/staff/rooms/${roomId}/result`, { teamAScore: scoreA, teamBScore: scoreB })}>Confirmar y liquidar</button></div>}
+    {data.room.status === "live" && data.viewer && <div className="dispute-form"><h3>Impugnar partida</h3><p>Úsalo únicamente para hacks, coordinación ilegal, suplantación o marcador incorrecto.</p><label>Motivo<select value={reason} onChange={(e) => setReason(e.target.value)}><option value="hacking">Sospecha de hacks</option><option value="collusion">Coordinación o mafia</option><option value="wrong_result">Resultado incorrecto</option><option value="impersonation">Suplantación</option><option value="other">Otro</option></select></label><label>Jugador implicado (opcional)<select value={accusedUserId} onChange={(e) => setAccusedUserId(e.target.value)}><option value="">Sin seleccionar</option>{data.players.filter((p) => p.userId !== data.viewer?.userId).map((p) => <option key={p.userId} value={p.userId}>{p.nickname}</option>)}</select></label><label>Descripción<textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Indica jugador, ronda y lo ocurrido…" /></label><button disabled={busy || description.trim().length < 10} className="dispute-button" onClick={() => void send(`/api/rooms/${roomId}/disputes`, { reason, description, accusedUserId: accusedUserId || undefined })}>⚑ Enviar y congelar liquidación</button></div>}
+    {["live", "review"].includes(data.room.status) && isFinanceStaff && <div className="cancel-match"><button disabled={busy} className="secondary-button" onClick={() => { const why = window.prompt("Motivo de cancelación (las entradas serán devueltas):"); if (why) void send(`/api/staff/rooms/${roomId}/cancel`, { reason: why, sanctionedUserId: pending?.accusedUserId || undefined }); }}>Cancelar sala {pending?.accusedUserId ? "y retener entrada del infractor" : "y devolver entradas"}</button></div>}
+    {message && <p className="form-message">{message}</p>}
+  </article>;
 }
 
 function MatchOperations({ map }: { map: string }) {

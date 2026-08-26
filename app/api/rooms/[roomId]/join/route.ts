@@ -2,6 +2,7 @@ import { and, eq, gte, sql } from "drizzle-orm";
 import { getDb } from "../../../../../db";
 import {
   ledgerEntries,
+  playerRatings,
   roomPlayers,
   rooms,
   users,
@@ -110,6 +111,20 @@ export async function POST(
       { ok: false, error: "reservation_conflict" },
       { status: 409 },
     );
+  }
+
+  const fullRoom = await db
+    .select({ id: roomPlayers.id, userId: roomPlayers.userId, level: playerRatings.level, elo: playerRatings.elo })
+    .from(roomPlayers)
+    .leftJoin(playerRatings, eq(roomPlayers.userId, playerRatings.userId))
+    .where(eq(roomPlayers.roomId, roomId));
+  if (fullRoom.length === 10) {
+    const captains = [...fullRoom].sort((a, b) => (b.level ?? 1) - (a.level ?? 1) || (b.elo ?? 1000) - (a.elo ?? 1000)).slice(0, 2);
+    await db.batch([
+      db.update(roomPlayers).set({ isCaptain: true, team: "a" }).where(eq(roomPlayers.id, captains[0].id)),
+      db.update(roomPlayers).set({ isCaptain: true, team: "b" }).where(eq(roomPlayers.id, captains[1].id)),
+      db.update(rooms).set({ status: "draft" }).where(eq(rooms.id, roomId)),
+    ]);
   }
 
   return Response.json({ ok: true, wallet: charged[0] });

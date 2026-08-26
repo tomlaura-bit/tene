@@ -118,6 +118,7 @@ export default function Home() {
   const [sessionLoading, setSessionLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Inicio");
   const [bannedMaps, setBannedMaps] = useState<string[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
 
   useEffect(() => {
     void fetch("/api/me")
@@ -169,7 +170,7 @@ export default function Home() {
         setBalance={setBalance}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        openRoom={() => setScreen("room")}
+        openRoom={(roomId) => { setSelectedRoomId(roomId ?? null); setScreen("room"); }}
         goHome={() => setScreen("landing")}
         notice={notice}
         setNotice={setNotice}
@@ -179,6 +180,7 @@ export default function Home() {
   if (screen === "room")
     return (
       <EnhancedRoomFlow
+        roomId={selectedRoomId}
         balance={balance}
         bannedMaps={bannedMaps}
         setBannedMaps={setBannedMaps}
@@ -773,7 +775,7 @@ function Dashboard({
   balance: number;
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  openRoom: () => void;
+  openRoom: (roomId?: string) => void;
   goHome: () => void;
   notice: string;
 }) {
@@ -974,7 +976,7 @@ function RoomRow({
   name: string;
   players: string;
   average: string;
-  openRoom: () => void;
+  openRoom: (roomId?: string) => void;
 }) {
   const roomProfiles = name.includes("Violeta")
     ? [
@@ -1353,7 +1355,7 @@ function EnhancedDashboard({
   setBalance: (value: number | ((value: number) => number)) => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  openRoom: () => void;
+  openRoom: (roomId?: string) => void;
   goHome: () => void;
   notice: string;
   setNotice: (value: string) => void;
@@ -1991,7 +1993,7 @@ function HomePanel({
   session,
 }: {
   balance: number;
-  openRoom: () => void;
+  openRoom: (roomId?: string) => void;
   setActiveTab: (tab: string) => void;
   wallet: (action: "deposit" | "withdraw") => void;
   session: SessionData | null;
@@ -2117,7 +2119,7 @@ function RoomsPanel({
   setBalance,
   notify,
 }: {
-  openRoom: () => void;
+  openRoom: (roomId?: string) => void;
   session: SessionData | null;
   setBalance: (value: number) => void;
   notify: (message: string) => void;
@@ -2178,7 +2180,7 @@ function RoomsPanel({
         : "Puesto reservado · S/ 6 bloqueados",
     );
     await loadRooms();
-    openRoom();
+    openRoom(roomId);
   };
   const canCreate =
     session && ["owner", "admin", "mod"].includes(session.user.role);
@@ -3431,7 +3433,43 @@ function Transactions({ compact = false }: { compact?: boolean }) {
   );
 }
 
+type LiveRoomState = {
+  room: { id: string; name: string; status: string };
+  players: Array<{ userId: string; nickname: string; avatarUrl: string | null; level: number; elo: number; team: "pool" | "a" | "b"; isCaptain: boolean }>;
+  viewer: { userId: string; team: "pool" | "a" | "b"; isCaptain: boolean } | null;
+  server: { map: string | null; status: string } | null;
+  events: Array<{ id: string; type: string; payload: Record<string, string | number> }>;
+};
+
+function LiveRoomFlow({ roomId, balance, goBack, notice }: { roomId: string; balance: number; goBack: () => void; notice: string }) {
+  const [data, setData] = useState<LiveRoomState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const load = async () => { const response = await fetch(`/api/rooms/${roomId}/state`, { cache: "no-store" }); if (response.ok) setData(await response.json()); };
+  useEffect(() => { void load(); const timer = window.setInterval(() => void load(), 5000); return () => window.clearInterval(timer); }, [roomId]);
+  const act = async (path: string, body: Record<string, string>) => { setBusy(true); const response = await fetch(`/api/rooms/${roomId}/${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); setBusy(false); await load(); return response.ok; };
+  if (!data) return <main className="app-bg room-screen min-h-screen text-white"><div className="room-loading">Cargando sala…</div></main>;
+  const picks = data.events.filter((event) => event.type === "draft_pick");
+  const bans = data.events.filter((event) => event.type === "map_ban").map((event) => String(event.payload.map));
+  const vetoStart = data.events.find((event) => event.type === "veto_start");
+  const firstTeam = String(vetoStart?.payload.team ?? "a");
+  const expectedDraftTeam = ["a", "b", "b", "a", "a", "b", "b", "a"][picks.length];
+  const expectedVetoTeam = bans.length % 2 === 0 ? firstTeam : firstTeam === "a" ? "b" : "a";
+  const remainingMaps = mapPool.filter((map) => !bans.includes(map));
+  const lastBanTeam = String(data.events.filter((event) => event.type === "map_ban").at(-1)?.payload.team ?? "");
+  const sideChooser = lastBanTeam === "a" ? "b" : "a";
+  return <main className="app-bg room-screen min-h-screen text-white">
+    <header className="room-header"><button onClick={goBack}>← Volver a salas</button><div><span className="status-pill"><i /> {data.room.status.toUpperCase()}</span><strong>{data.room.name}</strong></div><div className="room-balance"><small>SALDO</small>S/ {balance.toFixed(2)}</div></header>
+    <section className="room-layout"><div className="room-main"><div className="room-stage"><div><p className="eyebrow"><span /> FLUJO COMPETITIVO</p><h1>{data.room.status === "open" ? "Esperando jugadores" : data.room.status === "draft" ? "Draft de equipos" : data.room.status === "veto" ? "Veto de mapas" : "Partida preparada"}</h1><p>Los cambios quedan guardados y solo el capitán del turno puede actuar.</p></div><div className="room-count"><strong>{data.players.length}/10</strong><span>jugadores</span></div></div>
+      {data.room.status === "open" && <article className="reserve-card"><h3>Tu puesto está reservado</h3><p>El draft comienza automáticamente cuando se completa la sala.</p></article>}
+      {data.room.status === "draft" && <article className="draft-board"><div className="veto-head"><div><small>TURNO ACTUAL</small><strong>{expectedDraftTeam ? `Capitán ${expectedDraftTeam.toUpperCase()} elige` : "Equipos completos"}</strong></div><span>{picks.length}/8 elecciones</span></div><div className="draft-columns"><div><span className="team-label a">EQUIPO A</span>{data.players.filter((p) => p.team === "a").map((p) => <b key={p.userId}>{p.nickname}{p.isCaptain ? " · CAP" : ""}</b>)}</div><div className="draft-pool"><small>JUGADORES DISPONIBLES</small>{data.players.filter((p) => p.team === "pool").map((p) => <button disabled={busy || !data.viewer?.isCaptain || data.viewer.team !== expectedDraftTeam} key={p.userId} onClick={() => void act("draft", { playerId: p.userId })}><span>{p.nickname[0]}</span><b>{p.nickname}</b><i>LVL {p.level}</i></button>)}</div><div><span className="team-label b">EQUIPO B</span>{data.players.filter((p) => p.team === "b").map((p) => <b key={p.userId}>{p.nickname}{p.isCaptain ? " · CAP" : ""}</b>)}</div></div></article>}
+      {data.room.status === "veto" && <article className="veto-card"><div className="veto-head"><div><small>TURNO ACTUAL</small><strong>{bans.length < 6 ? `Capitán ${expectedVetoTeam.toUpperCase()} banea` : `Capitán ${sideChooser.toUpperCase()} elige lado`}</strong></div><span>{bans.length}/6 baneos</span></div>{bans.length < 6 ? <div className="maps-grid">{mapPool.map((map) => <button key={map} className={bans.includes(map) ? "banned" : ""} disabled={busy || bans.includes(map) || !data.viewer?.isCaptain || data.viewer.team !== expectedVetoTeam} onClick={() => void act("veto", { map })}><span>{map.slice(0,2).toUpperCase()}</span><strong>{map}</strong><small>{bans.includes(map) ? "BANEADO" : "BANEAR"}</small></button>)}</div> : <div className="veto-next"><strong>{remainingMaps[0]} será el mapa</strong><button disabled={busy || !data.viewer?.isCaptain || data.viewer.team !== sideChooser} className="primary-button" onClick={() => void act("veto", { side: "ct" })}>Elegir CT</button><button disabled={busy || !data.viewer?.isCaptain || data.viewer.team !== sideChooser} className="secondary-button" onClick={() => void act("veto", { side: "t" })}>Elegir T</button></div>}</article>}
+      {["live", "review", "settled"].includes(data.room.status) && <MatchOperations map={data.server?.map ?? remainingMaps[0] ?? "Por definir"} />}
+    </div><aside className="room-side"><div className="side-title"><strong>Jugadores</strong><span>{data.players.length}/10</span></div>{data.players.map((player) => <div className="side-player" key={player.userId}>{player.avatarUrl ? <img className="avatar small" src={player.avatarUrl} alt="" /> : <span className="avatar small">{player.nickname[0]}</span>}<div><strong>{player.nickname}</strong><small>{player.isCaptain ? `Capitán ${player.team.toUpperCase()}` : player.team === "pool" ? "Disponible" : `Equipo ${player.team.toUpperCase()}`}</small></div><span className="level">LVL {player.level}</span></div>)}</aside></section>{notice && <div className="toast"><span className="live-pulse" />{notice}</div>}
+  </main>;
+}
+
 function EnhancedRoomFlow({
+  roomId,
   balance,
   bannedMaps,
   setBannedMaps,
@@ -3440,6 +3478,7 @@ function EnhancedRoomFlow({
   goBack,
   notice,
 }: {
+  roomId: string | null;
   balance: number;
   bannedMaps: string[];
   setBannedMaps: (maps: string[]) => void;
@@ -3450,6 +3489,7 @@ function EnhancedRoomFlow({
 }) {
   const [draftPicks, setDraftPicks] = useState<string[]>([]);
   const [phase, setPhase] = useState<"draft" | "veto" | "match">("draft");
+  if (roomId) return <LiveRoomFlow roomId={roomId} balance={balance} goBack={goBack} notice={notice} />;
   const sequence = ["A", "B", "B", "A", "A", "B", "B", "A"];
   const remainingMaps = mapPool.filter((map) => !bannedMaps.includes(map));
   const currentCaptain =

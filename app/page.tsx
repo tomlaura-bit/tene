@@ -4217,13 +4217,26 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
 }
 
 function RolesManager({ notify }: { notify: (message: string) => void }) {
-  const [roles, setRoles] = useState([
-    { name: "Tom", role: "Dueño" },
-    { name: "hoxhi", role: "Admin" },
-    { name: "Jericho", role: "Mod" },
-    { name: "Shiro", role: "Streamer" },
-    { name: "Maddison", role: "Sub" },
-  ]);
+  const [roles, setRoles] = useState<
+    Array<{ id: string; name: string; role: string }>
+  >([]);
+  const loadRoles = async () => {
+    const response = await fetch("/api/staff/users");
+    if (!response.ok) return;
+    const body = (await response.json()) as {
+      users: Array<{ id: string; nickname: string; role: string }>;
+    };
+    setRoles(
+      body.users.map((user) => ({
+        id: user.id,
+        name: user.nickname,
+        role: user.role,
+      })),
+    );
+  };
+  useEffect(() => {
+    void loadRoles();
+  }, []);
   const permissions = [
     {
       role: "Dueño",
@@ -4264,11 +4277,18 @@ function RolesManager({ notify }: { notify: (message: string) => void }) {
     "Roles",
     "Admins",
   ];
-  const change = (name: string, role: string) => {
-    setRoles(
-      roles.map((item) => (item.name === name ? { ...item, role } : item)),
+  const change = async (item: { id: string; name: string }, role: string) => {
+    const response = await fetch(`/api/staff/users/${item.id}/role`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ role, reason: "Asignación desde panel de roles" }),
+    });
+    notify(
+      response.ok
+        ? `${item.name}: rol actualizado`
+        : "No tienes permiso para realizar ese cambio",
     );
-    notify(`${name}: rol demo cambiado a ${role}`);
+    if (response.ok) await loadRoles();
   };
   return (
     <section className="roles-manager">
@@ -4282,7 +4302,8 @@ function RolesManager({ notify }: { notify: (message: string) => void }) {
           </p>
         </div>
         <span>
-          <small>STAFF ACTIVO</small>4 personas
+          <small>CUENTAS REGISTRADAS</small>
+          {roles.length} personas
         </span>
       </div>
       <div className="permissions-table">
@@ -4315,7 +4336,7 @@ function RolesManager({ notify }: { notify: (message: string) => void }) {
           <span>Solo Dueño y Admin autorizados</span>
         </div>
         {roles.map((item) => (
-          <article key={item.name}>
+          <article key={item.id}>
             <span className="online-avatar">{item.name[0]}</span>
             <div>
               <strong>{item.name}</strong>
@@ -4323,19 +4344,16 @@ function RolesManager({ notify }: { notify: (message: string) => void }) {
             </div>
             <select
               value={item.role}
-              disabled={item.role === "Dueño"}
-              onChange={(event) => change(item.name, event.target.value)}
+              onChange={(event) => void change(item, event.target.value)}
             >
-              {["Jugador", "Sub", "Streamer", "Mod", "Admin", "Dueño"].map(
-                (role) => (
-                  <option key={role}>{role}</option>
-                ),
-              )}
+              <option value="player">Jugador</option>
+              <option value="sub">Sub</option>
+              <option value="streamer">Streamer</option>
+              <option value="mod">Mod</option>
+              <option value="admin">Admin</option>
+              <option value="owner">Dueño</option>
             </select>
-            <button
-              disabled={item.role === "Dueño"}
-              onClick={() => notify(`${item.name}: permisos revisados`)}
-            >
+            <button onClick={() => notify(`${item.name}: permisos revisados`)}>
               Revisar
             </button>
           </article>

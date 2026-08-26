@@ -30,14 +30,12 @@ export async function POST(request: Request) {
     .update(users)
     .set({ steamId64, status: "pending" })
     .where(eq(users.id, user.id));
-  await db
-    .insert(steamProfileChecks)
-    .values({
-      id: `spc_${crypto.randomUUID()}`,
-      userId: user.id,
-      steamId64,
-      checkedAt: now,
-    });
+  await db.insert(steamProfileChecks).values({
+    id: `spc_${crypto.randomUUID()}`,
+    userId: user.id,
+    steamId64,
+    checkedAt: now,
+  });
   return Response.json({
     ok: true,
     verificationStatus: "pending",

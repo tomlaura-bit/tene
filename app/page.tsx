@@ -539,11 +539,14 @@ function SteamRegistrationModal({
                 ¿No sabes tu SteamID64? Encuéntralo aquí ↗
               </a>
             </label>
-            <button className="steam-openid-button" onClick={saveSteam}>
+            <button
+              className="steam-openid-button"
+              onClick={() => window.location.assign("/api/auth/steam")}
+            >
               <span className="steam-dot">S</span>
               <span>
-                <b>Vincular con Steam</b>
-                <small>Recomendado · evita errores de identidad</small>
+                <b>Vincular oficialmente con Steam</b>
+                <small>OpenID verificado · recomendado</small>
               </span>
             </button>
             <div className="auth-divider">

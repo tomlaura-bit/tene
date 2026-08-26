@@ -1494,6 +1494,7 @@ function EnhancedDashboard({
         {activeTab === "Ranking" && <RankingPanel />}
         {activeTab === "Staff" && <StaffPanel notify={flash} />}
         {activeTab === "Finanzas" && <FinancePanel notify={flash} />}
+        {activeTab === "Cuenta" && <AccountPanel session={session} />}
       </div>
       {walletAction && (
         <div
@@ -1548,7 +1549,6 @@ function EnhancedDashboard({
           </section>
         </div>
       )}
-      {activeTab === "Cuenta" && <AccountPanel session={session} />}
       {notice && (
         <div className="toast">
           <span className="live-pulse" />
@@ -1560,7 +1560,9 @@ function EnhancedDashboard({
 }
 
 function AccountPanel({ session }: { session: SessionData | null }) {
-  const [tab, setTab] = useState<"Cuenta" | "Steam">("Cuenta");
+  const [tab, setTab] = useState<
+    "Cuenta" | "Steam" | "Partidas" | "Conducta" | "Movimientos" | "Privacidad"
+  >("Cuenta");
   const [steamState, setSteamState] = useState<{
     steam?: {
       steamId64: string;
@@ -1657,12 +1659,19 @@ function AccountPanel({ session }: { session: SessionData | null }) {
         >
           Steam
         </button>
-        <button>Partidas</button>
-        <button>Conducta</button>
-        <button>Movimientos</button>
-        <button>Privacidad</button>
+        {(["Partidas", "Conducta", "Movimientos", "Privacidad"] as const).map(
+          (item) => (
+            <button
+              key={item}
+              className={tab === item ? "active" : ""}
+              onClick={() => setTab(item)}
+            >
+              {item}
+            </button>
+          ),
+        )}
       </div>
-      {tab === "Cuenta" ? (
+      {tab === "Cuenta" && (
         <div className="account-surface">
           <div className="account-title">
             <div>
@@ -1728,7 +1737,8 @@ function AccountPanel({ session }: { session: SessionData | null }) {
             </a>
           </div>
         </div>
-      ) : (
+      )}
+      {tab === "Steam" && (
         <div className="account-surface">
           <div className="account-title">
             <div>
@@ -1788,6 +1798,108 @@ function AccountPanel({ session }: { session: SessionData | null }) {
             La vinculación es personal y no puede cambiarse sin revisión del
             staff.
           </p>
+        </div>
+      )}
+      {tab === "Partidas" && (
+        <div className="account-surface account-section-content">
+          <div className="account-title">
+            <div>
+              <span className="verified-badge">TEMPORADA ACTUAL</span>
+              <h2>Partidas competitivas</h2>
+              <p>Tu actividad aparecerá aquí después de jugar una sala real.</p>
+            </div>
+          </div>
+          <div className="account-metric-grid">
+            <span>
+              <small>Partidas</small>
+              <strong>{session?.rating?.matches ?? 0}</strong>
+            </span>
+            <span>
+              <small>Victorias</small>
+              <strong>{session?.rating?.wins ?? 0}</strong>
+            </span>
+            <span>
+              <small>Derrotas</small>
+              <strong>{session?.rating?.losses ?? 0}</strong>
+            </span>
+            <span>
+              <small>Elo</small>
+              <strong>{session?.rating?.elo ?? 1000}</strong>
+            </span>
+          </div>
+        </div>
+      )}
+      {tab === "Conducta" && (
+        <div className="account-surface account-section-content">
+          <div className="account-title">
+            <div>
+              <span className="verified-badge">SIN SANCIONES ACTIVAS</span>
+              <h2>Estado de conducta</h2>
+              <p>
+                Aquí se mostrarán advertencias, multas, suspensiones y
+                apelaciones.
+              </p>
+            </div>
+          </div>
+          <div className="account-info-row">
+            <strong>Estado actual</strong>
+            <span>Buena conducta</span>
+          </div>
+          <div className="account-info-row">
+            <strong>Abandonos</strong>
+            <span>0 registrados</span>
+          </div>
+          <div className="account-info-row">
+            <strong>Apelaciones</strong>
+            <span>Ninguna pendiente</span>
+          </div>
+        </div>
+      )}
+      {tab === "Movimientos" && (
+        <div className="account-surface account-section-content">
+          <div className="account-title">
+            <div>
+              <span className="verified-badge">WALLET TENE</span>
+              <h2>Movimientos de saldo</h2>
+              <p>Recargas, reservas, premios, retiros y penalizaciones.</p>
+            </div>
+          </div>
+          <Transactions compact />
+        </div>
+      )}
+      {tab === "Privacidad" && (
+        <div className="account-surface account-section-content">
+          <div className="account-title">
+            <div>
+              <span className="verified-badge">CONTROL DE PERFIL</span>
+              <h2>Privacidad</h2>
+              <p>
+                Los datos competitivos necesarios permanecen visibles para
+                verificar partidas.
+              </p>
+            </div>
+          </div>
+          <label className="privacy-option">
+            <span>
+              <strong>Perfil público</strong>
+              <small>Requerido para participar en salas.</small>
+            </span>
+            <input type="checkbox" defaultChecked disabled />
+          </label>
+          <label className="privacy-option">
+            <span>
+              <strong>Historial de partidas</strong>
+              <small>Permite que otros jugadores revisen tus resultados.</small>
+            </span>
+            <input type="checkbox" defaultChecked />
+          </label>
+          <label className="privacy-option">
+            <span>
+              <strong>Mostrar horas de CS2</strong>
+              <small>Necesario para conservar la verificación.</small>
+            </span>
+            <input type="checkbox" defaultChecked disabled />
+          </label>
         </div>
       )}
     </section>

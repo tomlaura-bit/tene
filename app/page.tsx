@@ -2655,7 +2655,7 @@ function CommunityChat({ notify }: { notify: (message: string) => void }) {
           <div className="message-stream">
             {messages.map((message) => (
               <article key={message.id}>
-                <PlayerProfile
+                <ProfileAvatar
                   profile={{
                     name: message.name,
                     level: message.level,

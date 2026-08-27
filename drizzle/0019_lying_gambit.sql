@@ -1,0 +1,1 @@
+ALTER TABLE `match_servers` ADD `password_encrypted` text;

@@ -1,4 +1,5 @@
 import { and, eq, gte, inArray, sql } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { getDb } from "../../../../../../db";
 import { auditLogs, benefitPasses, ledgerEntries, matchDisputes, matchEvents, matchServers, notifications, playerRatings, ratingChanges, roomPlayers, rooms, users, wallets } from "../../../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../../../lib/auth";
@@ -19,7 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
   if (!actor || !["owner", "admin"].includes(actor.role)) return Response.json({ ok: false, error: "staff_required" }, { status: 403 });
   const [room] = await db.select().from(rooms).where(eq(rooms.id, roomId)).limit(1);
   const [server] = await db.select().from(matchServers).where(eq(matchServers.roomId, roomId)).limit(1);
-  if (!room || room.status !== "live" || !server) return Response.json({ ok: false, error: "room_not_live" }, { status: 409 });
+  if (!room || !["live", "review"].includes(room.status) || !server) return Response.json({ ok: false, error: "room_not_ready_for_settlement" }, { status: 409 });
   const [pending] = await db.select().from(matchDisputes).where(and(eq(matchDisputes.roomId, roomId), eq(matchDisputes.status, "pending"))).limit(1);
   if (pending) return Response.json({ ok: false, error: "settlement_frozen" }, { status: 409 });
   const players = await db.select({ userId: roomPlayers.userId, team: roomPlayers.team, elo: playerRatings.elo }).from(roomPlayers).leftJoin(playerRatings, eq(roomPlayers.userId, playerRatings.userId)).where(eq(roomPlayers.roomId, roomId));
@@ -39,7 +40,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
   const expectedA = 1 / (1 + Math.pow(10, (averageB - averageA) / 400));
   const deltaA = Math.round(32 * ((winner === "a" ? 1 : 0) - expectedA));
   const now = new Date();
-  const actions: any[] = [];
+  const actions: BatchItem<"sqlite">[] = [];
   for (const player of players) {
     const won = player.team === winner;
     const before = player.elo ?? 1000;
@@ -57,6 +58,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
   actions.push(db.update(rooms).set({ status: "settled" }).where(eq(rooms.id, roomId)));
   actions.push(db.insert(matchEvents).values({ id: `evt_${crypto.randomUUID()}`, serverId: server.id, eventType: "result_settled", payloadJson: JSON.stringify({ scoreA, scoreB, winner, prizePerWinnerCents: room.prizePerWinnerCents, serviceFeePerPlayerCents: 100 }), createdAt: now }));
   actions.push(db.insert(auditLogs).values({ id: `aud_${crypto.randomUUID()}`, actorId: actor.id, action: "room_result_settled", entityType: "room", entityId: roomId, afterJson: JSON.stringify({ scoreA, scoreB, winner }), reason: "Resultado confirmado por staff", createdAt: now }));
-  await db.batch(actions as [any, ...any[]]);
+  await db.batch(actions as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
   return Response.json({ ok: true, winner, scoreA, scoreB });
 }

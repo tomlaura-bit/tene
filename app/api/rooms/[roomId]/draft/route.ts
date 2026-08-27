@@ -32,12 +32,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
   const actions = [
     db.update(roomPlayers).set({ team: expectedTeam }).where(eq(roomPlayers.id, target.id)),
     db.insert(matchEvents).values({ id: `event_${crypto.randomUUID()}`, serverId: server.id, eventType: "draft_pick", payloadJson: JSON.stringify({ captainId: actor.id, playerId: target.userId, team: expectedTeam, order: picks.length + 1 }), createdAt: now }),
-  ];
+  ] as const;
   if (picks.length === 7) {
     const firstTeam = crypto.getRandomValues(new Uint8Array(1))[0] % 2 === 0 ? "a" : "b";
-    actions.push(db.insert(matchEvents).values({ id: `event_${crypto.randomUUID()}`, serverId: server.id, eventType: "veto_start", payloadJson: JSON.stringify({ team: firstTeam }), createdAt: new Date(now.getTime() + 1) }));
-    actions.push(db.update(rooms).set({ status: "veto" }).where(eq(rooms.id, roomId)));
+    await db.batch([
+      ...actions,
+      db.insert(matchEvents).values({ id: `event_${crypto.randomUUID()}`, serverId: server.id, eventType: "veto_start", payloadJson: JSON.stringify({ team: firstTeam }), createdAt: new Date(now.getTime() + 1) }),
+      db.update(rooms).set({ status: "veto" }).where(eq(rooms.id, roomId)),
+    ] as const);
+  } else {
+    await db.batch(actions);
   }
-  await db.batch(actions);
   return Response.json({ ok: true, pick: { playerId: target.userId, team: expectedTeam } });
 }

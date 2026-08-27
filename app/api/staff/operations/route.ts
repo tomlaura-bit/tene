@@ -1,4 +1,5 @@
 import { desc, eq, sql } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { getDb } from "../../../../db";
 import { auditLogs, disputeEvidence, ledgerEntries, matchDisputes, notifications, rooms, sanctionAppeals, sanctions, users, wallets } from "../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../lib/auth";
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
       ...(["suspension", "ban"].includes(body.type) ? [db.update(users).set({ status: body.type === "ban" ? "banned" : "suspended" }).where(eq(users.id, target.id))] : []),
       db.insert(notifications).values({ id: `not_${crypto.randomUUID()}`, userId: target.id, type: "sanction", title: "Sanción aplicada", body: `${body.reason.trim()}${penalty ? ` · Multa S/ ${(penalty / 100).toFixed(2)}` : ""}`, actionUrl: "/conduct", createdAt: now }),
       db.insert(auditLogs).values({ id: `aud_${crypto.randomUUID()}`, actorId: actor.id, targetUserId: target.id, action: "sanction_created", entityType: "sanction", entityId: id, afterJson: JSON.stringify({ type: body.type, penaltyCents: penalty, expiresAt }), reason: body.reason.trim(), createdAt: now }),
-    ] as [any, ...any[]]);
+    ] as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
     return Response.json({ ok: true, sanctionId: id });
   }
   if (body.action === "review_appeal") {
@@ -56,14 +57,14 @@ export async function POST(request: Request) {
     if (!appeal || appeal.status !== "pending") return Response.json({ ok: false, error: "appeal_not_pending" }, { status: 409 });
     const [sanction] = await db.select().from(sanctions).where(eq(sanctions.id, appeal.sanctionId)).limit(1);
     if (!sanction) return Response.json({ ok: false, error: "sanction_not_found" }, { status: 404 });
-    const actions: any[] = [db.update(sanctionAppeals).set({ status: body.decision!, resolution: body.resolution.trim(), reviewedById: actor.id, reviewedAt: now }).where(eq(sanctionAppeals.id, appeal.id)), db.insert(notifications).values({ id: `not_${crypto.randomUUID()}`, userId: appeal.userId, type: "staff", title: body.decision === "accepted" ? "Apelación aceptada" : "Apelación rechazada", body: body.resolution.trim(), actionUrl: "/conduct", createdAt: now }), db.insert(auditLogs).values({ id: `aud_${crypto.randomUUID()}`, actorId: actor.id, targetUserId: appeal.userId, action: `appeal_${body.decision}`, entityType: "sanction_appeal", entityId: appeal.id, reason: body.resolution.trim(), createdAt: now })];
+    const actions: BatchItem<"sqlite">[] = [db.update(sanctionAppeals).set({ status: body.decision!, resolution: body.resolution.trim(), reviewedById: actor.id, reviewedAt: now }).where(eq(sanctionAppeals.id, appeal.id)), db.insert(notifications).values({ id: `not_${crypto.randomUUID()}`, userId: appeal.userId, type: "staff", title: body.decision === "accepted" ? "Apelación aceptada" : "Apelación rechazada", body: body.resolution.trim(), actionUrl: "/conduct", createdAt: now }), db.insert(auditLogs).values({ id: `aud_${crypto.randomUUID()}`, actorId: actor.id, targetUserId: appeal.userId, action: `appeal_${body.decision}`, entityType: "sanction_appeal", entityId: appeal.id, reason: body.resolution.trim(), createdAt: now })];
     if (body.decision === "accepted") {
       const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, appeal.userId)).limit(1);
       const debtReduction = Math.min(wallet?.debtCents ?? 0, sanction.penaltyCents);
       const refund = sanction.penaltyCents - debtReduction;
       actions.push(db.update(sanctions).set({ revokedAt: now }).where(eq(sanctions.id, sanction.id)), db.update(wallets).set({ debtCents: sql`${wallets.debtCents} - ${debtReduction}`, availableCents: sql`${wallets.availableCents} + ${refund}` }).where(eq(wallets.userId, appeal.userId)), db.insert(ledgerEntries).values({ id: `led_${crypto.randomUUID()}`, userId: appeal.userId, type: "adjustment", amountCents: sanction.penaltyCents, description: `Sanción revocada: ${body.resolution.trim()}`, createdAt: now }), db.update(users).set({ status: "verified" }).where(eq(users.id, appeal.userId)));
     }
-    await db.batch(actions as [any, ...any[]]);
+    await db.batch(actions as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
     return Response.json({ ok: true });
   }
   return Response.json({ ok: false, error: "invalid_action" }, { status: 400 });

@@ -1,4 +1,5 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { getDb } from "../../../db";
 import { auditLogs, competitiveSeasons, notifications, playerRatings, publicPlayerProfiles, rooms, seasonPlacements, users } from "../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../lib/auth";
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
   const leaderboard = await db.select({ userId: playerRatings.userId, elo: playerRatings.elo, level: playerRatings.level }).from(playerRatings).where(eq(playerRatings.seasonKey, active.key)).orderBy(desc(playerRatings.elo));
   const nextKey = `season-${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${crypto.randomUUID().slice(0, 6)}`;
   const nextId = `sea_${crypto.randomUUID()}`;
-  const actions: any[] = [
+  const actions: BatchItem<"sqlite">[] = [
     db.update(competitiveSeasons).set({ status: "closed", endsAt: now }).where(and(eq(competitiveSeasons.id, active.id), eq(competitiveSeasons.status, "active"))),
     db.insert(competitiveSeasons).values({ id: nextId, key: nextKey, name: body.nextName.trim(), status: "active", startsAt: now, endsAt: nextEndsAt, resetFactorBasisPoints: active.resetFactorBasisPoints, createdAt: now }),
   ];
@@ -63,6 +64,6 @@ export async function POST(request: Request) {
     actions.push(db.insert(notifications).values({ id: `not_${crypto.randomUUID()}`, userId: player.userId, type: "match", title: `Temporada finalizada · Puesto #${position}`, body: badgeKey ? `Obtuviste la insignia ${badgeKey.replaceAll("_", " ")}. Tu Elo fue ajustado para la nueva temporada.` : "Tu resultado histórico fue guardado y tu Elo fue ajustado para la nueva temporada.", actionUrl: "/ranking", createdAt: now }));
   }
   actions.push(db.insert(auditLogs).values({ id: `aud_${crypto.randomUUID()}`, actorId: actor.id, action: "season_closed", entityType: "competitive_season", entityId: active.id, afterJson: JSON.stringify({ placements: leaderboard.length, nextSeasonId: nextId, nextKey }), reason: "Cierre administrativo de temporada", createdAt: now }));
-  await db.batch(actions as [any, ...any[]]);
+  await db.batch(actions as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
   return Response.json({ ok: true, closedSeasonId: active.id, nextSeasonId: nextId, placements: leaderboard.length });
 }

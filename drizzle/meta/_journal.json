@@ -134,6 +134,13 @@
       "when": 1787757265340,
       "tag": "0018_cheerful_dragon_man",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1787874950718,
+      "tag": "0019_lying_gambit",
+      "breakpoints": true
     }
   ]
 }

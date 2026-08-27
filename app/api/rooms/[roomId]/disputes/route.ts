@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { env } from "cloudflare:workers";
 import { getDb } from "../../../../../db";
 import { disputeEvidence, matchDisputes, notifications, roomPlayers, rooms, users } from "../../../../../db/schema";
@@ -52,7 +53,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
     ...(evidenceRow ? [db.insert(disputeEvidence).values(evidenceRow)] : []),
     db.update(rooms).set({ status: "review" }).where(eq(rooms.id, roomId)),
     db.insert(notifications).values({ id: `not_${crypto.randomUUID()}`, userId: reporter.id, type: "match", title: "Partida en revisión", body: "La liquidación quedó congelada hasta que el staff resuelva tu reporte.", actionUrl: `/rooms/${roomId}`, createdAt: now }),
-    ] as [any, ...any[]]);
+    ] as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
   } catch {
     if (evidenceRow?.storageKey) await env.UPLOADS.delete(evidenceRow.storageKey);
     return Response.json({ ok: false, error: "dispute_create_failed" }, { status: 409 });

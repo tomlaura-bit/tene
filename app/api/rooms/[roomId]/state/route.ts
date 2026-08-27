@@ -16,7 +16,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ room
   const events = await db.select().from(matchEvents).innerJoin(matchServers, eq(matchEvents.serverId, matchServers.id)).where(eq(matchServers.roomId, roomId)).orderBy(asc(matchEvents.createdAt));
   const [server] = await db.select().from(matchServers).where(eq(matchServers.roomId, roomId)).limit(1);
   const disputes = await db.select().from(matchDisputes).where(eq(matchDisputes.roomId, roomId)).orderBy(asc(matchDisputes.createdAt));
-  const [viewerUser] = await db.select({ id: users.id }).from(users).where(eq(users.authSubjectId, identity.id)).limit(1);
+  const [viewerUser] = await db.select({ id: users.id, role: users.role }).from(users).where(eq(users.authSubjectId, identity.id)).limit(1);
   const viewer = players.find((player) => player.userId === viewerUser?.id) ?? null;
+  if (!viewer && !["owner", "admin", "mod"].includes(viewerUser?.role ?? "")) return Response.json({ ok: false, error: "room_access_required" }, { status: 403 });
   return Response.json({ ok: true, room, players: players.map((player) => ({ ...player, level: player.level ?? 1, elo: player.elo ?? 1000 })), viewer, server: server ?? null, disputes, events: events.map(({ match_events }) => ({ id: match_events.id, type: match_events.eventType, payload: JSON.parse(match_events.payloadJson), createdAt: match_events.createdAt.toISOString() })) });
 }

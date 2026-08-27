@@ -406,6 +406,7 @@ export const matchServers = sqliteTable(
     provider: text("provider").notNull().default("matchzy"),
     region: text("region").notNull().default("lima"),
     addressEncrypted: text("address_encrypted"),
+    passwordEncrypted: text("password_encrypted"),
     map: text("map"),
     status: text("status", {
       enum: ["provisioning", "ready", "live", "finished", "failed"],

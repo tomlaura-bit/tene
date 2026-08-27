@@ -64,6 +64,7 @@ export async function POST(request: Request) {
   };
   if (!validChannel(body.channel ?? null))
     return Response.json({ ok: false, error: "invalid_channel" }, { status: 400 });
+  const channel = body.channel as Channel;
   const message = body.message?.trim() ?? "";
   if (!message || message.length > 240)
     return Response.json({ ok: false, error: "invalid_message" }, { status: 400 });
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
     .limit(1);
   if (!user)
     return Response.json({ ok: false, error: "account_required" }, { status: 403 });
-  if (body.channel === "announcements" && !["owner", "admin", "mod"].includes(user.role))
+  if (channel === "announcements" && !["owner", "admin", "mod"].includes(user.role))
     return Response.json({ ok: false, error: "staff_required" }, { status: 403 });
 
   const id = `chat_${crypto.randomUUID()}`;
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
   await db.insert(chatMessages).values({
     id,
     userId: user.id,
-    channel: body.channel,
+    channel,
     body: message,
     createdAt,
   });

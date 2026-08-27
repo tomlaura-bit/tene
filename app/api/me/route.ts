@@ -79,10 +79,11 @@ export async function POST(request: Request) {
       { ok: false, error: "invalid_profile" },
       { status: 400 },
     );
-  const age =
-    new Date().getUTCFullYear() -
-    new Date(`${birthDate}T00:00:00Z`).getUTCFullYear();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate) || age < 18)
+  const birthday = new Date(`${birthDate}T00:00:00Z`);
+  const today = new Date();
+  let age = today.getUTCFullYear() - birthday.getUTCFullYear();
+  if (today.getUTCMonth() < birthday.getUTCMonth() || (today.getUTCMonth() === birthday.getUTCMonth() && today.getUTCDate() < birthday.getUTCDate())) age -= 1;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate) || Number.isNaN(birthday.getTime()) || age < 18)
     return Response.json(
       { ok: false, error: "adult_required" },
       { status: 400 },
@@ -115,8 +116,8 @@ export async function POST(request: Request) {
     .values({
       userId: user.id,
       availableCents: 0,
-      heldCents: 0,
-      updatedAt: now,
+      lockedCents: 0,
+      debtCents: 0,
     })
     .onConflictDoNothing();
   await db

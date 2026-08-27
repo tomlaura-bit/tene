@@ -1,4 +1,5 @@
 import { and, eq, gte, inArray, sql } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { getDb } from "../../../../../../db";
 import { auditLogs, benefitPasses, ledgerEntries, matchServers, notifications, roomPlayers, rooms, users, wallets } from "../../../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../../../lib/auth";
@@ -27,7 +28,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
       return Response.json({ ok: false, error: "wallet_lock_mismatch" }, { status: 409 });
   }
   const now = new Date();
-  const actions: any[] = [];
+  const actions: BatchItem<"sqlite">[] = [];
   for (const player of players) {
     const sanctioned = player.userId === body.sanctionedUserId;
     const usedPass = passByUser.get(player.userId);
@@ -40,6 +41,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
   actions.push(db.update(rooms).set({ status: "cancelled" }).where(eq(rooms.id, roomId)));
   actions.push(db.update(matchServers).set({ status: "failed", finishedAt: now }).where(eq(matchServers.roomId, roomId)));
   actions.push(db.insert(auditLogs).values({ id: `aud_${crypto.randomUUID()}`, actorId: actor.id, targetUserId: body.sanctionedUserId || null, action: "room_cancelled", entityType: "room", entityId: roomId, afterJson: JSON.stringify({ refunded: players.length - (body.sanctionedUserId ? 1 : 0), sanctionedUserId: body.sanctionedUserId || null }), reason: body.reason.trim(), createdAt: now }));
-  await db.batch(actions as [any, ...any[]]);
+  await db.batch(actions as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
   return Response.json({ ok: true });
 }

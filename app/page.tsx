@@ -1088,7 +1088,7 @@ function RoomRow({
           )}
         </div>
       </div>
-      <button className="room-enter" onClick={openRoom}>
+      <button className="room-enter" onClick={() => openRoom()}>
         Entrar <span>→</span>
       </button>
     </article>
@@ -2998,7 +2998,7 @@ function PublicProfilePanel({ session }: { session: SessionData | null }) {
   );
   const [competitive, setCompetitive] = useState<{ me: { name: string; elo: number; level: number; matches: number; wins: number; losses: number; position: number } | null; history: Array<{ id: string; roomName: string | null; delta: number; map: string | null; teamAScore: number | null; teamBScore: number | null }> } | null>(null);
   const [conductScore, setConductScore] = useState(100);
-  useEffect(() => { void fetch("/api/competitive").then(async (response) => { if (response.ok) setCompetitive(await response.json()); }); void fetch("/api/conduct").then(async (response) => { if (response.ok) setConductScore((await response.json()).score); }); }, []);
+  useEffect(() => { void fetch("/api/competitive").then(async (response) => { if (response.ok) setCompetitive(await response.json() as NonNullable<typeof competitive>); }); void fetch("/api/conduct").then(async (response) => { if (response.ok) setConductScore(((await response.json()) as { score: number }).score); }); }, []);
   const me = competitive?.me;
   const matches = me?.matches ?? 0;
   const wins = me?.wins ?? 0;
@@ -3437,7 +3437,7 @@ type LiveRoomState = {
   room: { id: string; name: string; status: string };
   players: Array<{ userId: string; nickname: string; avatarUrl: string | null; level: number; elo: number; team: "pool" | "a" | "b"; isCaptain: boolean }>;
   viewer: { userId: string; team: "pool" | "a" | "b"; isCaptain: boolean } | null;
-  server: { map: string | null; status: string; teamAScore: number; teamBScore: number } | null;
+  server: { map: string | null; status: string; provider: string; region: string; addressEncrypted: string | null; passwordEncrypted: string | null; teamAScore: number; teamBScore: number } | null;
   disputes: Array<{ id: string; reporterId: string; accusedUserId: string | null; reason: string; description: string; status: string; resolution: string | null }>;
   events: Array<{ id: string; type: string; payload: Record<string, string | number> }>;
 };
@@ -3637,8 +3637,8 @@ function EnhancedRoomFlow({
 }
 
 function LiveMatchOperations({ roomId, data, session, reload }: { roomId: string; data: LiveRoomState; session: SessionData | null; reload: () => Promise<void> }) {
-  const [scoreA, setScoreA] = useState(13);
-  const [scoreB, setScoreB] = useState(9);
+  const [scoreA, setScoreA] = useState(() => data.server?.teamAScore ?? 13);
+  const [scoreB, setScoreB] = useState(() => data.server?.teamBScore ?? 9);
   const [reason, setReason] = useState("hacking");
   const [description, setDescription] = useState("");
   const [accusedUserId, setAccusedUserId] = useState("");
@@ -3647,10 +3647,16 @@ function LiveMatchOperations({ roomId, data, session, reload }: { roomId: string
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const isFinanceStaff = ["owner", "admin"].includes(session?.user.role ?? "");
   const pending = data.disputes.find((item) => item.status === "pending");
+  useEffect(() => {
+    if (data.room.status === "review" && data.server) {
+      setScoreA(data.server.teamAScore);
+      setScoreB(data.server.teamBScore);
+    }
+  }, [data.room.status, data.server?.teamAScore, data.server?.teamBScore]);
   const send = async (url: string, body: Record<string, unknown>) => {
     setBusy(true); setMessage("");
     const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-    const result = await response.json().catch(() => ({}));
+    const result = await response.json().catch(() => ({})) as { error?: string };
     setBusy(false);
     setMessage(response.ok ? "Operación guardada correctamente." : `No se pudo completar: ${result.error ?? "error"}`);
     await reload();
@@ -3662,7 +3668,7 @@ function LiveMatchOperations({ roomId, data, session, reload }: { roomId: string
     if (accusedUserId) form.set("accusedUserId", accusedUserId);
     if (evidenceFile) form.set("evidence", evidenceFile);
     const response = await fetch(`/api/rooms/${roomId}/disputes`, { method: "POST", body: form });
-    const result = await response.json().catch(() => ({}));
+    const result = await response.json().catch(() => ({})) as { error?: string };
     setBusy(false);
     setMessage(response.ok ? "Impugnación registrada y liquidación congelada." : result.error === "invalid_evidence" ? "La evidencia no cumple el formato o tamaño permitido." : `No se pudo completar: ${result.error ?? "error"}`);
     if (response.ok) { setDescription(""); setEvidenceFile(null); }
@@ -3670,13 +3676,14 @@ function LiveMatchOperations({ roomId, data, session, reload }: { roomId: string
   };
   const statusLabel = data.room.status === "settled" ? "Resultado liquidado" : data.room.status === "review" ? "Liquidación congelada" : data.room.status === "cancelled" ? "Sala cancelada" : "Partida en vivo";
   return <article className="match-ops">
-    <div className="server-head"><div><span className={`server-light ${data.server?.status ?? data.room.status}`} /><div><small>SERVIDOR PERÚ · MATCHZY</small><strong>{statusLabel}</strong></div></div><span>{data.server?.map ?? "Por definir"} · MR12</span></div>
+    <div className="server-head"><div><span className={`server-light ${data.server?.status ?? data.room.status}`} /><div><small>{data.server?.provider === "dathost" ? "DATHOST · SANTIAGO" : "SERVIDOR TENE"}</small><strong>{statusLabel}</strong></div></div><span>{data.server?.map ?? "Por definir"} · MR12</span></div>
+    {data.viewer && data.server?.addressEncrypted && ["live", "review"].includes(data.room.status) && <div className="connect-box"><small>DIRECCIÓN DEL SERVIDOR</small><code>connect {data.server.addressEncrypted}{data.server.passwordEncrypted ? `; password ${data.server.passwordEncrypted}` : ""}</code><button onClick={() => void navigator.clipboard?.writeText(`connect ${data.server!.addressEncrypted}${data.server!.passwordEncrypted ? `; password ${data.server!.passwordEncrypted}` : ""}`)}>Copiar</button></div>}
     {data.room.status === "settled" && <div className="result-confirm"><span>✓</span><h3>Equipo {data.server!.teamAScore > data.server!.teamBScore ? "A" : "B"} ganó {data.server!.teamAScore} — {data.server!.teamBScore}</h3><p>La entrada bloqueada fue liquidada, cada ganador recibió S/ 10 y el ranking fue actualizado.</p><div className="settlement-status"><small>LIQUIDACIÓN COMPLETA</small><b>S/ 50 en premios · S/ 10 de servicio</b></div></div>}
     {data.room.status === "cancelled" && <div className="result-confirm"><span>×</span><h3>Partida cancelada</h3><p>Las entradas de jugadores no sancionados fueron devueltas automáticamente.</p></div>}
-    {data.room.status === "review" && <div className="result-confirm"><span>⌛</span><h3>Resultado congelado por revisión</h3><p>Ningún premio ni entrada se liquidará mientras exista una impugnación pendiente.</p>{pending && <div className="settlement-status"><small>CASO {pending.id.slice(-8).toUpperCase()}</small><b>{pending.description}</b></div>}</div>}
+    {data.room.status === "review" && <div className="result-confirm"><span>⌛</span><h3>{pending ? "Resultado congelado por revisión" : "Resultado recibido · pendiente de confirmación"}</h3><p>{pending ? "Ningún premio ni entrada se liquidará mientras exista una impugnación pendiente." : "El servidor envió el marcador. Un administrador debe confirmarlo antes de liquidar los premios."}</p>{pending && <div className="settlement-status"><small>CASO {pending.id.slice(-8).toUpperCase()}</small><b>{pending.description}</b></div>}</div>}
     {data.room.status === "review" && pending && isFinanceStaff && <div className="admin-result-controls"><h3>Resolver impugnación</h3><p>Descartar devuelve la partida a estado en vivo. Confirmar mantiene el dinero congelado para cancelar y sancionar.</p><button disabled={busy} className="secondary-button" onClick={() => void send(`/api/staff/disputes/${pending.id}/review`, { decision: "dismissed", resolution: "Reporte revisado por staff; no se encontró una infracción suficiente." })}>Descartar y reanudar</button><button disabled={busy} className="primary-button" onClick={() => void send(`/api/staff/disputes/${pending.id}/review`, { decision: "upheld", resolution: "Infracción confirmada por el staff. La sala debe cancelarse y aplicar la retención correspondiente." })}>Confirmar infracción</button></div>}
     {data.room.status === "live" && <div className="live-score"><div><small>EQUIPO A</small><strong>{scoreA}</strong></div><span><b>MARCADOR</b><i>STAFF</i><em>EN VIVO</em></span><div><small>EQUIPO B</small><strong>{scoreB}</strong></div></div>}
-    {data.room.status === "live" && isFinanceStaff && <div className="admin-result-controls"><h3>Confirmar resultado y liquidar</h3><p>Esta acción libera los S/ 6 bloqueados, acredita S/ 10 a cada ganador y actualiza el ELO.</p><div className="score-inputs"><label>Equipo A<input type="number" min="0" value={scoreA} onChange={(e) => setScoreA(Number(e.target.value))} /></label><label>Equipo B<input type="number" min="0" value={scoreB} onChange={(e) => setScoreB(Number(e.target.value))} /></label></div><button disabled={busy} className="primary-button" onClick={() => void send(`/api/staff/rooms/${roomId}/result`, { teamAScore: scoreA, teamBScore: scoreB })}>Confirmar y liquidar</button></div>}
+    {["live", "review"].includes(data.room.status) && !pending && isFinanceStaff && <div className="admin-result-controls"><h3>Confirmar resultado y liquidar</h3><p>Esta acción libera los S/ 6 bloqueados, acredita S/ 10 a cada ganador y actualiza el ELO.</p><div className="score-inputs"><label>Equipo A<input type="number" min="0" value={scoreA} onChange={(e) => setScoreA(Number(e.target.value))} /></label><label>Equipo B<input type="number" min="0" value={scoreB} onChange={(e) => setScoreB(Number(e.target.value))} /></label></div><button disabled={busy} className="primary-button" onClick={() => void send(`/api/staff/rooms/${roomId}/result`, { teamAScore: scoreA, teamBScore: scoreB })}>Confirmar y liquidar</button></div>}
     {data.room.status === "live" && data.viewer && <div className="dispute-form"><h3>Impugnar partida</h3><p>Úsalo únicamente para hacks, coordinación ilegal, suplantación o marcador incorrecto.</p><label>Motivo<select value={reason} onChange={(e) => setReason(e.target.value)}><option value="hacking">Sospecha de hacks</option><option value="collusion">Coordinación o mafia</option><option value="wrong_result">Resultado incorrecto</option><option value="impersonation">Suplantación</option><option value="other">Otro</option></select></label><label>Jugador implicado (opcional)<select value={accusedUserId} onChange={(e) => setAccusedUserId(e.target.value)}><option value="">Sin seleccionar</option>{data.players.filter((p) => p.userId !== data.viewer?.userId).map((p) => <option key={p.userId} value={p.userId}>{p.nickname}</option>)}</select></label><label>Descripción<textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Indica jugador, ronda y lo ocurrido…" /></label><label className="evidence-upload"><span>{evidenceFile ? evidenceFile.name : "Adjuntar captura, clip o demo (opcional)"}</span><input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,.zip,.bz2,.dem" onChange={(event) => setEvidenceFile(event.target.files?.[0] ?? null)} /></label><button disabled={busy || description.trim().length < 10} className="dispute-button" onClick={() => void submitDispute()}>⚑ Enviar y congelar liquidación</button></div>}
     {["live", "review"].includes(data.room.status) && isFinanceStaff && <div className="cancel-match"><button disabled={busy} className="secondary-button" onClick={() => { const why = window.prompt("Motivo de cancelación (las entradas serán devueltas):"); if (why) void send(`/api/staff/rooms/${roomId}/cancel`, { reason: why, sanctionedUserId: pending?.accusedUserId || undefined }); }}>Cancelar sala {pending?.accusedUserId ? "y retener entrada del infractor" : "y devolver entradas"}</button></div>}
     {message && <p className="form-message">{message}</p>}
@@ -4254,20 +4261,19 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
 }
 
 function SeasonsManager({ notify }: { notify: (message: string) => void }) {
-  const defaultEnd = new Date(Date.now() + 45 * 86400000).toISOString().slice(0, 10);
   const [data, setData] = useState<{ active: { id: string; name: string; startsAt: string; endsAt: string } | null; closed: Array<{ id: string; name: string; podium: Array<{ position: number; nickname: string; elo: number }> }> } | null>(null);
   const [name, setName] = useState("Temporada 01 · Lima");
-  const [endsAt, setEndsAt] = useState(defaultEnd);
+  const [endsAt, setEndsAt] = useState(() => new Date(Date.now() + 45 * 86400000).toISOString().slice(0, 10));
   const [busy, setBusy] = useState(false);
   const load = async () => { const response = await fetch("/api/seasons", { cache: "no-store" }); if (response.ok) setData(await response.json()); };
   useEffect(() => { void load(); }, []);
   const submit = async () => {
     setBusy(true);
     const response = await fetch("/api/seasons", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(data?.active ? { action: "close_and_start", nextName: name, nextEndsAt: endsAt } : { action: "initialize", name, endsAt }) });
-    const result = await response.json().catch(() => ({}));
+    const result = await response.json().catch(() => ({})) as { error?: string };
     setBusy(false);
     const errors: Record<string, string> = { active_rooms_exist: "No se puede cerrar mientras existan partidas activas o en revisión", invalid_season: "Revisa el nombre y la fecha", invalid_next_season: "Revisa el nombre y la fecha de la siguiente temporada" };
-    notify(response.ok ? (data?.active ? "Temporada cerrada, podio guardado y nueva temporada iniciada" : "Primera temporada iniciada") : errors[result.error] ?? "No se pudo procesar la temporada");
+    notify(response.ok ? (data?.active ? "Temporada cerrada, podio guardado y nueva temporada iniciada" : "Primera temporada iniciada") : result.error ? errors[result.error] ?? "No se pudo procesar la temporada" : "No se pudo procesar la temporada");
     if (response.ok) await load();
   };
   return <section className="season-admin"><div className="roles-intro"><div><span className="staff-role">CONTROL COMPETITIVO</span><h3>Temporadas</h3><p>El cierre guarda todas las posiciones, entrega insignias y acerca 25% del Elo hacia 1,000.</p></div></div>{data?.active && <article className="account-surface"><span className="verified-badge">TEMPORADA ACTIVA</span><h3>{data.active.name}</h3><p className="wallet-help">Final programado: {new Date(data.active.endsAt).toLocaleDateString("es-PE")}</p></article>}<div className="admin-result-controls"><h3>{data?.active ? "Cerrar e iniciar la siguiente" : "Inicializar primera temporada"}</h3><label>Nombre<input value={name} onChange={(event) => setName(event.target.value)} /></label><label>Fecha de cierre<input type="date" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></label><button className="primary-button" disabled={busy || name.trim().length < 3} onClick={() => void submit()}>{busy ? "Procesando…" : data?.active ? "Cerrar temporada y guardar podio" : "Iniciar temporada"}</button></div><div className="staff-table"><div><strong>Archivo histórico</strong><span>{data?.closed.length ?? 0} temporadas</span></div>{(data?.closed ?? []).map((season) => <article key={season.id}><span>{season.name}</span><span>{season.podium.map((player) => `#${player.position} ${player.nickname}`).join(" · ") || "Sin clasificados"}</span></article>)}</div></section>;
@@ -4286,7 +4292,7 @@ function StaffOperations({ mode, notify }: { mode: "disputes" | "sanctions" | "a
   const [target, setTarget] = useState("");
   const [type, setType] = useState("warning");
   const [reason, setReason] = useState("");
-  const load = async () => { const response = await fetch("/api/staff/operations", { cache: "no-store" }); if (response.ok) { const body = await response.json(); setData(body); setTarget((current) => current || body.users[0]?.id || ""); } };
+  const load = async () => { const response = await fetch("/api/staff/operations", { cache: "no-store" }); if (response.ok) { const body = await response.json() as OperationsData; setData(body); setTarget((current) => current || body.users[0]?.id || ""); } };
   useEffect(() => { void load(); }, []);
   const reviewDispute = async (item: OperationsData["disputes"][number], decision: "dismissed" | "upheld") => { const resolution = decision === "dismissed" ? "Revisado por staff: reporte descartado." : "Infracción confirmada por el staff."; let response = await fetch(`/api/staff/disputes/${item.id}/review`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ decision, resolution }) }); if (response.ok && decision === "upheld") response = await fetch(`/api/staff/rooms/${item.roomId}/cancel`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reason: resolution, sanctionedUserId: item.accusedUserId || undefined }) }); notify(response.ok ? "Caso resuelto y registrado" : "No se pudo resolver el caso"); if (response.ok) await load(); };
   const sanction = async () => { const penalties: Record<string, number> = { no_show: 300, abandonment: 1200 }; const response = await fetch("/api/staff/operations", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "sanction", userId: target, type, reason, penaltyCents: penalties[type] ?? 0, expiresHours: type === "ban" ? undefined : 24 }) }); notify(response.ok ? "Sanción aplicada y auditada" : "No se pudo aplicar la sanción"); if (response.ok) { setReason(""); await load(); } };
@@ -4690,7 +4696,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
       }>;
       ledger: typeof ledger;
     };
-    const mapped = body.requests.map((item) => ({
+    const mapped: PaymentRequest[] = body.requests.map((item) => ({
       id: item.id,
       user: item.nickname,
       type: item.type === "deposit" ? "Recarga" : "Retiro",

@@ -3158,7 +3158,7 @@ function HistoryPanel() {
   );
 }
 function RankingPanel() {
-  const [liveRanking, setLiveRanking] = useState<Array<{ userId: string; name: string; elo: number; level: number; position: number }>>([]);
+  const [liveRanking, setLiveRanking] = useState<Array<{ userId: string; name: string; elo: number; level: number; matches: number; wins: number; losses: number; position: number }>>([]);
   const [myRating, setMyRating] = useState<{ userId: string; name: string; elo: number; level: number; matches: number; wins: number; losses: number; position: number } | null>(null);
   useEffect(() => { void fetch("/api/competitive").then(async (response) => { if (!response.ok) return; const data = await response.json() as { ranking: typeof liveRanking; me: typeof myRating }; setLiveRanking(data.ranking); setMyRating(data.me); }); }, []);
   const [balanceMode, setBalanceMode] = useState<"suggested" | "alternate">(
@@ -3167,20 +3167,23 @@ function RankingPanel() {
   const [seasonView, setSeasonView] = useState<"current" | "previous">(
     "current",
   );
-  const suggested = {
-    a: ["hoxhi", "Jericho", "k1ng", "neo", "ace"],
-    b: ["melo", "Tom", "navi", "loko", "shiro"],
-    aElo: 7341,
-    bElo: 7328,
+  const buildBalance = (players: typeof liveRanking) => {
+    const teams = { a: [] as typeof liveRanking, b: [] as typeof liveRanking };
+    const totals = { a: 0, b: 0 };
+    players.forEach((player) => {
+      const side = teams.a.length >= 5 ? "b" : teams.b.length >= 5 ? "a" : totals.a <= totals.b ? "a" : "b";
+      teams[side].push(player);
+      totals[side] += player.elo;
+    });
+    return { ...teams, aElo: totals.a, bElo: totals.b };
   };
-  const alternate = {
-    a: ["hoxhi", "Tom", "loko", "shiro", "ace"],
-    b: ["melo", "Jericho", "k1ng", "navi", "neo"],
-    aElo: 7396,
-    bElo: 7273,
-  };
-  const balance = balanceMode === "suggested" ? suggested : alternate;
+  const rankingPool = liveRanking.slice(0, 10);
+  const alternatePool = rankingPool.length > 1 ? [...rankingPool.slice(1), rankingPool[0]] : rankingPool;
+  const balance = buildBalance(balanceMode === "suggested" ? rankingPool : alternatePool);
   const difference = Math.abs(balance.aElo - balance.bElo);
+  const eloProgress = myRating ? Math.max(0, Math.min(100, ((myRating.elo - 900) % 100 + 100) % 100)) : 0;
+  const seasonProgress = Math.min(100, ((myRating?.matches ?? 0) / 30) * 100);
+  const topPercent = myRating && liveRanking.length ? Math.max(1, Math.ceil((myRating.position / liveRanking.length) * 100)) : null;
   return (
     <section className="section-panel">
       <div className="section-intro">
@@ -3203,7 +3206,7 @@ function RankingPanel() {
             <div className="rating-progress">
               <span>{myRating?.name ?? "Jugador"} · {(myRating?.elo ?? 1000).toLocaleString()} ELO</span>
               <div>
-                <i style={{ width: "66%" }} />
+                <i style={{ width: `${eloProgress}%` }} />
               </div>
               <small>Posición #{myRating?.position ?? "—"} de la temporada</small>
             </div>
@@ -3237,7 +3240,7 @@ function RankingPanel() {
             <span
               className={difference <= 25 ? "balance-good" : "balance-warning"}
             >
-              {difference} ELO de diferencia
+              {rankingPool.length === 10 ? `${difference} ELO de diferencia` : `${rankingPool.length}/10 jugadores con ranking`}
             </span>
           </div>
           <div className="balanced-teams">
@@ -3247,18 +3250,20 @@ function RankingPanel() {
                 <strong>
                   {side === "a" ? balance.aElo : balance.bElo} ELO
                 </strong>
-                {(side === "a" ? balance.a : balance.b).map((name, index) => (
-                  <p key={name}>
+                {(side === "a" ? balance.a : balance.b).map((player, index) => (
+                  <p key={player.userId}>
                     <i>{index + 1}</i>
-                    {name}
-                    <small>LVL {10 - index - (side === "b" ? 1 : 0)}</small>
+                    {player.name}
+                    <small>LVL {player.level}</small>
                   </p>
                 ))}
+                {!(side === "a" ? balance.a : balance.b).length && <p>Sin jugadores disponibles</p>}
               </div>
             ))}
           </div>
           <button
             className="balance-button"
+            disabled={rankingPool.length < 2}
             onClick={() =>
               setBalanceMode(
                 balanceMode === "suggested" ? "alternate" : "suggested",
@@ -3303,8 +3308,8 @@ function RankingPanel() {
             </h3>
             <p>
               {seasonView === "current"
-                ? "19 ago — 30 sep · Quedan 36 días"
-                : "Finalizada · 18 ago 2026"}
+                ? "Temporada activa · se actualiza con cada resultado confirmado"
+                : "Las temporadas cerradas aparecerán aquí"}
             </p>
           </div>
           <div className="season-switch">
@@ -3327,15 +3332,15 @@ function RankingPanel() {
             <div className="season-track">
               <div>
                 <span>Tu posición</span>
-                <strong>#6</strong>
-                <small>Top 18% · 1,298 ELO</small>
+                <strong>{myRating ? `#${myRating.position}` : "—"}</strong>
+                <small>{myRating ? `Top ${topPercent}% · ${myRating.elo.toLocaleString()} ELO` : "Juega una sala liquidada para entrar al ranking"}</small>
               </div>
               <div className="season-progress">
                 <span>
-                  <i style={{ width: "58%" }} />
+                  <i style={{ width: `${seasonProgress}%` }} />
                 </span>
                 <div>
-                  <small>Partida 19</small>
+                  <small>Partida {myRating?.matches ?? 0}</small>
                   <small>Meta: 30 partidas</small>
                 </div>
               </div>
@@ -3366,16 +3371,10 @@ function RankingPanel() {
         ) : (
           <div className="past-seasons">
             <article>
-              <span>PRETEMPORADA</span>
-              <strong>#1 hoxhi</strong>
-              <b>1,804 ELO</b>
-              <small>Tu posición: #9 · 1,241 ELO</small>
-            </article>
-            <article>
-              <span>REINICIO CONTROLADO</span>
-              <strong>−25% hacia 1,000</strong>
-              <b>Sin borrar historial</b>
-              <small>Calibración conservada por el staff</small>
+              <span>SIN TEMPORADAS CERRADAS</span>
+              <strong>La temporada actual sigue en curso</strong>
+              <b>{liveRanking.length} jugadores clasificados</b>
+              <small>Cuando el staff cierre una temporada, su podio y resultados quedarán guardados aquí.</small>
             </article>
           </div>
         )}

@@ -3191,7 +3191,8 @@ function HistoryPanel() {
 function RankingPanel() {
   const [liveRanking, setLiveRanking] = useState<Array<{ userId: string; name: string; elo: number; level: number; matches: number; wins: number; losses: number; position: number }>>([]);
   const [myRating, setMyRating] = useState<{ userId: string; name: string; elo: number; level: number; matches: number; wins: number; losses: number; position: number } | null>(null);
-  useEffect(() => { void fetch("/api/competitive").then(async (response) => { if (!response.ok) return; const data = await response.json() as { ranking: typeof liveRanking; me: typeof myRating }; setLiveRanking(data.ranking); setMyRating(data.me); }); }, []);
+  const [seasonData, setSeasonData] = useState<{ active: { id: string; name: string; startsAt: string; endsAt: string } | null; closed: Array<{ id: string; name: string; endsAt: string; podium: Array<{ position: number; nickname: string; elo: number }> }> } | null>(null);
+  useEffect(() => { void fetch("/api/competitive").then(async (response) => { if (!response.ok) return; const data = await response.json() as { ranking: typeof liveRanking; me: typeof myRating }; setLiveRanking(data.ranking); setMyRating(data.me); }); void fetch("/api/seasons", { cache: "no-store" }).then(async (response) => { if (response.ok) setSeasonData(await response.json()); }); }, []);
   const [balanceMode, setBalanceMode] = useState<"suggested" | "alternate">(
     "suggested",
   );
@@ -3219,7 +3220,7 @@ function RankingPanel() {
     <section className="section-panel">
       <div className="section-intro">
         <div>
-          <span className="verified-badge">TEMPORADA 01</span>
+          <span className="verified-badge">{seasonData?.active?.name?.toUpperCase() ?? "TEMPORADA SIN CONFIGURAR"}</span>
           <h2>Ranking competitivo</h2>
           <p>
             El staff asigna el nivel inicial y, después, cada resultado
@@ -3334,13 +3335,13 @@ function RankingPanel() {
             <small>CENTRO DE TEMPORADA</small>
             <h3>
               {seasonView === "current"
-                ? "Temporada 01 · Lima"
-                : "Pretemporada · Fundadores"}
+                ? seasonData?.active?.name ?? "Temporada pendiente de configuración"
+                : "Archivo de temporadas"}
             </h3>
             <p>
               {seasonView === "current"
-                ? "Temporada activa · se actualiza con cada resultado confirmado"
-                : "Las temporadas cerradas aparecerán aquí"}
+                ? seasonData?.active ? `${new Date(seasonData.active.startsAt).toLocaleDateString("es-PE")} — ${new Date(seasonData.active.endsAt).toLocaleDateString("es-PE")}` : "El staff debe inicializar la primera temporada"
+                : `${seasonData?.closed.length ?? 0} temporadas cerradas`}
             </p>
           </div>
           <div className="season-switch">
@@ -3401,12 +3402,8 @@ function RankingPanel() {
           </div>
         ) : (
           <div className="past-seasons">
-            <article>
-              <span>SIN TEMPORADAS CERRADAS</span>
-              <strong>La temporada actual sigue en curso</strong>
-              <b>{liveRanking.length} jugadores clasificados</b>
-              <small>Cuando el staff cierre una temporada, su podio y resultados quedarán guardados aquí.</small>
-            </article>
+            {(seasonData?.closed ?? []).map((season) => <article key={season.id}><span>{season.name.toUpperCase()}</span><strong>{season.podium[0] ? `#1 ${season.podium[0].nickname}` : "Sin clasificados"}</strong><b>{season.podium[0] ? `${season.podium[0].elo} ELO` : "Temporada cerrada"}</b><small>{season.podium.slice(1).map((player) => `#${player.position} ${player.nickname}`).join(" · ") || `Finalizada ${new Date(season.endsAt).toLocaleDateString("es-PE")}`}</small></article>)}
+            {seasonData && !seasonData.closed.length && <article><span>SIN TEMPORADAS CERRADAS</span><strong>La temporada actual sigue en curso</strong><b>{liveRanking.length} jugadores clasificados</b><small>El podio quedará guardado cuando el staff cierre la temporada.</small></article>}
           </div>
         )}
       </section>
@@ -4112,6 +4109,7 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
           "Roles",
           "Sanciones",
           "Auditoría",
+          "Temporadas",
         ].map((tab) => (
           <button
             className={staffTab === tab ? "active" : ""}
@@ -4250,8 +4248,29 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
       {staffTab === "Roles" && <RolesManager notify={notify} />}
       {staffTab === "Sanciones" && <StaffOperations mode="sanctions" notify={notify} />}
       {staffTab === "Auditoría" && <StaffOperations mode="audit" notify={notify} />}
+      {staffTab === "Temporadas" && <SeasonsManager notify={notify} />}
     </section>
   );
+}
+
+function SeasonsManager({ notify }: { notify: (message: string) => void }) {
+  const defaultEnd = new Date(Date.now() + 45 * 86400000).toISOString().slice(0, 10);
+  const [data, setData] = useState<{ active: { id: string; name: string; startsAt: string; endsAt: string } | null; closed: Array<{ id: string; name: string; podium: Array<{ position: number; nickname: string; elo: number }> }> } | null>(null);
+  const [name, setName] = useState("Temporada 01 · Lima");
+  const [endsAt, setEndsAt] = useState(defaultEnd);
+  const [busy, setBusy] = useState(false);
+  const load = async () => { const response = await fetch("/api/seasons", { cache: "no-store" }); if (response.ok) setData(await response.json()); };
+  useEffect(() => { void load(); }, []);
+  const submit = async () => {
+    setBusy(true);
+    const response = await fetch("/api/seasons", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(data?.active ? { action: "close_and_start", nextName: name, nextEndsAt: endsAt } : { action: "initialize", name, endsAt }) });
+    const result = await response.json().catch(() => ({}));
+    setBusy(false);
+    const errors: Record<string, string> = { active_rooms_exist: "No se puede cerrar mientras existan partidas activas o en revisión", invalid_season: "Revisa el nombre y la fecha", invalid_next_season: "Revisa el nombre y la fecha de la siguiente temporada" };
+    notify(response.ok ? (data?.active ? "Temporada cerrada, podio guardado y nueva temporada iniciada" : "Primera temporada iniciada") : errors[result.error] ?? "No se pudo procesar la temporada");
+    if (response.ok) await load();
+  };
+  return <section className="season-admin"><div className="roles-intro"><div><span className="staff-role">CONTROL COMPETITIVO</span><h3>Temporadas</h3><p>El cierre guarda todas las posiciones, entrega insignias y acerca 25% del Elo hacia 1,000.</p></div></div>{data?.active && <article className="account-surface"><span className="verified-badge">TEMPORADA ACTIVA</span><h3>{data.active.name}</h3><p className="wallet-help">Final programado: {new Date(data.active.endsAt).toLocaleDateString("es-PE")}</p></article>}<div className="admin-result-controls"><h3>{data?.active ? "Cerrar e iniciar la siguiente" : "Inicializar primera temporada"}</h3><label>Nombre<input value={name} onChange={(event) => setName(event.target.value)} /></label><label>Fecha de cierre<input type="date" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></label><button className="primary-button" disabled={busy || name.trim().length < 3} onClick={() => void submit()}>{busy ? "Procesando…" : data?.active ? "Cerrar temporada y guardar podio" : "Iniciar temporada"}</button></div><div className="staff-table"><div><strong>Archivo histórico</strong><span>{data?.closed.length ?? 0} temporadas</span></div>{(data?.closed ?? []).map((season) => <article key={season.id}><span>{season.name}</span><span>{season.podium.map((player) => `#${player.position} ${player.nickname}`).join(" · ") || "Sin clasificados"}</span></article>)}</div></section>;
 }
 
 type OperationsData = {

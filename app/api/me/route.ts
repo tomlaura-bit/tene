@@ -72,8 +72,7 @@ export async function POST(request: Request) {
   };
   const fullName = body.fullName?.trim();
   const nickname = body.nickname?.trim();
-  const email =
-    body.email?.trim().toLowerCase() || identity.email.toLowerCase();
+  const email = identity.email.toLowerCase();
   const birthDate = body.birthDate?.trim();
   if (!fullName || !nickname || !birthDate || !/^\S+@\S+\.\S+$/.test(email))
     return Response.json(

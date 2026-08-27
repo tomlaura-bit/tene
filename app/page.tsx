@@ -115,6 +115,7 @@ export default function Home() {
   const [screen, setScreen] = useState<Screen>("landing");
   const [balance, setBalance] = useState(0);
   const [session, setSession] = useState<SessionData | null>(null);
+  const [onboardingIdentity, setOnboardingIdentity] = useState<{ email: string; fullName: string | null } | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Inicio");
   const [bannedMaps, setBannedMaps] = useState<string[]>([]);
@@ -123,13 +124,19 @@ export default function Home() {
 
   useEffect(() => {
     void fetch("/api/public", { cache: "no-store" }).then(async (response) => { if (response.ok) setPublicData(await response.json()); });
-    void fetch("/api/me")
+    void fetch("/api/me", { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) return null;
         const body = (await response.json()) as SessionData & {
           onboardingRequired?: boolean;
+          identity?: { email: string; fullName: string | null };
         };
-        return body.onboardingRequired ? null : body;
+        if (body.onboardingRequired) {
+          setOnboardingIdentity(body.identity ?? null);
+          setSteamOpen(true);
+          return null;
+        }
+        return body;
       })
       .then((data) => {
         setSession(data);
@@ -158,10 +165,19 @@ export default function Home() {
     setScreen("dashboard");
   }
 
-  function enterDemo() {
+  async function completeOnboarding() {
     setSteamOpen(false);
-    setScreen("dashboard");
-    setActiveTab("Cuenta");
+    const response = await fetch("/api/me", { cache: "no-store" });
+    if (response.ok) {
+      const data = await response.json() as SessionData & { onboardingRequired?: boolean };
+      if (!data.onboardingRequired) {
+        setSession(data);
+        setOnboardingIdentity(null);
+        if (data.wallet) setBalance(data.wallet.availableCents / 100);
+        setScreen("dashboard");
+        setActiveTab("Cuenta");
+      }
+    }
     setNotice("Solicitud registrada · el staff debe aprobar tu cuenta antes de jugar");
     window.setTimeout(() => setNotice(""), 3500);
   }
@@ -423,7 +439,8 @@ export default function Home() {
       {steamOpen && (
         <SteamRegistrationModal
           close={() => setSteamOpen(false)}
-          complete={enterDemo}
+          complete={completeOnboarding}
+          identity={onboardingIdentity}
         />
       )}
       {notice && (
@@ -439,17 +456,19 @@ export default function Home() {
 function SteamRegistrationModal({
   close,
   complete,
+  identity,
 }: {
   close: () => void;
-  complete: () => void;
+  complete: () => Promise<void>;
+  identity: { email: string; fullName: string | null } | null;
 }) {
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState<"register" | "login">("register");
-  const [steamId, setSteamId] = useState("76561198442891307");
-  const [fullName, setFullName] = useState("Tom Laura");
-  const [nickname, setNickname] = useState("Tom");
-  const [email, setEmail] = useState("tom@correo.com");
-  const [birthDate, setBirthDate] = useState("2000-08-25");
+  const [steamId, setSteamId] = useState("");
+  const [fullName, setFullName] = useState(identity?.fullName ?? "");
+  const [nickname, setNickname] = useState("");
+  const [email] = useState(identity?.email ?? "");
+  const [birthDate, setBirthDate] = useState("");
   const [backendMessage, setBackendMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [steamCheck, setSteamCheck] = useState<{ personaName: string; avatarUrl: string | null; profilePublic: boolean; gameDetailsPublic: boolean; ownsCs2: boolean; cs2Minutes: number; eligible: boolean } | null>(null);
@@ -579,9 +598,10 @@ function SteamRegistrationModal({
                 <input
                   type="email"
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  readOnly
                   autoComplete="email"
                 />
+                <small>Correo verificado por el sistema de acceso.</small>
               </label>
               <label>
                 Seguridad
@@ -607,12 +627,14 @@ function SteamRegistrationModal({
               disabled={saving}
               onClick={() =>
                 mode === "register"
-                  ? saveProfile()
+                  ? identity
+                    ? saveProfile()
+                    : window.location.assign("/signin-with-chatgpt?return_to=/")
                   : window.location.assign("/signin-with-chatgpt?return_to=/")
               }
             >
               {mode === "register"
-                ? "Siguiente: vincular Steam →"
+                ? identity ? "Siguiente: vincular Steam →" : "Validar correo y continuar"
                 : "Iniciar sesión segura"}
             </button>
             <p className="auth-security">
@@ -735,7 +757,7 @@ function SteamRegistrationModal({
             </p>
             <div className="request-ticket">
               <span>
-                <small>SOLICITUD</small>VER-2041
+                <small>SOLICITUD</small>VER-{steamId.slice(-8) || "PENDIENTE"}
               </span>
               <span>
                 <small>ESTADO</small>
@@ -745,7 +767,7 @@ function SteamRegistrationModal({
                 <small>TIEMPO ESTIMADO</small>Hasta 24 h
               </span>
             </div>
-            <button className="primary-button w-full" onClick={complete}>
+            <button className="primary-button w-full" onClick={() => void complete()}>
               Ir a mi cuenta
             </button>
             <button className="secondary-registration" onClick={close}>

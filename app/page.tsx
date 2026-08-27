@@ -1390,6 +1390,7 @@ function EnhancedDashboard({
   const [amount, setAmount] = useState("20");
   const [paymentMethod, setPaymentMethod] = useState<"yape" | "plin">("yape");
   const [operationCode, setOperationCode] = useState("");
+  const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const flash = (message: string) => {
     setNotice(message);
     window.setTimeout(() => setNotice(""), 3500);
@@ -1397,22 +1398,23 @@ function EnhancedDashboard({
   const applyWallet = async () => {
     const value = Number(amount);
     if (!Number.isFinite(value) || value <= 0) return;
-    const response = await fetch("/api/wallet", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        type: walletAction === "deposit" ? "deposit" : "withdrawal",
-        method: paymentMethod,
-        amountCents: Math.round(value * 100),
-        operationCode: walletAction === "deposit" ? operationCode : undefined,
-      }),
-    });
+    const form = new FormData();
+    form.set("type", walletAction === "deposit" ? "deposit" : "withdrawal");
+    form.set("method", paymentMethod);
+    form.set("amountCents", String(Math.round(value * 100)));
+    if (walletAction === "deposit") {
+      form.set("operationCode", operationCode);
+      if (paymentProof) form.set("proof", paymentProof);
+    }
+    const response = await fetch("/api/wallet", { method: "POST", body: form });
     const body = (await response.json()) as {
       error?: string;
       wallet?: { availableCents: number };
     };
     const labels: Record<string, string> = {
       operation_code_required: "Ingresa el código de operación de Yape o Plin",
+      proof_required: "Adjunta una captura del comprobante",
+      invalid_proof: "El comprobante debe ser JPG, PNG o WebP y pesar máximo 5 MB",
       withdrawal_minimum: "El retiro mínimo es S/ 10",
       one_room_required: "Debes haber participado en una sala antes de retirar",
       insufficient_balance: "No tienes saldo suficiente",
@@ -1430,6 +1432,7 @@ function EnhancedDashboard({
         : "Retiro solicitado · saldo bloqueado hasta su aprobación",
     );
     setOperationCode("");
+    setPaymentProof(null);
     setWalletAction(null);
   };
   return (
@@ -1609,6 +1612,10 @@ function EnhancedDashboard({
                   placeholder="Código de operación"
                   aria-label="Código de operación"
                 />
+                <label className="proof-upload">
+                  <span>{paymentProof ? paymentProof.name : "Adjuntar comprobante (JPG, PNG o WebP)"}</span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setPaymentProof(event.target.files?.[0] ?? null)} />
+                </label>
               </div>
             ) : (
               <p className="wallet-help">
@@ -4558,6 +4565,7 @@ type PaymentRequest = {
   method: "Yape" | "Plin";
   amount: number;
   operation: string;
+  proofUrl?: string | null;
   status: "Pendiente" | "Aprobada" | "Rechazada";
 };
 const seedPayments: PaymentRequest[] = [
@@ -4619,6 +4627,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
         method: "yape" | "plin";
         amountCents: number;
         operationCode: string | null;
+        proofUrl: string | null;
         status: string;
         nickname: string;
       }>;
@@ -4631,6 +4640,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
       method: item.method === "yape" ? "Yape" : "Plin",
       amount: item.amountCents / 100,
       operation: item.operationCode ?? "—",
+      proofUrl: item.proofUrl,
       status:
         item.status === "pending"
           ? "Pendiente"
@@ -4806,10 +4816,12 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
               </div>
               {selected.type === "Recarga" ? (
                 <div className="receipt-demo">
-                  <span>OPERACIÓN REGISTRADA</span>
-                  <strong>{selected.method}</strong>
-                  <b>S/ {selected.amount.toFixed(2)}</b>
-                  <small>Operación {selected.operation} · Hoy 10:24</small>
+                  {selected.proofUrl ? (
+                    <img className="payment-proof" src={`/api/staff/payments/${selected.id}/proof`} alt={`Comprobante ${selected.operation}`} />
+                  ) : (
+                    <><span>SIN COMPROBANTE ADJUNTO</span><strong>{selected.method}</strong><b>S/ {selected.amount.toFixed(2)}</b></>
+                  )}
+                  <small>Operación {selected.operation}</small>
                 </div>
               ) : (
                 <div className="withdraw-checks">
@@ -4836,7 +4848,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
                   disabled={selected.status !== "Pendiente"}
                   onClick={() => resolve("Aprobada")}
                 >
-                  Aprobar y registrar
+                  {selected.type === "Retiro" ? "Marcar como pagado" : "Aprobar y acreditar"}
                 </button>
               </div>
             </article>

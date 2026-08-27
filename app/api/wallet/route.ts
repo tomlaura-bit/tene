@@ -9,6 +9,7 @@ import {
   wallets,
 } from "../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../lib/auth";
+import { env } from "cloudflare:workers";
 
 export const dynamic = "force-dynamic";
 
@@ -50,11 +51,16 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const user = await getUser(request);
   if (!user) return unauthorized();
-  const body = (await request.json().catch(() => ({}))) as {
+  const contentType = request.headers.get("content-type") ?? "";
+  const form = contentType.includes("multipart/form-data") ? await request.formData() : null;
+  const json = form ? null : await request.json().catch(() => ({}));
+  const body = (form ? {
+    type: form.get("type"), method: form.get("method"), amountCents: form.get("amountCents"), operationCode: form.get("operationCode"),
+  } : json) as {
     type?: "deposit" | "withdrawal";
     method?: "yape" | "plin";
-    amountCents?: number;
-    operationCode?: string;
+    amountCents?: number | string;
+    operationCode?: string | FormDataEntryValue | null;
   };
   const amountCents = Math.round(Number(body.amountCents));
   if (
@@ -73,12 +79,19 @@ export async function POST(request: Request) {
       { ok: false, error: "withdrawal_minimum" },
       { status: 400 },
     );
-  const operationCode = body.operationCode?.trim() || null;
+  const operationCode = typeof body.operationCode === "string" ? body.operationCode.trim() || null : null;
   if (body.type === "deposit" && (!operationCode || operationCode.length < 4))
     return Response.json(
       { ok: false, error: "operation_code_required" },
       { status: 400 },
     );
+
+  const proof = form?.get("proof");
+  if (body.type === "deposit") {
+    if (!(proof instanceof File)) return Response.json({ ok: false, error: "proof_required" }, { status: 400 });
+    if (!["image/jpeg", "image/png", "image/webp"].includes(proof.type) || proof.size < 1 || proof.size > 5 * 1024 * 1024)
+      return Response.json({ ok: false, error: "invalid_proof" }, { status: 400 });
+  }
 
   const db = getDb();
   if (body.type === "withdrawal") {
@@ -116,18 +129,27 @@ export async function POST(request: Request) {
       );
   }
 
+  const paymentId = `pay_${crypto.randomUUID()}`;
+  let proofKey: string | null = null;
+  if (proof instanceof File) {
+    const extension = proof.type === "image/png" ? "png" : proof.type === "image/webp" ? "webp" : "jpg";
+    proofKey = `payment-proofs/${user.id}/${paymentId}.${extension}`;
+    await env.UPLOADS.put(proofKey, await proof.arrayBuffer(), { httpMetadata: { contentType: proof.type }, customMetadata: { paymentId, userId: user.id } });
+  }
   try {
     await db.insert(paymentRequests).values({
-      id: `pay_${crypto.randomUUID()}`,
+      id: paymentId,
       userId: user.id,
       type: body.type!,
       method: body.method!,
       amountCents,
       operationCode,
+      proofUrl: proofKey,
       status: "pending",
       requestedAt: new Date(),
     });
   } catch {
+    if (proofKey) await env.UPLOADS.delete(proofKey);
     if (body.type === "withdrawal") {
       await db
         .update(wallets)

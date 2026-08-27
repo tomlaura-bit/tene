@@ -2193,6 +2193,25 @@ button {
   margin-bottom: 7px;
   font-size: 24px;
 }
+.payment-proof {
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+.proof-upload {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  border: 1px dashed #a78bfa55;
+  border-radius: 9px;
+  padding: 12px;
+  color: #c4b5fd;
+  cursor: pointer;
+}
+.proof-upload input {
+  display: none;
+}
 .withdraw-checks {
   display: grid;
   grid-template-columns: 1fr 1fr;

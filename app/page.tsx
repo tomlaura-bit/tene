@@ -2106,6 +2106,7 @@ function RoomsPanel({
 }) {
   const [realRooms, setRealRooms] = useState<RoomData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [levelFilter, setLevelFilter] = useState<"all" | "low" | "high">("all");
   const loadRooms = async () => {
     const response = await fetch("/api/rooms");
     if (response.ok) {
@@ -2165,6 +2166,12 @@ function RoomsPanel({
   };
   const canCreate =
     session && ["owner", "admin", "mod"].includes(session.user.role);
+  const visibleRooms = realRooms.filter((room) => {
+    if (levelFilter === "all") return true;
+    if (!room.players.length) return true;
+    const averageLevel = room.players.reduce((sum, player) => sum + player.level, 0) / room.players.length;
+    return levelFilter === "low" ? averageLevel <= 5 : averageLevel >= 6;
+  });
   return (
     <section className="section-panel">
       <div className="section-intro">
@@ -2179,9 +2186,9 @@ function RoomsPanel({
           </p>
         </div>
         <div className="filter-pills">
-          <button className="active">Todas</button>
-          <button>LVL 1–5</button>
-          <button>LVL 6–10</button>
+          <button className={levelFilter === "all" ? "active" : ""} onClick={() => setLevelFilter("all")}>Todas</button>
+          <button className={levelFilter === "low" ? "active" : ""} onClick={() => setLevelFilter("low")}>LVL 1–5</button>
+          <button className={levelFilter === "high" ? "active" : ""} onClick={() => setLevelFilter("high")}>LVL 6–10</button>
           {canCreate && <button onClick={createRoom}>＋ Crear sala</button>}
         </div>
       </div>
@@ -2196,9 +2203,12 @@ function RoomsPanel({
             </p>
           </article>
         )}
-        {realRooms.map((room) => (
+        {visibleRooms.map((room) => (
           <RealRoomRow key={room.id} room={room} join={() => join(room.id)} />
         ))}
+        {!loading && realRooms.length > 0 && visibleRooms.length === 0 && (
+          <p className="wallet-help">No hay salas que coincidan con este rango de nivel.</p>
+        )}
       </div>
     </section>
   );
@@ -3139,7 +3149,7 @@ function HistoryPanel() {
             <span>{match.map ?? "Mapa sin registrar"}</span>
             <b>{match.teamAScore ?? 0} — {match.teamBScore ?? 0}</b>
             <em>{match.delta > 0 ? "+" : ""}{match.delta} ELO</em>
-            <button disabled>Demo no disponible</button>
+            <button disabled>Detalle próximamente</button>
           </article>;
         })}
         {!history.length && <p className="wallet-help">Todavía no tienes resultados competitivos confirmados.</p>}
@@ -3950,6 +3960,7 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
   const [selectedId, setSelectedId] = useState("");
   const [staffTab, setStaffTab] = useState("Solicitudes");
   const [notes, setNotes] = useState("");
+  const [staffCounts, setStaffCounts] = useState({ sanctions: 0, withdrawals: 0 });
   const selected =
     candidates.find((candidate) => candidate.id === selectedId) ||
     candidates[0] ||
@@ -3984,6 +3995,18 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
   };
   useEffect(() => {
     void loadCandidates();
+    void Promise.all([
+      fetch("/api/staff/operations", { cache: "no-store" }),
+      fetch("/api/staff/payments", { cache: "no-store" }),
+    ]).then(async ([operationsResponse, paymentsResponse]) => {
+      const operations = operationsResponse.ok ? await operationsResponse.json() as OperationsData : null;
+      const payments = paymentsResponse.ok ? await paymentsResponse.json() as { requests: Array<{ type: string; status: string }> } : null;
+      const now = Date.now();
+      setStaffCounts({
+        sanctions: operations?.sanctions.filter((item) => !item.revokedAt && (!item.expiresAt || new Date(item.expiresAt).getTime() > now)).length ?? 0,
+        withdrawals: payments?.requests.filter((item) => item.type === "withdrawal" && item.status === "pending").length ?? 0,
+      });
+    });
   }, []);
   const update = (values: Partial<Candidate>) =>
     setCandidates((items) =>
@@ -4029,10 +4052,10 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
             {candidates.filter((item) => item.status === "Pendiente").length}
           </span>
           <span>
-            <small>SANCIONES ACTIVAS</small>2
+            <small>SANCIONES ACTIVAS</small>{staffCounts.sanctions}
           </span>
           <span>
-            <small>RETIROS EN REVISIÓN</small>4
+            <small>RETIROS EN REVISIÓN</small>{staffCounts.withdrawals}
           </span>
         </div>
       </div>
@@ -4189,7 +4212,7 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
 
 type OperationsData = {
   disputes: Array<{ id: string; roomId: string; roomName: string | null; accusedUserId: string | null; reason: string; description: string; status: string; resolution: string | null; createdAt: string }>;
-  sanctions: Array<{ id: string; userId: string; nickname: string; type: string; reason: string; penaltyCents: number; revokedAt: string | null; createdAt: string }>;
+  sanctions: Array<{ id: string; userId: string; nickname: string; type: string; reason: string; penaltyCents: number; expiresAt: string | null; revokedAt: string | null; createdAt: string }>;
   appeals: Array<{ id: string; sanctionId: string; nickname: string; reason: string; status: string; resolution: string | null; createdAt: string }>;
   audits: Array<{ id: string; action: string; entityType: string; entityId: string | null; reason: string | null; createdAt: string }>;
   users: Array<{ id: string; nickname: string; role: string; status: string; level: number }>;
@@ -4784,7 +4807,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
               </div>
               {selected.type === "Recarga" ? (
                 <div className="receipt-demo">
-                  <span>COMPROBANTE DEMO</span>
+                  <span>OPERACIÓN REGISTRADA</span>
                   <strong>{selected.method}</strong>
                   <b>S/ {selected.amount.toFixed(2)}</b>
                   <small>Operación {selected.operation} · Hoy 10:24</small>

@@ -1,4 +1,4 @@
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import { getDb } from "../../../../../../db";
 import { auditLogs, benefitPasses, ledgerEntries, matchDisputes, matchEvents, matchServers, notifications, playerRatings, ratingChanges, roomPlayers, rooms, users, wallets } from "../../../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../../../lib/auth";
@@ -27,6 +27,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
   const passUsers = new Set(passes.map((pass) => pass.userId));
   if (players.length !== 10 || players.filter((p) => p.team === "a").length !== 5 || players.filter((p) => p.team === "b").length !== 5)
     return Response.json({ ok: false, error: "invalid_teams" }, { status: 409 });
+  const paidUserIds = players.filter((player) => !passUsers.has(player.userId)).map((player) => player.userId);
+  if (paidUserIds.length) {
+    const lockedWallets = await db.select({ userId: wallets.userId, lockedCents: wallets.lockedCents }).from(wallets).where(inArray(wallets.userId, paidUserIds));
+    if (lockedWallets.length !== paidUserIds.length || lockedWallets.some((wallet) => wallet.lockedCents < room.entryCents))
+      return Response.json({ ok: false, error: "wallet_lock_mismatch" }, { status: 409 });
+  }
   const winner = scoreA > scoreB ? "a" : "b";
   const averageA = players.filter((p) => p.team === "a").reduce((sum, p) => sum + (p.elo ?? 1000), 0) / 5;
   const averageB = players.filter((p) => p.team === "b").reduce((sum, p) => sum + (p.elo ?? 1000), 0) / 5;

@@ -1,4 +1,4 @@
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import { getDb } from "../../../../../../db";
 import { auditLogs, benefitPasses, ledgerEntries, matchServers, notifications, roomPlayers, rooms, users, wallets } from "../../../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../../../lib/auth";
@@ -20,6 +20,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
   const passes = await db.select().from(benefitPasses).where(and(eq(benefitPasses.roomId, roomId), eq(benefitPasses.status, "used")));
   const passByUser = new Map(passes.map((pass) => [pass.userId, pass]));
   if (body.sanctionedUserId && !players.some((p) => p.userId === body.sanctionedUserId)) return Response.json({ ok: false, error: "sanctioned_user_not_in_room" }, { status: 400 });
+  const paidUserIds = players.filter((player) => !passByUser.has(player.userId)).map((player) => player.userId);
+  if (paidUserIds.length) {
+    const lockedWallets = await db.select({ userId: wallets.userId, lockedCents: wallets.lockedCents }).from(wallets).where(inArray(wallets.userId, paidUserIds));
+    if (lockedWallets.length !== paidUserIds.length || lockedWallets.some((wallet) => wallet.lockedCents < room.entryCents))
+      return Response.json({ ok: false, error: "wallet_lock_mismatch" }, { status: 409 });
+  }
   const now = new Date();
   const actions: any[] = [];
   for (const player of players) {

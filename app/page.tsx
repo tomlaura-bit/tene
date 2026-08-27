@@ -3151,7 +3151,8 @@ function PublicProfilePanel({ session }: { session: SessionData | null }) {
 }
 
 function HistoryPanel() {
-  const [history, setHistory] = useState<Array<{ id: string; roomName: string | null; delta: number; map: string | null; teamAScore: number | null; teamBScore: number | null; createdAt: string }>>([]);
+  const [history, setHistory] = useState<Array<{ id: string; roomName: string | null; beforeElo: number; afterElo: number; delta: number; map: string | null; teamAScore: number | null; teamBScore: number | null; createdAt: string }>>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   useEffect(() => { void fetch("/api/competitive").then(async (response) => { if (response.ok) setHistory(((await response.json()) as { history: typeof history }).history); }); }, []);
   return (
     <section className="section-panel">
@@ -3168,7 +3169,7 @@ function HistoryPanel() {
       <div className="match-history">
         {history.map((match) => {
           const result = match.delta >= 0 ? "Victoria" : "Derrota";
-          return <article key={match.id}>
+          return <article key={match.id} className={expandedId === match.id ? "expanded" : ""}>
             <span
               className={result === "Victoria" ? "result-win" : "result-loss"}
             >
@@ -3178,7 +3179,8 @@ function HistoryPanel() {
             <span>{match.map ?? "Mapa sin registrar"}</span>
             <b>{match.teamAScore ?? 0} — {match.teamBScore ?? 0}</b>
             <em>{match.delta > 0 ? "+" : ""}{match.delta} ELO</em>
-            <button disabled>Detalle próximamente</button>
+            <button onClick={() => setExpandedId((current) => current === match.id ? null : match.id)}>{expandedId === match.id ? "Ocultar" : "Ver detalle"}</button>
+            {expandedId === match.id && <div className="history-detail"><span><small>FECHA</small>{new Date(match.createdAt).toLocaleString("es-PE")}</span><span><small>MAPA</small>{match.map ?? "Sin registrar"}</span><span><small>ELO</small>{match.beforeElo} → {match.afterElo}</span><span><small>RESULTADO</small>{match.teamAScore ?? 0} — {match.teamBScore ?? 0}</span></div>}
           </article>;
         })}
         {!history.length && <p className="wallet-help">Todavía no tienes resultados competitivos confirmados.</p>}
@@ -3645,6 +3647,7 @@ function LiveMatchOperations({ roomId, data, session, reload }: { roomId: string
   const [accusedUserId, setAccusedUserId] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const isFinanceStaff = ["owner", "admin"].includes(session?.user.role ?? "");
   const pending = data.disputes.find((item) => item.status === "pending");
   const send = async (url: string, body: Record<string, unknown>) => {
@@ -3653,6 +3656,19 @@ function LiveMatchOperations({ roomId, data, session, reload }: { roomId: string
     const result = await response.json().catch(() => ({}));
     setBusy(false);
     setMessage(response.ok ? "Operación guardada correctamente." : `No se pudo completar: ${result.error ?? "error"}`);
+    await reload();
+  };
+  const submitDispute = async () => {
+    setBusy(true); setMessage("");
+    const form = new FormData();
+    form.set("reason", reason); form.set("description", description);
+    if (accusedUserId) form.set("accusedUserId", accusedUserId);
+    if (evidenceFile) form.set("evidence", evidenceFile);
+    const response = await fetch(`/api/rooms/${roomId}/disputes`, { method: "POST", body: form });
+    const result = await response.json().catch(() => ({}));
+    setBusy(false);
+    setMessage(response.ok ? "Impugnación registrada y liquidación congelada." : result.error === "invalid_evidence" ? "La evidencia no cumple el formato o tamaño permitido." : `No se pudo completar: ${result.error ?? "error"}`);
+    if (response.ok) { setDescription(""); setEvidenceFile(null); }
     await reload();
   };
   const statusLabel = data.room.status === "settled" ? "Resultado liquidado" : data.room.status === "review" ? "Liquidación congelada" : data.room.status === "cancelled" ? "Sala cancelada" : "Partida en vivo";
@@ -3664,7 +3680,7 @@ function LiveMatchOperations({ roomId, data, session, reload }: { roomId: string
     {data.room.status === "review" && pending && isFinanceStaff && <div className="admin-result-controls"><h3>Resolver impugnación</h3><p>Descartar devuelve la partida a estado en vivo. Confirmar mantiene el dinero congelado para cancelar y sancionar.</p><button disabled={busy} className="secondary-button" onClick={() => void send(`/api/staff/disputes/${pending.id}/review`, { decision: "dismissed", resolution: "Reporte revisado por staff; no se encontró una infracción suficiente." })}>Descartar y reanudar</button><button disabled={busy} className="primary-button" onClick={() => void send(`/api/staff/disputes/${pending.id}/review`, { decision: "upheld", resolution: "Infracción confirmada por el staff. La sala debe cancelarse y aplicar la retención correspondiente." })}>Confirmar infracción</button></div>}
     {data.room.status === "live" && <div className="live-score"><div><small>EQUIPO A</small><strong>{scoreA}</strong></div><span><b>MARCADOR</b><i>STAFF</i><em>EN VIVO</em></span><div><small>EQUIPO B</small><strong>{scoreB}</strong></div></div>}
     {data.room.status === "live" && isFinanceStaff && <div className="admin-result-controls"><h3>Confirmar resultado y liquidar</h3><p>Esta acción libera los S/ 6 bloqueados, acredita S/ 10 a cada ganador y actualiza el ELO.</p><div className="score-inputs"><label>Equipo A<input type="number" min="0" value={scoreA} onChange={(e) => setScoreA(Number(e.target.value))} /></label><label>Equipo B<input type="number" min="0" value={scoreB} onChange={(e) => setScoreB(Number(e.target.value))} /></label></div><button disabled={busy} className="primary-button" onClick={() => void send(`/api/staff/rooms/${roomId}/result`, { teamAScore: scoreA, teamBScore: scoreB })}>Confirmar y liquidar</button></div>}
-    {data.room.status === "live" && data.viewer && <div className="dispute-form"><h3>Impugnar partida</h3><p>Úsalo únicamente para hacks, coordinación ilegal, suplantación o marcador incorrecto.</p><label>Motivo<select value={reason} onChange={(e) => setReason(e.target.value)}><option value="hacking">Sospecha de hacks</option><option value="collusion">Coordinación o mafia</option><option value="wrong_result">Resultado incorrecto</option><option value="impersonation">Suplantación</option><option value="other">Otro</option></select></label><label>Jugador implicado (opcional)<select value={accusedUserId} onChange={(e) => setAccusedUserId(e.target.value)}><option value="">Sin seleccionar</option>{data.players.filter((p) => p.userId !== data.viewer?.userId).map((p) => <option key={p.userId} value={p.userId}>{p.nickname}</option>)}</select></label><label>Descripción<textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Indica jugador, ronda y lo ocurrido…" /></label><button disabled={busy || description.trim().length < 10} className="dispute-button" onClick={() => void send(`/api/rooms/${roomId}/disputes`, { reason, description, accusedUserId: accusedUserId || undefined })}>⚑ Enviar y congelar liquidación</button></div>}
+    {data.room.status === "live" && data.viewer && <div className="dispute-form"><h3>Impugnar partida</h3><p>Úsalo únicamente para hacks, coordinación ilegal, suplantación o marcador incorrecto.</p><label>Motivo<select value={reason} onChange={(e) => setReason(e.target.value)}><option value="hacking">Sospecha de hacks</option><option value="collusion">Coordinación o mafia</option><option value="wrong_result">Resultado incorrecto</option><option value="impersonation">Suplantación</option><option value="other">Otro</option></select></label><label>Jugador implicado (opcional)<select value={accusedUserId} onChange={(e) => setAccusedUserId(e.target.value)}><option value="">Sin seleccionar</option>{data.players.filter((p) => p.userId !== data.viewer?.userId).map((p) => <option key={p.userId} value={p.userId}>{p.nickname}</option>)}</select></label><label>Descripción<textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Indica jugador, ronda y lo ocurrido…" /></label><label className="evidence-upload"><span>{evidenceFile ? evidenceFile.name : "Adjuntar captura, clip o demo (opcional)"}</span><input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,.zip,.bz2,.dem" onChange={(event) => setEvidenceFile(event.target.files?.[0] ?? null)} /></label><button disabled={busy || description.trim().length < 10} className="dispute-button" onClick={() => void submitDispute()}>⚑ Enviar y congelar liquidación</button></div>}
     {["live", "review"].includes(data.room.status) && isFinanceStaff && <div className="cancel-match"><button disabled={busy} className="secondary-button" onClick={() => { const why = window.prompt("Motivo de cancelación (las entradas serán devueltas):"); if (why) void send(`/api/staff/rooms/${roomId}/cancel`, { reason: why, sanctionedUserId: pending?.accusedUserId || undefined }); }}>Cancelar sala {pending?.accusedUserId ? "y retener entrada del infractor" : "y devolver entradas"}</button></div>}
     {message && <p className="form-message">{message}</p>}
   </article>;
@@ -4239,7 +4255,7 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
 }
 
 type OperationsData = {
-  disputes: Array<{ id: string; roomId: string; roomName: string | null; accusedUserId: string | null; reason: string; description: string; status: string; resolution: string | null; createdAt: string }>;
+  disputes: Array<{ id: string; roomId: string; roomName: string | null; accusedUserId: string | null; reason: string; description: string; status: string; resolution: string | null; createdAt: string; evidence: Array<{ id: string; type: string; description: string | null }> }>;
   sanctions: Array<{ id: string; userId: string; nickname: string; type: string; reason: string; penaltyCents: number; expiresAt: string | null; revokedAt: string | null; createdAt: string }>;
   appeals: Array<{ id: string; sanctionId: string; nickname: string; reason: string; status: string; resolution: string | null; createdAt: string }>;
   audits: Array<{ id: string; action: string; entityType: string; entityId: string | null; reason: string | null; createdAt: string }>;
@@ -4257,7 +4273,7 @@ function StaffOperations({ mode, notify }: { mode: "disputes" | "sanctions" | "a
   const sanction = async () => { const penalties: Record<string, number> = { no_show: 300, abandonment: 1200 }; const response = await fetch("/api/staff/operations", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "sanction", userId: target, type, reason, penaltyCents: penalties[type] ?? 0, expiresHours: type === "ban" ? undefined : 24 }) }); notify(response.ok ? "Sanción aplicada y auditada" : "No se pudo aplicar la sanción"); if (response.ok) { setReason(""); await load(); } };
   const reviewAppeal = async (id: string, decision: "accepted" | "rejected") => { const response = await fetch("/api/staff/operations", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "review_appeal", appealId: id, decision, resolution: decision === "accepted" ? "Apelación aceptada; sanción revocada y saldo regularizado." : "Apelación revisada y rechazada por el staff." }) }); notify(response.ok ? "Apelación resuelta" : "No se pudo resolver la apelación"); if (response.ok) await load(); };
   if (!data) return <p className="wallet-help">Cargando información operativa…</p>;
-  if (mode === "disputes") return <div className="staff-table"><div><strong>Disputas reales</strong><span>{data.disputes.filter((x) => x.status === "pending").length} pendientes</span></div>{data.disputes.map((item) => <article key={item.id}><span>{item.roomName ?? item.roomId}</span><span>{item.reason}</span><span>{item.description}</span><span>{item.status}</span>{item.status === "pending" ? <span><button onClick={() => void reviewDispute(item, "dismissed")}>Descartar</button><button onClick={() => void reviewDispute(item, "upheld")}>Confirmar y cancelar</button></span> : <span>{item.resolution}</span>}</article>)}{!data.disputes.length && <p className="wallet-help">No hay disputas registradas.</p>}</div>;
+  if (mode === "disputes") return <div className="staff-table"><div><strong>Disputas reales</strong><span>{data.disputes.filter((x) => x.status === "pending").length} pendientes</span></div>{data.disputes.map((item) => <article key={item.id}><span>{item.roomName ?? item.roomId}</span><span>{item.reason}</span><span>{item.description}</span><span>{item.status}</span><span className="evidence-links">{item.evidence.map((file) => <a key={file.id} href={`/api/staff/disputes/${item.id}/evidence/${file.id}`} target="_blank" rel="noreferrer">{file.type}: {file.description ?? "evidencia"}</a>)}{!item.evidence.length && "Sin adjuntos"}</span>{item.status === "pending" ? <span><button onClick={() => void reviewDispute(item, "dismissed")}>Descartar</button><button onClick={() => void reviewDispute(item, "upheld")}>Confirmar y cancelar</button></span> : <span>{item.resolution}</span>}</article>)}{!data.disputes.length && <p className="wallet-help">No hay disputas registradas.</p>}</div>;
   if (mode === "users") return <div className="staff-table"><div><strong>Usuarios registrados</strong><span>{data.users.length} cuentas</span></div>{data.users.map((item) => <article key={item.id}><span>{item.nickname}</span><span>LVL {item.level}</span><span>{item.role}</span><span>{item.status}</span></article>)}</div>;
   if (mode === "audit") return <div className="staff-table"><div><strong>Auditoría administrativa</strong><span>{data.audits.length} registros recientes</span></div>{data.audits.map((item) => <article key={item.id}><span>{item.action.replaceAll("_", " ")}</span><span>{item.entityType}</span><span>{item.reason ?? "Sin observación"}</span><span>{new Date(item.createdAt).toLocaleString("es-PE")}</span></article>)}</div>;
   return <section><div className="roles-intro"><div><span className="staff-role">DISCIPLINA REAL</span><h3>Aplicar sanción</h3></div></div><div className="admin-result-controls"><label>Jugador<select value={target} onChange={(e) => setTarget(e.target.value)}>{data.users.map((user) => <option value={user.id} key={user.id}>{user.nickname}</option>)}</select></label><label>Tipo<select value={type} onChange={(e) => setType(e.target.value)}><option value="warning">Advertencia</option><option value="mute">Mute 24 h</option><option value="no_show">No-show · S/ 3</option><option value="abandonment">Abandono · S/ 12</option><option value="suspension">Suspensión</option><option value="ban">Ban</option></select></label><label>Motivo<textarea value={reason} onChange={(e) => setReason(e.target.value)} /></label><button className="primary-button" disabled={reason.trim().length < 5} onClick={() => void sanction()}>Aplicar y registrar</button></div><div className="staff-table"><div><strong>Sanciones</strong><span>{data.sanctions.length} registros</span></div>{data.sanctions.map((item) => <article key={item.id}><span>{item.nickname}</span><span>{item.type}</span><span>{item.reason}</span><span>{item.penaltyCents ? `S/ ${(item.penaltyCents / 100).toFixed(2)}` : "Sin multa"}</span><span>{item.revokedAt ? "Revocada" : "Activa"}</span></article>)}</div><div className="staff-table"><div><strong>Apelaciones</strong><span>{data.appeals.filter((x) => x.status === "pending").length} pendientes</span></div>{data.appeals.map((item) => <article key={item.id}><span>{item.nickname}</span><span>{item.reason}</span><span>{item.status}</span>{item.status === "pending" && <span><button onClick={() => void reviewAppeal(item.id, "rejected")}>Rechazar</button><button onClick={() => void reviewAppeal(item.id, "accepted")}>Aceptar</button></span>}</article>)}</div></section>;

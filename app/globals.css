@@ -2212,6 +2212,28 @@ button {
 .proof-upload input {
   display: none;
 }
+.evidence-upload {
+  display: block;
+  border: 1px dashed #a78bfa55;
+  border-radius: 10px;
+  padding: 12px;
+  color: #c4b5fd;
+  cursor: pointer;
+}
+.evidence-upload input { display: none; }
+.evidence-links { display: grid; gap: 4px; }
+.evidence-links a { color: #c4b5fd; text-decoration: underline; }
+.history-detail {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  border-top: 1px solid #ffffff12;
+  padding-top: 14px;
+}
+.history-detail span { color: #fff; }
+.history-detail small { display: block; margin-bottom: 4px; color: #ffffff45; font-size: 8px; }
 .withdraw-checks {
   display: grid;
   grid-template-columns: 1fr 1fr;

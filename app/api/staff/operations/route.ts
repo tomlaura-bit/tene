@@ -1,6 +1,6 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
-import { auditLogs, ledgerEntries, matchDisputes, notifications, rooms, sanctionAppeals, sanctions, users, wallets } from "../../../../db/schema";
+import { auditLogs, disputeEvidence, ledgerEntries, matchDisputes, notifications, rooms, sanctionAppeals, sanctions, users, wallets } from "../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -17,11 +17,12 @@ export async function GET(request: Request) {
   if (!actor) return unauthorized();
   const db = getDb();
   const disputes = await db.select({ id: matchDisputes.id, roomId: matchDisputes.roomId, roomName: rooms.name, reporterId: matchDisputes.reporterId, accusedUserId: matchDisputes.accusedUserId, reason: matchDisputes.reason, description: matchDisputes.description, status: matchDisputes.status, resolution: matchDisputes.resolution, createdAt: matchDisputes.createdAt }).from(matchDisputes).leftJoin(rooms, eq(matchDisputes.roomId, rooms.id)).orderBy(desc(matchDisputes.createdAt)).limit(100);
+  const evidence = await db.select({ id: disputeEvidence.id, disputeId: disputeEvidence.disputeId, type: disputeEvidence.type, description: disputeEvidence.description, createdAt: disputeEvidence.createdAt }).from(disputeEvidence).orderBy(desc(disputeEvidence.createdAt)).limit(200);
   const sanctionRows = await db.select({ id: sanctions.id, userId: sanctions.userId, nickname: users.nickname, type: sanctions.type, reason: sanctions.reason, penaltyCents: sanctions.penaltyCents, expiresAt: sanctions.expiresAt, revokedAt: sanctions.revokedAt, createdAt: sanctions.createdAt }).from(sanctions).innerJoin(users, eq(sanctions.userId, users.id)).orderBy(desc(sanctions.createdAt)).limit(100);
   const appeals = await db.select({ id: sanctionAppeals.id, sanctionId: sanctionAppeals.sanctionId, userId: sanctionAppeals.userId, nickname: users.nickname, reason: sanctionAppeals.reason, status: sanctionAppeals.status, resolution: sanctionAppeals.resolution, createdAt: sanctionAppeals.createdAt }).from(sanctionAppeals).innerJoin(users, eq(sanctionAppeals.userId, users.id)).orderBy(desc(sanctionAppeals.createdAt)).limit(100);
   const audits = await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(100);
   const userRows = await db.select({ id: users.id, nickname: users.nickname, role: users.role, status: users.status, level: users.level }).from(users).orderBy(desc(users.createdAt)).limit(200);
-  return Response.json({ ok: true, disputes, sanctions: sanctionRows, appeals, audits, users: userRows });
+  return Response.json({ ok: true, disputes: disputes.map((item) => ({ ...item, evidence: evidence.filter((file) => file.disputeId === item.id) })), sanctions: sanctionRows, appeals, audits, users: userRows });
 }
 
 export async function POST(request: Request) {

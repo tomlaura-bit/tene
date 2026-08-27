@@ -1,6 +1,7 @@
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, isNull, or, sql } from "drizzle-orm";
 import { getDb } from "../../../../../db";
 import {
+  benefitPasses,
   ledgerEntries,
   playerRatings,
   roomPlayers,
@@ -59,7 +60,11 @@ export async function POST(
   if (members.length >= 10)
     return Response.json({ ok: false, error: "room_full" }, { status: 409 });
 
-  const charged = await db
+  const now = new Date();
+  const [passCandidate] = await db.select().from(benefitPasses).where(and(eq(benefitPasses.userId, user.id), eq(benefitPasses.status, "available"), or(isNull(benefitPasses.expiresAt), gt(benefitPasses.expiresAt, now)))).orderBy(asc(benefitPasses.createdAt)).limit(1);
+  const claimedPass = passCandidate ? await db.update(benefitPasses).set({ status: "reserved", roomId }).where(and(eq(benefitPasses.id, passCandidate.id), eq(benefitPasses.status, "available"))).returning() : [];
+  const pass = claimedPass[0] ?? null;
+  const charged = pass ? [{ availableCents: 0, lockedCents: 0 }] : await db
     .update(wallets)
     .set({
       availableCents: sql`${wallets.availableCents} - ${room.entryCents}`,
@@ -89,18 +94,20 @@ export async function POST(
         userId: user.id,
         joinedAt: new Date(),
       }),
+      ...(pass ? [db.update(benefitPasses).set({ status: "used" }).where(and(eq(benefitPasses.id, pass.id), eq(benefitPasses.status, "reserved")))] : []),
       db.insert(ledgerEntries).values({
         id: `led_${crypto.randomUUID()}`,
         userId: user.id,
         roomId,
-        type: "entry_lock",
-        amountCents: -room.entryCents,
-        description: `Reserva en ${room.name}`,
+        type: pass ? "adjustment" : "entry_lock",
+        amountCents: pass ? 0 : -room.entryCents,
+        description: pass ? `Pase ${pass.source === "birthday" ? "de cumpleaños" : "TENE Sub"} usado en ${room.name}` : `Reserva en ${room.name}`,
         createdAt: new Date(),
       }),
     ]);
   } catch {
-    await db
+    if (pass) await db.update(benefitPasses).set({ status: "available", roomId: null }).where(eq(benefitPasses.id, pass.id));
+    else await db
       .update(wallets)
       .set({
         availableCents: sql`${wallets.availableCents} + ${room.entryCents}`,
@@ -127,5 +134,6 @@ export async function POST(
     ]);
   }
 
-  return Response.json({ ok: true, wallet: charged[0] });
+  const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, user.id)).limit(1);
+  return Response.json({ ok: true, wallet: wallet ?? charged[0], usedPass: Boolean(pass) });
 }

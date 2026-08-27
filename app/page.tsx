@@ -119,8 +119,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("Inicio");
   const [bannedMaps, setBannedMaps] = useState<string[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [publicData, setPublicData] = useState<{ activePlayers: number; rooms: Array<{ id: string; name: string; status: string; entryCents: number; players: Array<{ nickname: string; avatarUrl: string | null; level: number | null; isCaptain: boolean }> }>; ranking: Array<{ userId: string; name: string; elo: number; level: number; position: number }> } | null>(null);
 
   useEffect(() => {
+    void fetch("/api/public", { cache: "no-store" }).then(async (response) => { if (response.ok) setPublicData(await response.json()); });
     void fetch("/api/me")
       .then(async (response) => {
         if (!response.ok) return null;
@@ -151,15 +153,16 @@ export default function Home() {
   }, []);
 
   function joinRoom() {
-    setJoined(true);
-    setNotice("Puesto reservado · S/ 6 bloqueados de tu saldo");
-    window.setTimeout(() => setNotice(""), 3500);
+    if (!session) return setSteamOpen(true);
+    setActiveTab("Salas");
+    setScreen("dashboard");
   }
 
   function enterDemo() {
     setSteamOpen(false);
     setScreen("dashboard");
-    setNotice("Verificación demo aprobada · Ya puedes entrar a las salas");
+    setActiveTab("Cuenta");
+    setNotice("Solicitud registrada · el staff debe aprobar tu cuenta antes de jugar");
     window.setTimeout(() => setNotice(""), 3500);
   }
 
@@ -262,7 +265,7 @@ export default function Home() {
               Ver salas disponibles <span>↗</span>
             </a>
             <div className="flex items-center gap-3 text-sm text-white/50">
-              <span className="live-pulse" /> 186 jugadores conectados
+              <span className="live-pulse" /> {publicData?.activePlayers ?? 0} jugadores en salas activas
             </div>
           </div>
           <div className="mt-10 flex gap-8 border-t border-white/8 pt-6">
@@ -288,47 +291,31 @@ export default function Home() {
                 <i /> FORMANDO EQUIPOS
               </span>
               <h2 className="mt-3 text-2xl font-bold tracking-tight">
-                Sala Violeta #184
+                {publicData?.rooms[0]?.name ?? "No hay salas abiertas"}
               </h2>
             </div>
             <div className="text-right">
               <span className="block text-xs text-white/35">ENTRADA</span>
-              <strong className="text-2xl text-violet-300">S/ 6.00</strong>
+              <strong className="text-2xl text-violet-300">S/ {((publicData?.rooms[0]?.entryCents ?? 600) / 100).toFixed(2)}</strong>
             </div>
           </div>
           <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-6">
-            {players.map((player, index) => (
-              <div key={player.name} className="player-card">
-                <div className={`avatar bg-gradient-to-br ${player.tone}`}>
-                  {player.name[0].toUpperCase()}
-                </div>
+            {(publicData?.rooms[0]?.players ?? []).map((player) => (
+              <div key={player.nickname} className="player-card">
+                {player.avatarUrl ? <img className="avatar" src={player.avatarUrl} alt={`Avatar de ${player.nickname}`} /> : <div className="avatar bg-gradient-to-br from-violet-500 to-fuchsia-500">{player.nickname[0].toUpperCase()}</div>}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <strong className="truncate">{player.name}</strong>
-                    {index < 2 && <span className="captain">CAP</span>}
+                    <strong className="truncate">{player.nickname}</strong>
+                    {player.isCaptain && <span className="captain">CAP</span>}
                   </div>
                   <span className="text-xs text-white/35">
-                    {index < 2 ? "Capitán" : "Jugador verificado"}
+                    {player.isCaptain ? "Capitán" : "Jugador verificado"}
                   </span>
                 </div>
                 <span className="level">LVL {player.level}</span>
               </div>
             ))}
-            {joined && (
-              <div className="player-card ring-1 ring-violet-400/40">
-                <div className="avatar bg-gradient-to-br from-violet-500 to-fuchsia-500">
-                  T
-                </div>
-                <div className="min-w-0 flex-1">
-                  <strong className="block truncate">Tu cuenta</strong>
-                  <span className="text-xs text-violet-300">
-                    Puesto reservado
-                  </span>
-                </div>
-                <span className="level">LVL 5</span>
-              </div>
-            )}
-            {Array.from({ length: joined ? 5 : 6 }, (_, i) => (
+            {Array.from({ length: Math.max(0, 10 - (publicData?.rooms[0]?.players.length ?? 0)) }, (_, i) => (
               <div key={i} className="empty-slot">
                 <span>+</span> Esperando jugador
               </div>
@@ -337,17 +324,17 @@ export default function Home() {
           <div className="match-footer">
             <div>
               <span className="text-xs text-white/35">JUGADORES</span>
-              <strong className="ml-3">{joined ? 5 : 4} / 10</strong>
+              <strong className="ml-3">{publicData?.rooms[0]?.players.length ?? 0} / 10</strong>
             </div>
             <div className="progress">
-              <span style={{ width: joined ? "50%" : "40%" }} />
+              <span style={{ width: `${(publicData?.rooms[0]?.players.length ?? 0) * 10}%` }} />
             </div>
             <button
-              disabled={joined}
+              disabled={!publicData?.rooms[0]}
               onClick={joinRoom}
               className="join-button disabled:cursor-default disabled:opacity-50"
             >
-              {joined ? "Ya estás dentro" : "Unirme por S/ 6"}
+              {session ? "Ver salas y reservar" : "Iniciar sesión para entrar"}
             </button>
           </div>
         </div>
@@ -417,12 +404,12 @@ export default function Home() {
             <strong>Ranking competitivo</strong>
             <span className="text-xs text-white/35">ACTUALIZADO HOY</span>
           </div>
-          {ranking.map(([place, name, level, elo]) => (
-            <div className="ranking-row" key={place}>
-              <span className="font-mono text-violet-300">{place}</span>
-              <strong>{name}</strong>
-              <span className="level">{level}</span>
-              <span className="ml-auto font-mono text-sm">{elo} ELO</span>
+          {(publicData?.ranking ?? []).map((player) => (
+            <div className="ranking-row" key={player.userId}>
+              <span className="font-mono text-violet-300">{String(player.position).padStart(2, "0")}</span>
+              <strong>{player.name}</strong>
+              <span className="level">LVL {player.level}</span>
+              <span className="ml-auto font-mono text-sm">{player.elo.toLocaleString()} ELO</span>
             </div>
           ))}
         </div>
@@ -465,6 +452,7 @@ function SteamRegistrationModal({
   const [birthDate, setBirthDate] = useState("2000-08-25");
   const [backendMessage, setBackendMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [steamCheck, setSteamCheck] = useState<{ personaName: string; avatarUrl: string | null; profilePublic: boolean; gameDetailsPublic: boolean; ownsCs2: boolean; cs2Minutes: number; eligible: boolean } | null>(null);
   const validId = /^7656119\d{10}$/.test(steamId);
   const saveProfile = async () => {
     setSaving(true);
@@ -502,6 +490,10 @@ function SteamRegistrationModal({
         return;
       }
       if (!response.ok) throw new Error("No se pudo registrar Steam");
+      const checkResponse = await fetch("/api/me/steam/recheck", { method: "POST" });
+      if (!checkResponse.ok) throw new Error("No se pudo consultar Steam");
+      const checked = await checkResponse.json() as { result: typeof steamCheck };
+      setSteamCheck(checked.result);
       setStep(2);
     } catch {
       setBackendMessage("No pudimos registrar ese SteamID64.");
@@ -687,34 +679,34 @@ function SteamRegistrationModal({
           <>
             <div className="steam-profile-preview">
               <img
-                src="https://api.dicebear.com/9.x/thumbs/svg?seed=Maddison&backgroundColor=2e1065,312e81"
+                src={steamCheck?.avatarUrl ?? `https://api.dicebear.com/9.x/thumbs/svg?seed=${steamId}`}
                 alt="Avatar del perfil de Steam"
               />
               <div>
                 <small>PERFIL ENCONTRADO</small>
-                <strong>Maddison</strong>
+                <strong>{steamCheck?.personaName ?? "Cuenta Steam"}</strong>
                 <span>{steamId}</span>
               </div>
             </div>
             <h2>Comprobación de requisitos</h2>
             <div className="registration-checks">
               <span>
-                <i>✓</i>
+                <i>{steamCheck?.profilePublic ? "✓" : "×"}</i>
                 <b>Perfil público</b>
                 <small>Información básica visible</small>
               </span>
               <span>
-                <i>✓</i>
+                <i>{steamCheck?.gameDetailsPublic ? "✓" : "×"}</i>
                 <b>Detalles de juego públicos</b>
                 <small>Biblioteca y horas visibles</small>
               </span>
               <span>
-                <i>✓</i>
-                <b>2,341 horas en CS2</b>
+                <i>{(steamCheck?.cs2Minutes ?? 0) >= 30000 ? "✓" : "×"}</i>
+                <b>{Math.floor((steamCheck?.cs2Minutes ?? 0) / 60).toLocaleString()} horas en CS2</b>
                 <small>Supera el mínimo de 500 h</small>
               </span>
               <span>
-                <i>✓</i>
+                <i>{steamCheck?.ownsCs2 ? "✓" : "×"}</i>
                 <b>CS2 detectado</b>
                 <small>AppID 730 en la cuenta</small>
               </span>
@@ -725,9 +717,10 @@ function SteamRegistrationModal({
             </p>
             <button
               className="primary-button w-full"
+              disabled={!steamCheck?.eligible}
               onClick={() => setStep(3)}
             >
-              Enviar solicitud al staff
+              {steamCheck?.eligible ? "Enviar solicitud al staff" : "Requisitos incompletos"}
             </button>
           </>
         )}
@@ -753,7 +746,7 @@ function SteamRegistrationModal({
               </span>
             </div>
             <button className="primary-button w-full" onClick={complete}>
-              Simular aprobación y entrar
+              Ir a mi cuenta
             </button>
             <button className="secondary-registration" onClick={close}>
               Cerrar y esperar revisión
@@ -1530,7 +1523,7 @@ function EnhancedDashboard({
             session={session}
           />
         )}
-        {activeTab === "Perfil" && <PublicProfilePanel />}
+        {activeTab === "Perfil" && <PublicProfilePanel session={session} />}
         {activeTab === "Salas" && (
           <RoomsPanel
             openRoom={openRoom}
@@ -1999,6 +1992,8 @@ function HomePanel({
   wallet: (action: "deposit" | "withdraw") => void;
   session: SessionData | null;
 }) {
+  const [homeRooms, setHomeRooms] = useState<RoomData[]>([]);
+  useEffect(() => { void fetch("/api/rooms").then(async (response) => { if (response.ok) setHomeRooms(((await response.json()) as { rooms: RoomData[] }).rooms.slice(0, 3)); }); }, []);
   const rating = session?.rating;
   const user = session?.user;
   const statusCopy = user
@@ -2063,24 +2058,8 @@ function HomePanel({
           </div>
           <button onClick={() => setActiveTab("Salas")}>Ver todas →</button>
         </div>
-        <RoomRow
-          name="Sala Violeta #184"
-          players="4 / 10"
-          average="LVL 6.8"
-          openRoom={openRoom}
-        />
-        <RoomRow
-          name="Sala Nocturna #183"
-          players="8 / 10"
-          average="LVL 8.2"
-          openRoom={openRoom}
-        />
-        <RoomRow
-          name="Sala Base #182"
-          players="2 / 10"
-          average="LVL 3.5"
-          openRoom={openRoom}
-        />
+        {homeRooms.map((room) => <RealRoomRow key={room.id} room={room} join={() => setActiveTab("Salas")} />)}
+        {!homeRooms.length && <p className="wallet-help">No hay salas registradas.</p>}
       </article>
       <article className="stats-card">
         <div className="card-label">TU TEMPORADA</div>
@@ -2108,7 +2087,7 @@ function HomePanel({
           <strong>Últimos movimientos</strong>
           <button onClick={() => setActiveTab("Historial")}>Historial →</button>
         </div>
-        <Transactions compact />
+        <WalletActivity compact />
       </article>
     </section>
   );
@@ -2161,6 +2140,7 @@ function RoomsPanel({
       error?: string;
       wallet?: { availableCents: number };
       alreadyJoined?: boolean;
+      usedPass?: boolean;
     };
     const labels: Record<string, string> = {
       insufficient_balance: "Saldo insuficiente: necesitas S/ 6 disponibles",
@@ -2178,7 +2158,7 @@ function RoomsPanel({
     notify(
       body.alreadyJoined
         ? "Ya tienes un puesto en esta sala"
-        : "Puesto reservado · S/ 6 bloqueados",
+        : body.usedPass ? "Puesto reservado · pase gratuito utilizado" : "Puesto reservado · S/ 6 bloqueados",
     );
     await loadRooms();
     openRoom(roomId);
@@ -2299,8 +2279,15 @@ function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
   );
 }
 function BenefitsPanel({ notify }: { notify: (message: string) => void }) {
-  const [subscribed, setSubscribed] = useState(false);
-  const [dailyUsed, setDailyUsed] = useState(false);
+  const [data, setData] = useState<{ subscription: { status: string; endsAt: string } | null; passes: Array<{ id: string; source: string; status: string; expiresAt: string | null; createdAt: string }> } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const load = async () => { const response = await fetch("/api/benefits", { cache: "no-store" }); if (response.ok) setData(await response.json()); };
+  useEffect(() => { void load(); }, []);
+  const subscribed = data?.subscription?.status === "active" && new Date(data.subscription.endsAt) > new Date();
+  const available = data?.passes.filter((pass) => pass.status === "available") ?? [];
+  const daily = data?.passes.find((pass) => pass.source === "daily_sub" && pass.status === "available");
+  const birthday = available.filter((pass) => pass.source === "birthday");
+  const subscribe = async () => { setBusy(true); const response = await fetch("/api/benefits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "subscribe" }) }); setBusy(false); notify(response.ok ? "TENE Sub activado por 30 días" : response.status === 402 ? "Necesitas S/ 20 de saldo disponible" : "No se pudo activar la suscripción"); if (response.ok) await load(); };
   return (
     <section className="benefits-panel">
       <div className="benefits-hero">
@@ -2321,12 +2308,10 @@ function BenefitsPanel({ notify }: { notify: (message: string) => void }) {
           </div>
           <button
             className="primary-button"
-            onClick={() => {
-              setSubscribed(true);
-              notify("Suscripción demo activada por 30 días");
-            }}
+            disabled={busy || subscribed}
+            onClick={() => void subscribe()}
           >
-            {subscribed ? "✓ Suscripción activa" : "Activar suscripción demo"}
+            {subscribed ? `✓ Activa hasta ${new Date(data!.subscription!.endsAt).toLocaleDateString("es-PE")}` : "Activar por S/ 20"}
           </button>
         </div>
         <div className="sub-mark">
@@ -2339,17 +2324,10 @@ function BenefitsPanel({ notify }: { notify: (message: string) => void }) {
           <h3>Una sala gratis diaria</h3>
           <p>Un pase de S/6 cada día. No se acumula y vence a medianoche.</p>
           <button
-            disabled={!subscribed || dailyUsed}
-            onClick={() => {
-              setDailyUsed(true);
-              notify("Pase diario demo reservado");
-            }}
+            disabled={!daily}
+            onClick={() => notify(daily ? "El pase se aplicará automáticamente al entrar a una sala" : "No tienes pase disponible")}
           >
-            {dailyUsed
-              ? "Usado hoy"
-              : subscribed
-                ? "Usar pase diario"
-                : "Requiere Sub"}
+            {daily ? "Disponible para tu próxima sala" : subscribed ? "Usado hoy" : "Requiere Sub"}
           </button>
         </article>
         <article>
@@ -2386,14 +2364,14 @@ function BenefitsPanel({ notify }: { notify: (message: string) => void }) {
         </div>
         <div className="reward-counter">
           <span>
-            <small>DISPONIBLES</small>2
+              <small>DISPONIBLES</small>{birthday.length}
           </span>
           <span>
-            <small>VENCEN</small>01 sep.
+              <small>VENCEN</small>{birthday[0]?.expiresAt ? new Date(birthday[0].expiresAt).toLocaleDateString("es-PE") : "—"}
           </span>
           <button
             onClick={() =>
-              notify("Se usará un pase de cumpleaños en tu próxima sala")
+              notify(birthday.length ? "El pase se aplicará automáticamente en tu próxima sala" : "No tienes pases de cumpleaños disponibles")
             }
           >
             Usar en próxima sala
@@ -2402,17 +2380,14 @@ function BenefitsPanel({ notify }: { notify: (message: string) => void }) {
       </div>
       <div className="benefit-history">
         <strong>Historial de beneficios</strong>
-        {[
-          ["Pase cumpleaños", "2 salas otorgadas", "25 ago. 2026"],
-          ["TENE Sub", "Activación demo", "25 ago. 2026"],
-          ["Pase diario", "Disponible", "Hoy"],
-        ].map((row) => (
-          <div key={row[0]}>
-            <span>{row[0]}</span>
-            <b>{row[1]}</b>
-            <small>{row[2]}</small>
+        {(data?.passes ?? []).map((pass) => (
+          <div key={pass.id}>
+            <span>{pass.source === "birthday" ? "Pase cumpleaños" : pass.source === "daily_sub" ? "Pase diario Sub" : "Pase promocional"}</span>
+            <b>{pass.status === "available" ? "Disponible" : pass.status === "used" ? "Utilizado" : "Vencido"}</b>
+            <small>{new Date(pass.createdAt).toLocaleDateString("es-PE")}</small>
           </div>
         ))}
+        {data && !data.passes.length && <p className="wallet-help">Todavía no tienes beneficios emitidos.</p>}
       </div>
     </section>
   );
@@ -2514,9 +2489,7 @@ function ConductPanel({ notify }: { notify: (message: string) => void }) {
               Motivo
               <textarea value={appealReason} onChange={(event) => setAppealReason(event.target.value)} placeholder="Describe lo sucedido y cualquier evidencia…" />
             </label>
-            <div className="evidence-box">
-              ＋ Adjuntar captura o evidencia demo
-            </div>
+            <div className="evidence-box">Incluye enlaces a capturas, clips o demos dentro de la descripción.</div>
             <button
               className="primary-button w-full"
               disabled={sent || appealReason.trim().length < 10}
@@ -2561,6 +2534,7 @@ function CommunityChat({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [community, setCommunity] = useState<{ activePlayers: number; rooms: Array<{ id: string; name: string; status: string }>; ranking: Array<{ userId: string; name: string; level: number }> } | null>(null);
 
   const loadMessages = async () => {
     setLoading(true);
@@ -2579,6 +2553,7 @@ function CommunityChat({
   useEffect(() => {
     void loadMessages();
   }, [channel]);
+  useEffect(() => { void fetch("/api/public", { cache: "no-store" }).then(async (response) => { if (response.ok) setCommunity(await response.json()); }); }, []);
 
   const send = async () => {
     if (!text.trim()) return;
@@ -2623,15 +2598,10 @@ function CommunityChat({
             </button>
           ))}
           <small>SALAS ACTIVAS</small>
-          <button>
-            <span>●</span>Sala #184
-          </button>
-          <button>
-            <span>●</span>Sala #183
-          </button>
+          {(community?.rooms ?? []).filter((room) => !["settled", "cancelled"].includes(room.status)).slice(0, 4).map((room) => <button key={room.id}><span>●</span>{room.name}</button>)}
           <div className="discord-card">
-            <b>Discord conectado</b>
-            <p>Los roles y prefijos se sincronizarán.</p>
+            <b>Discord pendiente</b>
+            <p>La sincronización se activará cuando exista una aplicación de Discord configurada.</p>
             <button
               onClick={() =>
                 notify("Vinculación con Discord disponible próximamente")
@@ -2651,7 +2621,7 @@ function CommunityChat({
                   : "Canal de coordinación y soporte"}
               </small>
             </div>
-            <span>186 conectados</span>
+            <span>{community?.activePlayers ?? 0} en salas activas</span>
           </header>
           <div className="message-stream">
             {loading && <p className="chat-empty">Cargando mensajes…</p>}
@@ -2713,24 +2683,15 @@ function CommunityChat({
           </div>
         </main>
         <aside className="online-list">
-          <strong>EN LÍNEA — 6</strong>
-          {[
-            ["hoxhi", "DUEÑO", 10],
-            ["Tom", "DUEÑO", 5],
-            ["Jericho", "MOD", 7],
-            ["Maddison", "SUB", 8],
-            ["Shiro", "STREAMER", 7],
-            ["rayo", "JUGADOR", 4],
-          ].map(([name, role, level]) => (
-            <div key={String(name)}>
-              <span className="online-avatar">{String(name)[0]}</span>
+          <strong>JUGADORES DESTACADOS</strong>
+          {(community?.ranking ?? []).slice(0, 6).map((player) => (
+            <div key={player.userId}>
+              <span className="online-avatar">{player.name[0]}</span>
               <span>
-                <b>{name}</b>
-                <small className={`role-text ${String(role).toLowerCase()}`}>
-                  {role}
-                </small>
+                <b>{player.name}</b>
+                <small className="role-text player">RANKING</small>
               </span>
-              <i>LVL {level}</i>
+              <i>LVL {player.level}</i>
             </div>
           ))}
         </aside>
@@ -2741,7 +2702,7 @@ function CommunityChat({
           reportes quedan registrados.
         </span>
         <button
-          onClick={() => notify("Reglas de comunidad abiertas en modo demo")}
+          onClick={() => notify("Reglas: respeto, sin spam, sin suplantación y cero coordinación para manipular partidas")}
         >
           Ver reglas del chat
         </button>
@@ -2992,34 +2953,42 @@ function WalletActivity({ compact = false }: { compact?: boolean }) {
     </>
   );
 }
-function PublicProfilePanel() {
+function PublicProfilePanel({ session }: { session: SessionData | null }) {
   const [profileSection, setProfileSection] = useState<"general" | "matches">(
     "general",
   );
+  const [competitive, setCompetitive] = useState<{ me: { name: string; elo: number; level: number; matches: number; wins: number; losses: number; position: number } | null; history: Array<{ id: string; roomName: string | null; delta: number; map: string | null; teamAScore: number | null; teamBScore: number | null }> } | null>(null);
+  const [conductScore, setConductScore] = useState(100);
+  useEffect(() => { void fetch("/api/competitive").then(async (response) => { if (response.ok) setCompetitive(await response.json()); }); void fetch("/api/conduct").then(async (response) => { if (response.ok) setConductScore((await response.json()).score); }); }, []);
+  const me = competitive?.me;
+  const matches = me?.matches ?? 0;
+  const wins = me?.wins ?? 0;
+  const historyRows = competitive?.history ?? [];
+  const winStreak = historyRows.findIndex((match) => match.delta < 0) === -1 ? historyRows.filter((match) => match.delta > 0).length : historyRows.findIndex((match) => match.delta < 0);
+  const mapStats = Object.entries(historyRows.reduce((acc, match) => { const map = match.map ?? "Sin mapa"; const current = acc[map] ?? { wins: 0, total: 0 }; current.total += 1; if (match.delta > 0) current.wins += 1; acc[map] = current; return acc; }, {} as Record<string, { wins: number; total: number }>)).map(([map, value]) => ({ map, rate: Math.round((value.wins / value.total) * 100) })).sort((a, b) => b.rate - a.rate).slice(0, 4);
   return (
     <section className="public-profile-panel">
       <article className="profile-cover">
         <div className="profile-identity">
           <img
-            src="https://api.dicebear.com/9.x/thumbs/svg?seed=Tom&backgroundColor=2e1065,312e81,164e63"
-            alt="Avatar de Tom"
+            src={session?.user.steamAvatarUrl ?? `https://api.dicebear.com/9.x/thumbs/svg?seed=${session?.user.nickname ?? "TENE"}`}
+            alt={`Avatar de ${session?.user.nickname ?? "jugador"}`}
           />
           <div>
             <span className="verified-badge">✓ STEAM VERIFICADO</span>
-            <h2>Tom</h2>
-            <p>Miembro desde agosto de 2026 · Lima, Perú</p>
+            <h2>{session?.user.nickname ?? me?.name ?? "Jugador"}</h2>
+            <p>{Math.floor((session?.user.cs2Minutes ?? 0) / 60).toLocaleString()} horas de CS2 verificadas</p>
             <div className="profile-tags">
-              <b>Dueño</b>
-              <b>Fundador</b>
+              <b>{session?.user.role ?? "Jugador"}</b>
               <b>Temporada 01</b>
             </div>
           </div>
         </div>
         <div className="profile-main-rating">
           <small>RATING COMPETITIVO</small>
-          <strong>LVL 5</strong>
-          <b>1,298 ELO</b>
-          <span>#6 esta temporada</span>
+          <strong>LVL {me?.level ?? session?.user.level ?? 1}</strong>
+          <b>{(me?.elo ?? 1000).toLocaleString()} ELO</b>
+          <span>#{me?.position ?? "—"} esta temporada</span>
         </div>
       </article>
       <nav className="profile-subnav">
@@ -3035,7 +3004,7 @@ function PublicProfilePanel() {
         >
           Últimas partidas
         </button>
-        <a href="https://steamcommunity.com/" target="_blank" rel="noreferrer">
+        <a href={session?.user.steamId64 ? `https://steamcommunity.com/profiles/${session.user.steamId64}` : "https://steamcommunity.com/"} target="_blank" rel="noreferrer">
           Ver Steam ↗
         </a>
       </nav>
@@ -3045,23 +3014,23 @@ function PublicProfilePanel() {
             <div className="profile-kpis">
               <article>
                 <small>PARTIDAS</small>
-                <strong>19</strong>
-                <span>12 ganadas · 7 perdidas</span>
+                <strong>{matches}</strong>
+                <span>{wins} ganadas · {me?.losses ?? 0} perdidas</span>
               </article>
               <article>
                 <small>WIN RATE</small>
-                <strong>63%</strong>
-                <span>+8% últimas 10</span>
+                <strong>{matches ? Math.round((wins / matches) * 100) : 0}%</strong>
+                <span>Resultados confirmados</span>
               </article>
               <article>
                 <small>HORAS CS2</small>
-                <strong>1,284</strong>
+                <strong>{Math.floor((session?.user.cs2Minutes ?? 0) / 60).toLocaleString()}</strong>
                 <span>Perfil público</span>
               </article>
               <article>
                 <small>RACHA</small>
-                <strong>3 W</strong>
-                <span>Mejor: 6 victorias</span>
+                <strong>{winStreak} W</strong>
+                <span>Racha actual confirmada</span>
               </article>
             </div>
             <article className="map-performance">
@@ -3072,26 +3041,22 @@ function PublicProfilePanel() {
                 </div>
                 <span>Últimas 20 partidas</span>
               </header>
-              {[
-                ["Mirage", "72%", 72],
-                ["Ancient", "65%", 65],
-                ["Inferno", "58%", 58],
-                ["Nuke", "50%", 50],
-              ].map(([map, rate, width]) => (
-                <div key={String(map)}>
+              {mapStats.map(({ map, rate }) => (
+                <div key={map}>
                   <strong>{map}</strong>
                   <span>
-                    <i style={{ width: `${width}%` }} />
+                    <i style={{ width: `${rate}%` }} />
                   </span>
-                  <b>{rate}</b>
+                  <b>{rate}%</b>
                 </div>
               ))}
+              {!mapStats.length && <p className="wallet-help">Sin partidas suficientes para calcular rendimiento por mapa.</p>}
             </article>
           </div>
           <aside className="profile-reputation">
             <span>CONDUCTA</span>
             <div className="conduct-score">
-              <strong>96</strong>
+              <strong>{conductScore}</strong>
               <small>/ 100</small>
             </div>
             <b>Excelente</b>
@@ -3114,7 +3079,7 @@ function PublicProfilePanel() {
               <small>INSIGNIAS</small>
               <div>
                 <b title="Cuenta fundadora">F</b>
-                <b title="Conducta excelente">96</b>
+                <b title="Conducta">{conductScore}</b>
                 <b title="Temporada 01">S1</b>
               </div>
             </div>
@@ -3122,23 +3087,20 @@ function PublicProfilePanel() {
         </div>
       ) : (
         <div className="public-match-list">
-          {[
-            ["Victoria", "Sala #176", "Mirage", "13 — 9", "+18"],
-            ["Derrota", "Sala #169", "Ancient", "11 — 13", "−14"],
-            ["Victoria", "Sala #161", "Nuke", "13 — 7", "+16"],
-          ].map(([result, room, map, score, delta]) => (
-            <article key={room}>
+          {(competitive?.history ?? []).map((match) => {
+            const result = match.delta >= 0 ? "Victoria" : "Derrota";
+            return <article key={match.id}>
               <span
                 className={result === "Victoria" ? "result-win" : "result-loss"}
               >
                 {result}
               </span>
-              <strong>{room}</strong>
-              <small>{map}</small>
-              <b>{score}</b>
-              <em>{delta} ELO</em>
-            </article>
-          ))}
+              <strong>{match.roomName ?? "Sala competitiva"}</strong>
+              <small>{match.map ?? "Sin mapa"}</small>
+              <b>{match.teamAScore ?? 0} — {match.teamBScore ?? 0}</b>
+              <em>{match.delta > 0 ? "+" : ""}{match.delta} ELO</em>
+            </article>})}
+          {competitive && !competitive.history.length && <p className="wallet-help">Aún no tienes partidas liquidadas.</p>}
         </div>
       )}
       <p className="profile-privacy">
@@ -4215,42 +4177,39 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
           )}
         </div>
       )}
-      {staffTab === "Disputas" && <DisputeReview notify={notify} />}
+      {staffTab === "Disputas" && <StaffOperations mode="disputes" notify={notify} />}
       {staffTab === "Reportes chat" && <ChatReportsManager notify={notify} />}
-      {staffTab === "Usuarios" && (
-        <StaffTable
-          title="Usuarios verificados"
-          rows={[
-            ["hoxhi", "LVL 10", "Dueño", "Activo"],
-            ["Maddison", "LVL 8", "Jugador", "Activo"],
-            ["Jericho", "LVL 7", "Mod", "Activo"],
-            ["Rayo", "LVL 4", "Jugador", "Pendiente"],
-          ]}
-        />
-      )}
+      {staffTab === "Usuarios" && <StaffOperations mode="users" notify={notify} />}
       {staffTab === "Roles" && <RolesManager notify={notify} />}
-      {staffTab === "Sanciones" && (
-        <StaffTable
-          title="Sanciones recientes"
-          rows={[
-            ["neo", "Abandono", "Deuda S/ 6", "Suspendido"],
-            ["ace", "No-show", "Multa S/ 3", "Activo"],
-            ["loko", "Chat tóxico", "Mute 24 h", "Activo"],
-          ]}
-        />
-      )}
-      {staffTab === "Auditoría" && (
-        <StaffTable
-          title="Registro administrativo"
-          rows={[
-            ["Tom", "Aprobó a Maddison", "LVL 8", "Hace 12 min"],
-            ["Jericho", "Silenció a loko", "24 horas", "Hace 1 h"],
-            ["Tom", "Ajuste contable", "+ S/ 10", "Ayer"],
-          ]}
-        />
-      )}
+      {staffTab === "Sanciones" && <StaffOperations mode="sanctions" notify={notify} />}
+      {staffTab === "Auditoría" && <StaffOperations mode="audit" notify={notify} />}
     </section>
   );
+}
+
+type OperationsData = {
+  disputes: Array<{ id: string; roomId: string; roomName: string | null; accusedUserId: string | null; reason: string; description: string; status: string; resolution: string | null; createdAt: string }>;
+  sanctions: Array<{ id: string; userId: string; nickname: string; type: string; reason: string; penaltyCents: number; revokedAt: string | null; createdAt: string }>;
+  appeals: Array<{ id: string; sanctionId: string; nickname: string; reason: string; status: string; resolution: string | null; createdAt: string }>;
+  audits: Array<{ id: string; action: string; entityType: string; entityId: string | null; reason: string | null; createdAt: string }>;
+  users: Array<{ id: string; nickname: string; role: string; status: string; level: number }>;
+};
+
+function StaffOperations({ mode, notify }: { mode: "disputes" | "sanctions" | "audit" | "users"; notify: (message: string) => void }) {
+  const [data, setData] = useState<OperationsData | null>(null);
+  const [target, setTarget] = useState("");
+  const [type, setType] = useState("warning");
+  const [reason, setReason] = useState("");
+  const load = async () => { const response = await fetch("/api/staff/operations", { cache: "no-store" }); if (response.ok) { const body = await response.json(); setData(body); setTarget((current) => current || body.users[0]?.id || ""); } };
+  useEffect(() => { void load(); }, []);
+  const reviewDispute = async (item: OperationsData["disputes"][number], decision: "dismissed" | "upheld") => { const resolution = decision === "dismissed" ? "Revisado por staff: reporte descartado." : "Infracción confirmada por el staff."; let response = await fetch(`/api/staff/disputes/${item.id}/review`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ decision, resolution }) }); if (response.ok && decision === "upheld") response = await fetch(`/api/staff/rooms/${item.roomId}/cancel`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reason: resolution, sanctionedUserId: item.accusedUserId || undefined }) }); notify(response.ok ? "Caso resuelto y registrado" : "No se pudo resolver el caso"); if (response.ok) await load(); };
+  const sanction = async () => { const penalties: Record<string, number> = { no_show: 300, abandonment: 1200 }; const response = await fetch("/api/staff/operations", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "sanction", userId: target, type, reason, penaltyCents: penalties[type] ?? 0, expiresHours: type === "ban" ? undefined : 24 }) }); notify(response.ok ? "Sanción aplicada y auditada" : "No se pudo aplicar la sanción"); if (response.ok) { setReason(""); await load(); } };
+  const reviewAppeal = async (id: string, decision: "accepted" | "rejected") => { const response = await fetch("/api/staff/operations", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "review_appeal", appealId: id, decision, resolution: decision === "accepted" ? "Apelación aceptada; sanción revocada y saldo regularizado." : "Apelación revisada y rechazada por el staff." }) }); notify(response.ok ? "Apelación resuelta" : "No se pudo resolver la apelación"); if (response.ok) await load(); };
+  if (!data) return <p className="wallet-help">Cargando información operativa…</p>;
+  if (mode === "disputes") return <div className="staff-table"><div><strong>Disputas reales</strong><span>{data.disputes.filter((x) => x.status === "pending").length} pendientes</span></div>{data.disputes.map((item) => <article key={item.id}><span>{item.roomName ?? item.roomId}</span><span>{item.reason}</span><span>{item.description}</span><span>{item.status}</span>{item.status === "pending" ? <span><button onClick={() => void reviewDispute(item, "dismissed")}>Descartar</button><button onClick={() => void reviewDispute(item, "upheld")}>Confirmar y cancelar</button></span> : <span>{item.resolution}</span>}</article>)}{!data.disputes.length && <p className="wallet-help">No hay disputas registradas.</p>}</div>;
+  if (mode === "users") return <div className="staff-table"><div><strong>Usuarios registrados</strong><span>{data.users.length} cuentas</span></div>{data.users.map((item) => <article key={item.id}><span>{item.nickname}</span><span>LVL {item.level}</span><span>{item.role}</span><span>{item.status}</span></article>)}</div>;
+  if (mode === "audit") return <div className="staff-table"><div><strong>Auditoría administrativa</strong><span>{data.audits.length} registros recientes</span></div>{data.audits.map((item) => <article key={item.id}><span>{item.action.replaceAll("_", " ")}</span><span>{item.entityType}</span><span>{item.reason ?? "Sin observación"}</span><span>{new Date(item.createdAt).toLocaleString("es-PE")}</span></article>)}</div>;
+  return <section><div className="roles-intro"><div><span className="staff-role">DISCIPLINA REAL</span><h3>Aplicar sanción</h3></div></div><div className="admin-result-controls"><label>Jugador<select value={target} onChange={(e) => setTarget(e.target.value)}>{data.users.map((user) => <option value={user.id} key={user.id}>{user.nickname}</option>)}</select></label><label>Tipo<select value={type} onChange={(e) => setType(e.target.value)}><option value="warning">Advertencia</option><option value="mute">Mute 24 h</option><option value="no_show">No-show · S/ 3</option><option value="abandonment">Abandono · S/ 12</option><option value="suspension">Suspensión</option><option value="ban">Ban</option></select></label><label>Motivo<textarea value={reason} onChange={(e) => setReason(e.target.value)} /></label><button className="primary-button" disabled={reason.trim().length < 5} onClick={() => void sanction()}>Aplicar y registrar</button></div><div className="staff-table"><div><strong>Sanciones</strong><span>{data.sanctions.length} registros</span></div>{data.sanctions.map((item) => <article key={item.id}><span>{item.nickname}</span><span>{item.type}</span><span>{item.reason}</span><span>{item.penaltyCents ? `S/ ${(item.penaltyCents / 100).toFixed(2)}` : "Sin multa"}</span><span>{item.revokedAt ? "Revocada" : "Activa"}</span></article>)}</div><div className="staff-table"><div><strong>Apelaciones</strong><span>{data.appeals.filter((x) => x.status === "pending").length} pendientes</span></div>{data.appeals.map((item) => <article key={item.id}><span>{item.nickname}</span><span>{item.reason}</span><span>{item.status}</span>{item.status === "pending" && <span><button onClick={() => void reviewAppeal(item.id, "rejected")}>Rechazar</button><button onClick={() => void reviewAppeal(item.id, "accepted")}>Aceptar</button></span>}</article>)}</div></section>;
 }
 
 type ChatReportItem = {
@@ -4622,6 +4581,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
   const [selectedId, setSelectedId] = useState("");
   const [financeTab, setFinanceTab] = useState("Pendientes");
   const [financeError, setFinanceError] = useState("");
+  const [ledger, setLedger] = useState<Array<{ id: string; nickname: string; roomId: string | null; type: string; amountCents: number; description: string; createdAt: string }>>([]);
   const loadPayments = async () => {
     const response = await fetch("/api/staff/payments");
     if (!response.ok) {
@@ -4640,6 +4600,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
         status: string;
         nickname: string;
       }>;
+      ledger: typeof ledger;
     };
     const mapped = body.requests.map((item) => ({
       id: item.id,
@@ -4656,6 +4617,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
             : "Aprobada",
     }));
     setRequests(mapped);
+    setLedger(body.ledger ?? []);
     setSelectedId((current) => current || mapped[0]?.id || "");
   };
   useEffect(() => {
@@ -4859,12 +4821,12 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
           )}
         </div>
       ) : (
-        <LedgerPanel />
+        <LedgerPanel entries={ledger} />
       )}
     </section>
   );
 }
-function LedgerPanel() {
+function LedgerPanel({ entries }: { entries: Array<{ id: string; nickname: string; roomId: string | null; type: string; amountCents: number; description: string; createdAt: string }> }) {
   return (
     <div className="ledger-full">
       <div className="ledger-head">
@@ -4876,64 +4838,8 @@ function LedgerPanel() {
         <span>CRÉDITO</span>
         <span>SALDO</span>
       </div>
-      {[
-        [
-          "LED-9812",
-          "Maddison",
-          "Recarga",
-          "PAY-2037",
-          "—",
-          "S/ 20.00",
-          "S/ 26.00",
-        ],
-        [
-          "LED-9811",
-          "hoxhi",
-          "Premio",
-          "ROOM-176",
-          "—",
-          "S/ 10.00",
-          "S/ 44.00",
-        ],
-        [
-          "LED-9810",
-          "hoxhi",
-          "Entrada",
-          "ROOM-176",
-          "S/ 6.00",
-          "—",
-          "S/ 34.00",
-        ],
-        [
-          "LED-9809",
-          "neo",
-          "Penalización",
-          "SAN-104",
-          "S/ 3.00",
-          "—",
-          "S/ 9.00",
-        ],
-        [
-          "LED-9808",
-          "Jericho",
-          "Retiro",
-          "PAY-2035",
-          "S/ 20.00",
-          "—",
-          "S/ 18.00",
-        ],
-      ].map((row) => (
-        <div key={row[0]}>
-          {row.map((cell, index) => (
-            <span
-              className={index === 5 ? "positive" : ""}
-              key={`${row[0]}-${index}`}
-            >
-              {cell}
-            </span>
-          ))}
-        </div>
-      ))}
+      {entries.map((entry) => <div key={entry.id}><span>{entry.id.slice(-8)}</span><span>{entry.nickname}</span><span>{entry.type}</span><span>{entry.roomId ?? entry.description}</span><span>{entry.amountCents < 0 ? `S/ ${Math.abs(entry.amountCents / 100).toFixed(2)}` : "—"}</span><span className="positive">{entry.amountCents > 0 ? `S/ ${(entry.amountCents / 100).toFixed(2)}` : "—"}</span><span>{new Date(entry.createdAt).toLocaleString("es-PE")}</span></div>)}
+      {!entries.length && <p className="wallet-help">No hay movimientos contables registrados.</p>}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { and, eq, gte, sql } from "drizzle-orm";
 import { getDb } from "../../../../../../db";
-import { auditLogs, ledgerEntries, matchServers, notifications, roomPlayers, rooms, users, wallets } from "../../../../../../db/schema";
+import { auditLogs, benefitPasses, ledgerEntries, matchServers, notifications, roomPlayers, rooms, users, wallets } from "../../../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../../../lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -17,13 +17,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
   const [room] = await db.select().from(rooms).where(eq(rooms.id, roomId)).limit(1);
   if (!room || ["settled", "cancelled"].includes(room.status)) return Response.json({ ok: false, error: "room_not_cancellable" }, { status: 409 });
   const players = await db.select().from(roomPlayers).where(eq(roomPlayers.roomId, roomId));
+  const passes = await db.select().from(benefitPasses).where(and(eq(benefitPasses.roomId, roomId), eq(benefitPasses.status, "used")));
+  const passByUser = new Map(passes.map((pass) => [pass.userId, pass]));
   if (body.sanctionedUserId && !players.some((p) => p.userId === body.sanctionedUserId)) return Response.json({ ok: false, error: "sanctioned_user_not_in_room" }, { status: 400 });
   const now = new Date();
   const actions: any[] = [];
   for (const player of players) {
     const sanctioned = player.userId === body.sanctionedUserId;
-    actions.push(db.update(wallets).set({ lockedCents: sql`${wallets.lockedCents} - ${room.entryCents}`, availableCents: sql`${wallets.availableCents} + ${sanctioned ? 0 : room.entryCents}` }).where(and(eq(wallets.userId, player.userId), gte(wallets.lockedCents, room.entryCents))));
-    actions.push(db.insert(ledgerEntries).values({ id: `led_${crypto.randomUUID()}`, userId: player.userId, roomId, type: sanctioned ? "penalty" : "entry_release", amountCents: sanctioned ? -room.entryCents : room.entryCents, description: sanctioned ? `Entrada retenida por sanción: ${body.reason.trim()}` : `Devolución por cancelación de ${room.name}`, createdAt: now }));
+    const usedPass = passByUser.get(player.userId);
+    if (usedPass) {
+      if (!sanctioned) actions.push(db.update(benefitPasses).set({ status: "available", roomId: null }).where(eq(benefitPasses.id, usedPass.id)));
+    } else actions.push(db.update(wallets).set({ lockedCents: sql`${wallets.lockedCents} - ${room.entryCents}`, availableCents: sql`${wallets.availableCents} + ${sanctioned ? 0 : room.entryCents}` }).where(and(eq(wallets.userId, player.userId), gte(wallets.lockedCents, room.entryCents))));
+    actions.push(db.insert(ledgerEntries).values({ id: `led_${crypto.randomUUID()}`, userId: player.userId, roomId, type: sanctioned ? "penalty" : "entry_release", amountCents: usedPass ? 0 : sanctioned ? -room.entryCents : room.entryCents, description: sanctioned ? `Entrada o pase retenido por sanción: ${body.reason.trim()}` : usedPass ? `Pase devuelto por cancelación de ${room.name}` : `Devolución por cancelación de ${room.name}`, createdAt: now }));
     actions.push(db.insert(notifications).values({ id: `not_${crypto.randomUUID()}`, userId: player.userId, type: sanctioned ? "sanction" : "wallet", title: sanctioned ? "Entrada retenida" : "Entrada devuelta", body: sanctioned ? body.reason.trim() : `Se devolvieron S/ ${(room.entryCents / 100).toFixed(2)} a tu saldo.`, actionUrl: `/rooms/${roomId}`, createdAt: now }));
   }
   actions.push(db.update(rooms).set({ status: "cancelled" }).where(eq(rooms.id, roomId)));

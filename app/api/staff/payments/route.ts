@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
-import { paymentRequests, users } from "../../../../db/schema";
+import { ledgerEntries, paymentRequests, users } from "../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -36,5 +36,6 @@ export async function GET(request: Request) {
     .innerJoin(users, eq(paymentRequests.userId, users.id))
     .orderBy(desc(paymentRequests.requestedAt))
     .limit(100);
-  return Response.json({ ok: true, requests: rows });
+  const ledger = await db.select({ id: ledgerEntries.id, userId: ledgerEntries.userId, nickname: users.nickname, roomId: ledgerEntries.roomId, type: ledgerEntries.type, amountCents: ledgerEntries.amountCents, description: ledgerEntries.description, createdAt: ledgerEntries.createdAt }).from(ledgerEntries).innerJoin(users, eq(ledgerEntries.userId, users.id)).orderBy(desc(ledgerEntries.createdAt)).limit(200);
+  return Response.json({ ok: true, requests: rows, ledger });
 }

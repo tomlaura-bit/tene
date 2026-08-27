@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  icons: { icon: '/favicon.svg' },
   title: 'TENE — CS2 competitivo en Perú',
   description: 'Salas privadas 5v5 de Counter-Strike 2 con equipos balanceados y premios reales.',
   openGraph: {

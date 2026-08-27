@@ -4,6 +4,7 @@ import {
   ledgerEntries,
   paymentRequests,
   roomPlayers,
+  rooms,
   users,
   wallets,
 } from "../../../db/schema";
@@ -84,7 +85,8 @@ export async function POST(request: Request) {
     const played = await db
       .select({ id: roomPlayers.id })
       .from(roomPlayers)
-      .where(eq(roomPlayers.userId, user.id))
+      .innerJoin(rooms, eq(roomPlayers.roomId, rooms.id))
+      .where(and(eq(roomPlayers.userId, user.id), eq(rooms.status, "settled")))
       .limit(1);
     if (!played.length)
       return Response.json(

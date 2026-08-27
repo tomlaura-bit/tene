@@ -2,6 +2,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { getDb } from "../../../../../db";
 import { matchEvents, matchServers, roomPlayers, rooms, users } from "../../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../../lib/auth";
+import { provisionMatch } from "../../../../../lib/matchzy";
 
 export const dynamic = "force-dynamic";
 const mapPool = ["Mirage", "Inferno", "Nuke", "Ancient", "Anubis", "Dust II", "Train"];
@@ -39,5 +40,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
     db.update(matchServers).set({ map: selectedMap, status: "ready" }).where(eq(matchServers.id, server.id)),
     db.update(rooms).set({ status: "live" }).where(eq(rooms.id, roomId)),
   ]);
-  return Response.json({ ok: true, map: selectedMap, side: body.side, status: "live" });
+  const roster = await db.select({ steamId64: users.steamId64, team: roomPlayers.team }).from(roomPlayers).innerJoin(users, eq(roomPlayers.userId, users.id)).where(eq(roomPlayers.roomId, roomId));
+  try {
+    const provisioned = await provisionMatch({ roomId, map: selectedMap!, side: body.side, players: roster });
+    if (provisioned.configured) await db.update(matchServers).set({ status: provisioned.address ? "ready" : "provisioning", addressEncrypted: provisioned.address }).where(eq(matchServers.id, server.id));
+    return Response.json({ ok: true, map: selectedMap, side: body.side, status: provisioned.configured ? "provisioning" : "live", integration: provisioned.configured ? "matchzy" : "manual" });
+  } catch {
+    await db.update(matchServers).set({ status: "failed" }).where(eq(matchServers.id, server.id));
+    await db.update(rooms).set({ status: "review" }).where(eq(rooms.id, roomId));
+    return Response.json({ ok: false, error: "server_provision_failed" }, { status: 502 });
+  }
 }

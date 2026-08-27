@@ -1,6 +1,6 @@
 import { and, eq, gte, sql } from "drizzle-orm";
 import { getDb } from "../../../../../../db";
-import { auditLogs, ledgerEntries, matchDisputes, matchEvents, matchServers, notifications, playerRatings, ratingChanges, roomPlayers, rooms, users, wallets } from "../../../../../../db/schema";
+import { auditLogs, benefitPasses, ledgerEntries, matchDisputes, matchEvents, matchServers, notifications, playerRatings, ratingChanges, roomPlayers, rooms, users, wallets } from "../../../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../../../lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -23,18 +23,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
   const [pending] = await db.select().from(matchDisputes).where(and(eq(matchDisputes.roomId, roomId), eq(matchDisputes.status, "pending"))).limit(1);
   if (pending) return Response.json({ ok: false, error: "settlement_frozen" }, { status: 409 });
   const players = await db.select({ userId: roomPlayers.userId, team: roomPlayers.team, elo: playerRatings.elo }).from(roomPlayers).leftJoin(playerRatings, eq(roomPlayers.userId, playerRatings.userId)).where(eq(roomPlayers.roomId, roomId));
+  const passes = await db.select().from(benefitPasses).where(and(eq(benefitPasses.roomId, roomId), eq(benefitPasses.status, "used")));
+  const passUsers = new Set(passes.map((pass) => pass.userId));
   if (players.length !== 10 || players.filter((p) => p.team === "a").length !== 5 || players.filter((p) => p.team === "b").length !== 5)
     return Response.json({ ok: false, error: "invalid_teams" }, { status: 409 });
   const winner = scoreA > scoreB ? "a" : "b";
+  const averageA = players.filter((p) => p.team === "a").reduce((sum, p) => sum + (p.elo ?? 1000), 0) / 5;
+  const averageB = players.filter((p) => p.team === "b").reduce((sum, p) => sum + (p.elo ?? 1000), 0) / 5;
+  const expectedA = 1 / (1 + Math.pow(10, (averageB - averageA) / 400));
+  const deltaA = Math.round(32 * ((winner === "a" ? 1 : 0) - expectedA));
   const now = new Date();
   const actions: any[] = [];
   for (const player of players) {
     const won = player.team === winner;
     const before = player.elo ?? 1000;
-    const delta = won ? 25 : -25;
+    const delta = player.team === "a" ? deltaA : -deltaA;
     const after = Math.max(0, before + delta);
-    actions.push(db.update(wallets).set({ lockedCents: sql`${wallets.lockedCents} - ${room.entryCents}`, availableCents: sql`${wallets.availableCents} + ${won ? room.prizePerWinnerCents : 0}` }).where(and(eq(wallets.userId, player.userId), gte(wallets.lockedCents, room.entryCents))));
-    actions.push(db.insert(ledgerEntries).values({ id: `led_${crypto.randomUUID()}`, userId: player.userId, roomId, type: "fee", amountCents: -100, description: `Servicio de ${room.name}`, createdAt: now }));
+    const usedPass = passUsers.has(player.userId);
+    actions.push(usedPass ? db.update(wallets).set({ availableCents: sql`${wallets.availableCents} + ${won ? room.prizePerWinnerCents : 0}` }).where(eq(wallets.userId, player.userId)) : db.update(wallets).set({ lockedCents: sql`${wallets.lockedCents} - ${room.entryCents}`, availableCents: sql`${wallets.availableCents} + ${won ? room.prizePerWinnerCents : 0}` }).where(and(eq(wallets.userId, player.userId), gte(wallets.lockedCents, room.entryCents))));
+    actions.push(db.insert(ledgerEntries).values({ id: `led_${crypto.randomUUID()}`, userId: player.userId, roomId, type: "fee", amountCents: 0, description: usedPass ? `Servicio cubierto por pase en ${room.name}` : `S/ 1 de servicio incluido en la entrada de ${room.name}`, createdAt: now }));
     if (won) actions.push(db.insert(ledgerEntries).values({ id: `led_${crypto.randomUUID()}`, userId: player.userId, roomId, type: "prize", amountCents: room.prizePerWinnerCents, description: `Premio de ${room.name}`, createdAt: now }));
     actions.push(db.update(playerRatings).set({ elo: after, level: levelForElo(after), matches: sql`${playerRatings.matches} + 1`, wins: sql`${playerRatings.wins} + ${won ? 1 : 0}`, losses: sql`${playerRatings.losses} + ${won ? 0 : 1}`, calibrationStatus: "established", updatedAt: now }).where(eq(playerRatings.userId, player.userId)));
     actions.push(db.insert(ratingChanges).values({ id: `rat_${crypto.randomUUID()}`, userId: player.userId, roomId, beforeElo: before, delta, afterElo: after, reason: "match", createdAt: now }));

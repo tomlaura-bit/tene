@@ -2,6 +2,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { chatMessages, playerRatings, users } from "../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../lib/auth";
+import { enforceRateLimit } from "../../../lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const limited = await enforceRateLimit(request, "chat_message", 12, 60);
+  if (limited) return limited;
   const identity = getAuthenticatedUser(request);
   if (!identity) return unauthorized();
   const body = (await request.json().catch(() => ({}))) as {

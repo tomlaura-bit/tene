@@ -4,6 +4,7 @@ import { getDb } from "../../../../../db";
 import { steamProfileChecks, users } from "../../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../../lib/auth";
 import { inspectSteamProfile } from "../../../../../lib/steam";
+import { enforceRateLimit } from "../../../../../lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const identity = getAuthenticatedUser(request);
   if (!identity) return unauthorized();
+  const limited = await enforceRateLimit(request, "steam_recheck", 5, 600);
+  if (limited) return limited;
   const db = getDb();
   const [user] = await db
     .select()

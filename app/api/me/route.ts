@@ -1,7 +1,8 @@
-import { asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { playerRatings, users, wallets } from "../../../db/schema";
+import { playerRatings, publicPlayerProfiles, users, wallets } from "../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../lib/auth";
+import { enforceRateLimit } from "../../../lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,7 @@ export async function GET(request: Request) {
   const identity = getAuthenticatedUser(request);
   if (!identity) return unauthorized();
   const db = getDb();
-  let [record] = await db
+  const [record] = await db
     .select()
     .from(users)
     .where(eq(users.authSubjectId, identity.id))
@@ -20,28 +21,6 @@ export async function GET(request: Request) {
       onboardingRequired: true,
       identity: { email: identity.email, fullName: identity.fullName },
     });
-  if (record.role === "player") {
-    const [owner] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.role, "owner"))
-      .limit(1);
-    if (!owner) {
-      const [firstUser] = await db
-        .select({ id: users.id })
-        .from(users)
-        .orderBy(asc(users.createdAt))
-        .limit(1);
-      if (firstUser?.id === record.id) {
-        const [promoted] = await db
-          .update(users)
-          .set({ role: "owner" })
-          .where(eq(users.id, record.id))
-          .returning();
-        if (promoted) record = promoted;
-      }
-    }
-  }
   const [wallet] = await db
     .select()
     .from(wallets)
@@ -52,23 +31,28 @@ export async function GET(request: Request) {
     .from(playerRatings)
     .where(eq(playerRatings.userId, record.id))
     .limit(1);
+  const [privacy] = await db.select({ matchHistoryVisible: publicPlayerProfiles.matchHistoryVisible }).from(publicPlayerProfiles).where(eq(publicPlayerProfiles.userId, record.id)).limit(1);
   return Response.json({
     ok: true,
     onboardingRequired: false,
     user: record,
     wallet: wallet ?? null,
     rating: rating ?? null,
+    privacy: privacy ?? { matchHistoryVisible: true },
   });
 }
 
 export async function POST(request: Request) {
   const identity = getAuthenticatedUser(request);
   if (!identity) return unauthorized();
+  const limited = await enforceRateLimit(request, "profile_write", 8, 60);
+  if (limited) return limited;
   const body = (await request.json()) as {
     fullName?: string;
     nickname?: string;
     email?: string;
     birthDate?: string;
+    acceptTerms?: boolean;
   };
   const fullName = body.fullName?.trim();
   const nickname = body.nickname?.trim();
@@ -90,6 +74,11 @@ export async function POST(request: Request) {
     );
   const db = getDb();
   const now = new Date();
+  const [existing] = await db.select({ legalVersion: users.legalVersion, termsAcceptedAt: users.termsAcceptedAt, privacyAcceptedAt: users.privacyAcceptedAt }).from(users).where(eq(users.authSubjectId, identity.id)).limit(1);
+  if ((!existing?.termsAcceptedAt || existing.legalVersion !== "2026-08-27") && body.acceptTerms !== true)
+    return Response.json({ ok: false, error: "legal_acceptance_required" }, { status: 400 });
+  const termsAcceptedAt = body.acceptTerms ? now : existing?.termsAcceptedAt ?? now;
+  const privacyAcceptedAt = body.acceptTerms ? now : existing?.privacyAcceptedAt ?? now;
   const id = `usr_${crypto.randomUUID()}`;
   await db
     .insert(users)
@@ -100,11 +89,14 @@ export async function POST(request: Request) {
       fullName,
       birthDate,
       nickname,
+      legalVersion: "2026-08-27",
+      termsAcceptedAt,
+      privacyAcceptedAt,
       createdAt: now,
     })
     .onConflictDoUpdate({
       target: users.authSubjectId,
-      set: { email, fullName, birthDate, nickname },
+      set: { email, fullName, birthDate, nickname, legalVersion: "2026-08-27", termsAcceptedAt, privacyAcceptedAt },
     });
   const [user] = await db
     .select()
@@ -120,6 +112,7 @@ export async function POST(request: Request) {
       debtCents: 0,
     })
     .onConflictDoNothing();
+  await db.insert(publicPlayerProfiles).values({ userId: user.id, updatedAt: now }).onConflictDoNothing();
   await db
     .insert(playerRatings)
     .values({ userId: user.id, seasonKey: "2026-s01", updatedAt: now })

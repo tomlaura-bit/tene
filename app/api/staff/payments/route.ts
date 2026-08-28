@@ -26,6 +26,8 @@ export async function GET(request: Request) {
       method: paymentRequests.method,
       amountCents: paymentRequests.amountCents,
       operationCode: paymentRequests.operationCode,
+      destinationName: paymentRequests.destinationName,
+      destinationPhone: paymentRequests.destinationPhone,
       proofUrl: paymentRequests.proofUrl,
       status: paymentRequests.status,
       requestedAt: paymentRequests.requestedAt,

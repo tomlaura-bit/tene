@@ -10,6 +10,7 @@ import {
   wallets,
 } from "../../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../../lib/auth";
+import { enforceRateLimit } from "../../../../../lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,8 @@ export async function POST(
 ) {
   const identity = getAuthenticatedUser(request);
   if (!identity) return unauthorized();
+  const limited = await enforceRateLimit(request, "room_join", 10, 60);
+  if (limited) return limited;
   const { roomId } = await params;
   const db = getDb();
   const [user] = await db
@@ -31,6 +34,8 @@ export async function POST(
       { ok: false, error: "onboarding_required" },
       { status: 409 },
     );
+  if (!user.termsAcceptedAt || !user.privacyAcceptedAt || user.legalVersion !== "2026-08-27")
+    return Response.json({ ok: false, error: "legal_acceptance_required" }, { status: 403 });
   if (user.status !== "verified")
     return Response.json(
       { ok: false, error: "staff_verification_required" },

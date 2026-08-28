@@ -141,6 +141,20 @@
       "when": 1787874950718,
       "tag": "0019_lying_gambit",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1787875731763,
+      "tag": "0020_robust_bug",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1787875831152,
+      "tag": "0021_modern_callisto",
+      "breakpoints": true
     }
   ]
 }

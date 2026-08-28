@@ -29,8 +29,22 @@ export const users = sqliteTable("users", {
   })
     .notNull()
     .default("player"),
+  legalVersion: text("legal_version"),
+  termsAcceptedAt: integer("terms_accepted_at", { mode: "timestamp" }),
+  privacyAcceptedAt: integer("privacy_accepted_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
+
+export const rateLimits = sqliteTable(
+  "rate_limits",
+  {
+    key: text("key").primaryKey(),
+    count: integer("count").notNull().default(0),
+    windowStartedAt: integer("window_started_at").notNull(),
+    expiresAt: integer("expires_at").notNull(),
+  },
+  (table) => [index("idx_rate_limits_expires").on(table.expiresAt)],
+);
 
 export const accountRegistrations = sqliteTable("account_registrations", {
   id: text("id").primaryKey(),
@@ -335,6 +349,8 @@ export const paymentRequests = sqliteTable(
     method: text("method", { enum: ["yape", "plin"] }).notNull(),
     amountCents: integer("amount_cents").notNull(),
     operationCode: text("operation_code"),
+    destinationName: text("destination_name"),
+    destinationPhone: text("destination_phone"),
     status: text("status", {
       enum: ["pending", "approved", "rejected", "paid", "cancelled"],
     })

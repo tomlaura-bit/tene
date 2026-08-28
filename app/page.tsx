@@ -51,6 +51,8 @@ type SessionData = {
     level: number;
     status: "pending" | "verified" | "rejected" | "suspended" | "banned";
     role: "player" | "sub" | "streamer" | "mod" | "admin" | "owner";
+    legalVersion: string | null;
+    termsAcceptedAt: string | null;
   };
   wallet: {
     availableCents: number;
@@ -65,6 +67,7 @@ type SessionData = {
     losses: number;
     calibrationStatus: "pending" | "staff_assigned" | "established";
   } | null;
+  privacy?: { matchHistoryVisible: boolean };
 };
 
 type RoomData = {
@@ -469,6 +472,7 @@ function SteamRegistrationModal({
   const [nickname, setNickname] = useState("");
   const [email] = useState(identity?.email ?? "");
   const [birthDate, setBirthDate] = useState("");
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [backendMessage, setBackendMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [steamCheck, setSteamCheck] = useState<{ personaName: string; avatarUrl: string | null; profilePublic: boolean; gameDetailsPublic: boolean; ownsCs2: boolean; cs2Minutes: number; eligible: boolean } | null>(null);
@@ -480,7 +484,7 @@ function SteamRegistrationModal({
       const response = await fetch("/api/me", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ fullName, nickname, email, birthDate }),
+        body: JSON.stringify({ fullName, nickname, email, birthDate, acceptTerms: acceptedLegal }),
       });
       if (response.status === 401) {
         window.location.href = "/signin-with-chatgpt?return_to=/";
@@ -608,23 +612,16 @@ function SteamRegistrationModal({
                 <input value="Protegida por ChatGPT" disabled />
               </label>
               {mode === "register" && (
-                <label>
+                <><label>
                   Fecha de nacimiento
-                  <input
-                    type="date"
-                    value={birthDate}
-                    onChange={(event) => setBirthDate(event.target.value)}
-                  />
-                  <small>
-                    Debes ser mayor de 18 años. En tu cumpleaños recibes 2 salas
-                    gratis.
-                  </small>
-                </label>
+                  <input type="date" value={birthDate} onChange={(event) => setBirthDate(event.target.value)} />
+                  <small>Debes ser mayor de 18 años. En tu cumpleaños recibes 2 salas gratis.</small>
+                </label><label className="legal-consent"><input type="checkbox" checked={acceptedLegal} onChange={(event) => setAcceptedLegal(event.target.checked)} /><span>Acepto los términos, las reglas competitivas, la política de privacidad y confirmo que soy mayor de 18 años.</span></label></>
               )}
             </div>
             <button
               className="primary-button w-full"
-              disabled={saving}
+              disabled={saving || (mode === "register" && identity !== null && !acceptedLegal)}
               onClick={() =>
                 mode === "register"
                   ? identity
@@ -807,6 +804,7 @@ function Dashboard({
     "Ranking",
     "Staff",
     "Finanzas",
+    "Reglas legales",
   ];
   return (
     <main className="app-bg min-h-screen text-white">
@@ -834,6 +832,7 @@ function Dashboard({
                       Historial: "↺",
                       Ranking: "⌁",
                       Staff: "⚙",
+                      "Reglas legales": "§",
                       Finanzas: "S/",
                     } as Record<string, string>
                   )[tab]
@@ -1413,6 +1412,8 @@ function EnhancedDashboard({
   const [paymentMethod, setPaymentMethod] = useState<"yape" | "plin">("yape");
   const [operationCode, setOperationCode] = useState("");
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [withdrawalName, setWithdrawalName] = useState("");
+  const [withdrawalPhone, setWithdrawalPhone] = useState("");
   const flash = (message: string) => {
     setNotice(message);
     window.setTimeout(() => setNotice(""), 3500);
@@ -1427,6 +1428,9 @@ function EnhancedDashboard({
     if (walletAction === "deposit") {
       form.set("operationCode", operationCode);
       if (paymentProof) form.set("proof", paymentProof);
+    } else {
+      form.set("destinationName", withdrawalName);
+      form.set("destinationPhone", withdrawalPhone);
     }
     const response = await fetch("/api/wallet", { method: "POST", body: form });
     const body = (await response.json()) as {
@@ -1442,6 +1446,7 @@ function EnhancedDashboard({
       insufficient_balance: "No tienes saldo suficiente",
       duplicate_operation: "Ese código de operación ya fue registrado",
       invalid_request: "Revisa el monto y los datos de la solicitud",
+      withdrawal_destination_required: "Ingresa el titular y un celular peruano válido de 9 dígitos",
     };
     if (!response.ok)
       return flash(
@@ -1455,6 +1460,8 @@ function EnhancedDashboard({
     );
     setOperationCode("");
     setPaymentProof(null);
+    setWithdrawalName("");
+    setWithdrawalPhone("");
     setWalletAction(null);
   };
   return (
@@ -1575,6 +1582,7 @@ function EnhancedDashboard({
         {activeTab === "Staff" && <StaffPanel notify={flash} />}
         {activeTab === "Finanzas" && <FinancePanel notify={flash} />}
         {activeTab === "Cuenta" && <AccountPanel session={session} />}
+        {activeTab === "Reglas legales" && <LegalPanel />}
       </div>
       {walletAction && (
         <div
@@ -1640,10 +1648,7 @@ function EnhancedDashboard({
                 </label>
               </div>
             ) : (
-              <p className="wallet-help">
-                Disponible: S/ {balance.toFixed(2)} · Retiro mínimo S/ 10 ·
-                Haber jugado una sala.
-              </p>
+              <div className="withdrawal-fields"><p className="wallet-help">Disponible: S/ {balance.toFixed(2)} · Retiro mínimo S/ 10 · Haber jugado una sala.</p><label>Titular de Yape/Plin<input value={withdrawalName} onChange={(event) => setWithdrawalName(event.target.value)} placeholder="Nombre completo" /></label><label>Celular de destino<input inputMode="numeric" value={withdrawalPhone} onChange={(event) => setWithdrawalPhone(event.target.value.replace(/\D/g, "").slice(0, 9))} placeholder="9XXXXXXXX" /></label></div>
             )}
             <button className="primary-button w-full" onClick={applyWallet}>
               Enviar solicitud
@@ -1683,6 +1688,8 @@ function AccountPanel({ session }: { session: SessionData | null }) {
   const [steamStatus, setSteamStatus] = useState("");
   const [checkingSteam, setCheckingSteam] = useState(false);
   const [profileStatus, setProfileStatus] = useState("");
+  const [historyVisible, setHistoryVisible] = useState(session?.privacy?.matchHistoryVisible ?? true);
+  const [privacyStatus, setPrivacyStatus] = useState("");
   const loadSteam = async () => {
     const response = await fetch("/api/me/steam/recheck");
     if (response.ok) setSteamState(await response.json());
@@ -1738,6 +1745,7 @@ function AccountPanel({ session }: { session: SessionData | null }) {
         nickname: form.get("nickname"),
         email: form.get("email"),
         birthDate: form.get("birthDate"),
+        acceptTerms: form.get("acceptTerms") === "on",
       }),
     });
     setProfileStatus(
@@ -1745,6 +1753,13 @@ function AccountPanel({ session }: { session: SessionData | null }) {
         ? "Cambios guardados."
         : "No se pudieron guardar los cambios.",
     );
+  };
+  const savePrivacy = async (visible: boolean) => {
+    setHistoryVisible(visible);
+    setPrivacyStatus("Guardando…");
+    const response = await fetch("/api/me/privacy", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ matchHistoryVisible: visible }) });
+    if (!response.ok) setHistoryVisible(!visible);
+    setPrivacyStatus(response.ok ? "Preferencia guardada." : "No se pudo guardar la preferencia.");
   };
   return (
     <section className="account-panel">
@@ -1821,6 +1836,7 @@ function AccountPanel({ session }: { session: SessionData | null }) {
             <button className="primary-button" type="submit">
               Guardar cambios
             </button>
+            {session?.user.legalVersion !== "2026-08-27" && <label className="legal-consent"><input name="acceptTerms" type="checkbox" required /><span>Acepto la versión vigente de los términos, reglas competitivas y política de privacidad.</span></label>}
             {profileStatus && (
               <p className="steam-check-result">{profileStatus}</p>
             )}
@@ -1993,7 +2009,7 @@ function AccountPanel({ session }: { session: SessionData | null }) {
               <strong>Historial de partidas</strong>
               <small>Permite que otros jugadores revisen tus resultados.</small>
             </span>
-            <input type="checkbox" defaultChecked />
+            <input type="checkbox" checked={historyVisible} onChange={(event) => void savePrivacy(event.target.checked)} />
           </label>
           <label className="privacy-option">
             <span>
@@ -2002,10 +2018,26 @@ function AccountPanel({ session }: { session: SessionData | null }) {
             </span>
             <input type="checkbox" defaultChecked disabled />
           </label>
+          {privacyStatus && <p className="steam-check-result">{privacyStatus}</p>}
         </div>
       )}
     </section>
   );
+}
+
+function LegalPanel() {
+  return <section className="legal-panel">
+    <div className="legal-hero"><span className="verified-badge">VERSIÓN 27/08/2026</span><h2>Reglas, dinero y privacidad sin letra pequeña</h2><p>Resumen operativo aplicable a todos los jugadores de TENE.</p></div>
+    <div className="legal-grid">
+      <article><h3>Participación</h3><p>Servicio exclusivo para mayores de 18 años. Se requiere SteamID64 propio, perfil y detalles de juego públicos, CS2 visible, mínimo 500 horas y aprobación del staff.</p></article>
+      <article><h3>Entrada y premios</h3><p>La entrada cuesta S/ 6. Se bloquea antes de entrar: S/ 5 financian el premio y S/ 1 corresponde al servicio. Cada integrante del equipo ganador recibe S/ 10.</p></article>
+      <article><h3>Faltas</h3><p>No presentarse implica S/ 3 de penalidad. Abandonar implica S/ 12. Hacks, suplantación, colusión o manipulación pueden ocasionar cancelación, pérdida de la entrada y suspensión o baneo.</p></article>
+      <article><h3>Recargas y retiros</h3><p>Las recargas aprobadas se convierten en saldo retirables; no se revierten como compra. Para retirar debes haber jugado al menos una sala. Cada operación queda registrada y revisada.</p></article>
+      <article><h3>Impugnaciones</h3><p>Un reporte congela la liquidación hasta revisión. Debe indicar motivo, jugador y evidencia cuando exista. El staff puede confirmar el resultado, cancelar o sancionar.</p></article>
+      <article><h3>Privacidad</h3><p>TENE usa identidad, mayoría de edad, SteamID64, horas, avatar, resultados y movimientos para operar las salas. Nunca almacena tu contraseña de ChatGPT ni de Steam.</p></article>
+    </div>
+    <div className="legal-note"><strong>Juego competitivo, no apuesta contra la casa.</strong><span>TENE no fija cuotas ni participa como rival. Organiza partidas de habilidad y cobra una tarifa de servicio informada.</span></div>
+  </section>;
 }
 
 function HomePanel({
@@ -2179,6 +2211,7 @@ function RoomsPanel({
       room_full: "La sala ya está completa",
       room_unavailable: "La sala ya no está disponible",
       authentication_required: "Inicia sesión para reservar",
+      legal_acceptance_required: "Acepta las reglas vigentes desde Cuenta antes de jugar",
     };
     if (!response.ok)
       return notify(
@@ -4629,6 +4662,8 @@ type PaymentRequest = {
   amount: number;
   operation: string;
   proofUrl?: string | null;
+  destinationName?: string | null;
+  destinationPhone?: string | null;
   status: "Pendiente" | "Aprobada" | "Rechazada";
 };
 const seedPayments: PaymentRequest[] = [
@@ -4691,6 +4726,8 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
         amountCents: number;
         operationCode: string | null;
         proofUrl: string | null;
+        destinationName: string | null;
+        destinationPhone: string | null;
         status: string;
         nickname: string;
       }>;
@@ -4704,6 +4741,8 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
       amount: item.amountCents / 100,
       operation: item.operationCode ?? "—",
       proofUrl: item.proofUrl,
+      destinationName: item.destinationName,
+      destinationPhone: item.destinationPhone,
       status:
         item.status === "pending"
           ? "Pendiente"
@@ -4870,7 +4909,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
                 </span>
                 <span>
                   <small>TITULAR</small>
-                  {selected.user}
+                  {selected.destinationName ?? selected.user}
                 </span>
                 <span>
                   <small>ESTADO</small>
@@ -4888,6 +4927,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
                 </div>
               ) : (
                 <div className="withdraw-checks">
+                  <span>Destino: {selected.destinationPhone ?? "Sin registrar"}</span>
                   <span>✓ Jugó al menos una sala</span>
                   <span>✓ Saldo disponible suficiente</span>
                   <span>✓ Titular verificado</span>

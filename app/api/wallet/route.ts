@@ -10,6 +10,7 @@ import {
 } from "../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../lib/auth";
 import { env } from "cloudflare:workers";
+import { enforceRateLimit } from "../../../lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -51,16 +52,20 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const user = await getUser(request);
   if (!user) return unauthorized();
+  const limited = await enforceRateLimit(request, "wallet_request", 5, 600);
+  if (limited) return limited;
   const contentType = request.headers.get("content-type") ?? "";
   const form = contentType.includes("multipart/form-data") ? await request.formData() : null;
   const json = form ? null : await request.json().catch(() => ({}));
   const body = (form ? {
-    type: form.get("type"), method: form.get("method"), amountCents: form.get("amountCents"), operationCode: form.get("operationCode"),
+    type: form.get("type"), method: form.get("method"), amountCents: form.get("amountCents"), operationCode: form.get("operationCode"), destinationName: form.get("destinationName"), destinationPhone: form.get("destinationPhone"),
   } : json) as {
     type?: "deposit" | "withdrawal";
     method?: "yape" | "plin";
     amountCents?: number | string;
     operationCode?: string | FormDataEntryValue | null;
+    destinationName?: string | FormDataEntryValue | null;
+    destinationPhone?: string | FormDataEntryValue | null;
   };
   const amountCents = Math.round(Number(body.amountCents));
   if (
@@ -80,11 +85,15 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   const operationCode = typeof body.operationCode === "string" ? body.operationCode.trim() || null : null;
+  const destinationName = typeof body.destinationName === "string" ? body.destinationName.trim() : "";
+  const destinationPhone = typeof body.destinationPhone === "string" ? body.destinationPhone.replace(/\D/g, "") : "";
   if (body.type === "deposit" && (!operationCode || operationCode.length < 4))
     return Response.json(
       { ok: false, error: "operation_code_required" },
       { status: 400 },
     );
+  if (body.type === "withdrawal" && (destinationName.length < 3 || !/^9\d{8}$/.test(destinationPhone)))
+    return Response.json({ ok: false, error: "withdrawal_destination_required" }, { status: 400 });
 
   const proof = form?.get("proof");
   if (body.type === "deposit") {
@@ -144,6 +153,8 @@ export async function POST(request: Request) {
       method: body.method!,
       amountCents,
       operationCode,
+      destinationName: body.type === "withdrawal" ? destinationName : null,
+      destinationPhone: body.type === "withdrawal" ? destinationPhone : null,
       proofUrl: proofKey,
       status: "pending",
       requestedAt: new Date(),

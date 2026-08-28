@@ -4,12 +4,15 @@ import { env } from "cloudflare:workers";
 import { getDb } from "../../../../../db";
 import { disputeEvidence, matchDisputes, notifications, roomPlayers, rooms, users } from "../../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../../lib/auth";
+import { enforceRateLimit } from "../../../../../lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request, { params }: { params: Promise<{ roomId: string }> }) {
   const identity = getAuthenticatedUser(request);
   if (!identity) return unauthorized();
+  const limited = await enforceRateLimit(request, "match_dispute", 3, 3600);
+  if (limited) return limited;
   const { roomId } = await params;
   const contentType = request.headers.get("content-type") ?? "";
   const form = contentType.includes("multipart/form-data") ? await request.formData() : null;

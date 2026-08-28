@@ -6,12 +6,7 @@ import { enforceRateLimit } from "../../../lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-const channels = [
-  "general",
-  "looking_for_room",
-  "support",
-  "announcements",
-] as const;
+const channels = ["general"] as const;
 type Channel = (typeof channels)[number];
 
 function validChannel(value: string | null): value is Channel {
@@ -80,9 +75,6 @@ export async function POST(request: Request) {
     .limit(1);
   if (!user)
     return Response.json({ ok: false, error: "account_required" }, { status: 403 });
-  if (channel === "announcements" && !["owner", "admin", "mod"].includes(user.role))
-    return Response.json({ ok: false, error: "staff_required" }, { status: 403 });
-
   const id = `chat_${crypto.randomUUID()}`;
   const createdAt = new Date();
   await db.insert(chatMessages).values({

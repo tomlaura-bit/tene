@@ -2553,13 +2553,6 @@ type ChatMessage = {
   hours: number;
   avatarUrl?: string | null;
 };
-const chatChannels = {
-  General: "general",
-  "Busco sala": "looking_for_room",
-  Soporte: "support",
-  Anuncios: "announcements",
-} as const;
-
 function CommunityChat({
   notify,
   session,
@@ -2567,7 +2560,6 @@ function CommunityChat({
   notify: (message: string) => void;
   session: SessionData | null;
 }) {
-  const [channel, setChannel] = useState("General");
   const [text, setText] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2577,7 +2569,7 @@ function CommunityChat({
   const loadMessages = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/chat?channel=${chatChannels[channel as keyof typeof chatChannels]}`);
+      const response = await fetch("/api/chat?channel=general");
       const data = (await response.json()) as { ok: boolean; messages?: ChatMessage[] };
       if (response.ok && data.messages) setMessages(data.messages);
       else notify("No se pudo cargar este canal");
@@ -2590,7 +2582,7 @@ function CommunityChat({
 
   useEffect(() => {
     void loadMessages();
-  }, [channel]);
+  }, []);
   useEffect(() => { void fetch("/api/public", { cache: "no-store" }).then(async (response) => { if (response.ok) setCommunity(await response.json()); }); }, []);
 
   const send = async () => {
@@ -2602,7 +2594,7 @@ function CommunityChat({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          channel: chatChannels[channel as keyof typeof chatChannels],
+          channel: "general",
           message: text.trim(),
         }),
       });
@@ -2623,20 +2615,11 @@ function CommunityChat({
             <span className="brand-mark">T</span>
             <strong>Comunidad TENE</strong>
           </div>
-          <small>CANALES</small>
-          {["General", "Busco sala", "Soporte", "Anuncios"].map((item) => (
-            <button
-              className={channel === item ? "active" : ""}
-              onClick={() => setChannel(item)}
-              key={item}
-            >
-              <span>#</span>
-              {item}
-              {item === "Soporte" && <i>2</i>}
-            </button>
-          ))}
-          <small>SALAS ACTIVAS</small>
-          {(community?.rooms ?? []).filter((room) => !["settled", "cancelled"].includes(room.status)).slice(0, 4).map((room) => <button key={room.id} onClick={() => setChannel(room.name)}><span>●</span>{room.name}</button>)}
+          <small>CHAT GLOBAL</small>
+          <button className="active" onClick={() => void loadMessages()}>
+            <span>#</span>
+            General
+          </button>
           <div className="discord-card">
             <b>Discord pendiente</b>
             <p>La sincronización se activará cuando exista una aplicación de Discord configurada.</p>
@@ -2652,12 +2635,8 @@ function CommunityChat({
         <main className="chat-main">
           <header>
             <div>
-              <strong># {channel}</strong>
-              <small>
-                {channel === "General"
-                  ? "Conversación de la comunidad peruana"
-                  : "Canal de coordinación y soporte"}
-              </small>
+              <strong># General</strong>
+              <small>Conversación global de la comunidad TENE</small>
             </div>
             <span>{community?.activePlayers ?? 0} en salas activas</span>
           </header>
@@ -2712,7 +2691,7 @@ function CommunityChat({
               maxLength={240}
               onChange={(event) => setText(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && void send()}
-              placeholder={`Enviar mensaje a #${channel.toLowerCase()}…`}
+              placeholder="Enviar mensaje al chat general…"
             />
             <span>{text.length}/240</span>
             <button disabled={sending || !text.trim()} onClick={() => void send()}>

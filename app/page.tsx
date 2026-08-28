@@ -235,9 +235,9 @@ export default function Home() {
           <span className="text-lg font-black tracking-[0.22em]">TENE</span>
         </a>
         <nav className="hidden items-center gap-8 text-sm font-medium text-white/55 md:flex">
-          <a className="text-white" href="#salas">
+          <button className="text-white" onClick={joinRoom}>
             Salas
-          </a>
+          </button>
           <a className="transition hover:text-white" href="#ranking">
             Ranking
           </a>
@@ -263,8 +263,8 @@ export default function Home() {
         </button>
       </header>
 
-      <section className="relative z-10 mx-auto grid max-w-[1440px] gap-12 px-5 pb-16 pt-10 md:px-10 lg:grid-cols-[0.88fr_1.12fr] lg:items-center lg:pb-24 lg:pt-16">
-        <div className="max-w-xl">
+      <section className="landing-simple relative z-10 mx-auto max-w-[1440px] px-5 pb-20 pt-12 md:px-10 lg:pb-28 lg:pt-24">
+        <div className="max-w-3xl">
           <div className="eyebrow">
             <span /> CS2 competitivo · Perú
           </div>
@@ -276,13 +276,13 @@ export default function Home() {
             GANA.
           </h1>
           <p className="mt-7 max-w-lg text-base leading-7 text-white/55 md:text-lg">
-            Salas privadas 5v5 con servidores peruanos, equipos balanceados y
-            premios reales. Tu nivel decide el reto; tu juego, el resultado.
+            Partidas privadas 5v5 de CS2 para la comunidad peruana. Entra,
+            compite con jugadores de tu nivel y demuestra tu juego.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-4">
-            <a className="primary-button" href="#salas">
+            <button className="primary-button" onClick={joinRoom}>
               Ver salas disponibles <span>↗</span>
-            </a>
+            </button>
             <div className="flex items-center gap-3 text-sm text-white/50">
               <span className="live-pulse" /> {publicData?.activePlayers ?? 0} jugadores en salas activas
             </div>
@@ -303,60 +303,6 @@ export default function Home() {
           </div>
         </div>
 
-        <div id="salas" className="match-shell">
-          <div className="match-topbar">
-            <div>
-              <span className="status-pill">
-                <i /> FORMANDO EQUIPOS
-              </span>
-              <h2 className="mt-3 text-2xl font-bold tracking-tight">
-                {publicData?.rooms[0]?.name ?? "No hay salas abiertas"}
-              </h2>
-            </div>
-            <div className="text-right">
-              <span className="block text-xs text-white/35">ENTRADA</span>
-              <strong className="text-2xl text-violet-300">S/ {((publicData?.rooms[0]?.entryCents ?? 600) / 100).toFixed(2)}</strong>
-            </div>
-          </div>
-          <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-6">
-            {(publicData?.rooms[0]?.players ?? []).map((player) => (
-              <div key={player.nickname} className="player-card">
-                {player.avatarUrl ? <img className="avatar" src={player.avatarUrl} alt={`Avatar de ${player.nickname}`} /> : <div className="avatar bg-gradient-to-br from-violet-500 to-fuchsia-500">{player.nickname[0].toUpperCase()}</div>}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <strong className="truncate">{player.nickname}</strong>
-                    {player.isCaptain && <span className="captain">CAP</span>}
-                  </div>
-                  <span className="text-xs text-white/35">
-                    {player.isCaptain ? "Capitán" : "Jugador verificado"}
-                  </span>
-                </div>
-                <span className="level">LVL {player.level}</span>
-              </div>
-            ))}
-            {Array.from({ length: Math.max(0, 10 - (publicData?.rooms[0]?.players.length ?? 0)) }, (_, i) => (
-              <div key={i} className="empty-slot">
-                <span>+</span> Esperando jugador
-              </div>
-            ))}
-          </div>
-          <div className="match-footer">
-            <div>
-              <span className="text-xs text-white/35">JUGADORES</span>
-              <strong className="ml-3">{publicData?.rooms[0]?.players.length ?? 0} / 10</strong>
-            </div>
-            <div className="progress">
-              <span style={{ width: `${(publicData?.rooms[0]?.players.length ?? 0) * 10}%` }} />
-            </div>
-            <button
-              disabled={!publicData?.rooms[0]}
-              onClick={joinRoom}
-              className="join-button disabled:cursor-default disabled:opacity-50"
-            >
-              {session ? "Ver salas y reservar" : "Iniciar sesión para entrar"}
-            </button>
-          </div>
-        </div>
       </section>
 
       <section
@@ -414,8 +360,8 @@ export default function Home() {
             demuestra jugando.
           </h2>
           <p className="mt-5 max-w-md leading-7 text-white/45">
-            Cada partida suma historial, reputación y Elo. El staff calibra tu
-            nivel inicial; después, tu rendimiento habla por ti.
+            Cada partida suma historial y reputación. El staff calibra tu nivel
+            inicial; después, tus resultados determinan si subes o bajas.
           </p>
         </div>
         <div className="ranking-card">
@@ -428,7 +374,7 @@ export default function Home() {
               <span className="font-mono text-violet-300">{String(player.position).padStart(2, "0")}</span>
               <strong>{player.name}</strong>
               <span className="level">LVL {player.level}</span>
-              <span className="ml-auto font-mono text-sm">{player.elo.toLocaleString()} ELO</span>
+              <span className="ml-auto font-mono text-sm">NIVEL {player.level}</span>
             </div>
           ))}
         </div>
@@ -882,7 +828,7 @@ function Dashboard({
             <div className="level-orbit">
               <small>NIVEL</small>
               <strong>5</strong>
-              <span>1,298 ELO</span>
+              <span>Nivel competitivo verificado</span>
             </div>
           </article>
           <article className="wallet-card">
@@ -1134,8 +1080,8 @@ function ProfileAvatar({
         </span>
         <span className="profile-stats">
           <span>
-            <small>ELO</small>
-            {profile.elo}
+            <small>NIVEL</small>
+            {profile.level}
           </span>
           <span>
             <small>HORAS CS2</small>
@@ -1412,8 +1358,13 @@ function EnhancedDashboard({
   const [paymentMethod, setPaymentMethod] = useState<"yape" | "plin">("yape");
   const [operationCode, setOperationCode] = useState("");
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState("");
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [paymentTime, setPaymentTime] = useState(() => new Date().toTimeString().slice(0, 5));
+  const [payerName, setPayerName] = useState("");
   const [withdrawalName, setWithdrawalName] = useState("");
   const [withdrawalPhone, setWithdrawalPhone] = useState("");
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const flash = (message: string) => {
     setNotice(message);
     window.setTimeout(() => setNotice(""), 3500);
@@ -1427,6 +1378,9 @@ function EnhancedDashboard({
     form.set("amountCents", String(Math.round(value * 100)));
     if (walletAction === "deposit") {
       form.set("operationCode", operationCode);
+      form.set("paymentDate", paymentDate);
+      form.set("paymentTime", paymentTime);
+      form.set("payerName", payerName);
       if (paymentProof) form.set("proof", paymentProof);
     } else {
       form.set("destinationName", withdrawalName);
@@ -1447,6 +1401,7 @@ function EnhancedDashboard({
       duplicate_operation: "Ese código de operación ya fue registrado",
       invalid_request: "Revisa el monto y los datos de la solicitud",
       withdrawal_destination_required: "Ingresa el titular y un celular peruano válido de 9 dígitos",
+      payment_datetime_required: "Confirma la fecha y hora que aparecen en el voucher",
     };
     if (!response.ok)
       return flash(
@@ -1460,6 +1415,8 @@ function EnhancedDashboard({
     );
     setOperationCode("");
     setPaymentProof(null);
+    setProofPreview("");
+    setPayerName("");
     setWithdrawalName("");
     setWithdrawalPhone("");
     setWalletAction(null);
@@ -1526,6 +1483,35 @@ function EnhancedDashboard({
         </div>
       </aside>
       <div className="app-content">
+        <nav className="dashboard-topbar">
+          <button className="topbar-brand" onClick={goHome}><span className="brand-mark">T</span><b>TENE</b></button>
+          <div className="primary-navigation">
+            {["Salas", "Beneficios", "Ranking"].map((tab) => <button key={tab} className={activeTab === tab ? "active" : ""} onClick={() => { setActiveTab(tab); setProfileMenuOpen(false); }}>{tab}</button>)}
+          </div>
+          <div className="topbar-account">
+            <button className="topbar-balance" onClick={() => { setActiveTab("Wallet"); setProfileMenuOpen(false); }}>S/ {balance.toFixed(2)}</button>
+            <div className="profile-menu-wrap" onMouseEnter={() => setProfileMenuOpen(true)} onMouseLeave={() => setProfileMenuOpen(false)}>
+              <button className="profile-trigger" aria-expanded={profileMenuOpen} onClick={() => setProfileMenuOpen((open) => !open)}>
+                {session?.user.steamAvatarUrl ? <img src={session.user.steamAvatarUrl} alt="" /> : <span>{nickname.slice(0, 1).toUpperCase()}</span>}
+                <span><b>{nickname}</b><small>LVL {session?.rating?.level ?? session?.user.level ?? 1}</small></span><i>⌄</i>
+              </button>
+              {profileMenuOpen && <div className="profile-dropdown">
+                <button onClick={() => { setActiveTab("Cuenta"); setProfileMenuOpen(false); }}>◎ Mi cuenta</button>
+                <button onClick={() => { setActiveTab("Wallet"); setProfileMenuOpen(false); }}>◈ Wallet</button>
+                <button onClick={() => { setWalletAction("deposit"); setProfileMenuOpen(false); }}>＋ Recargar</button>
+                <button onClick={() => { setWalletAction("withdraw"); setProfileMenuOpen(false); }}>↗ Retirar</button>
+                <button onClick={() => { setActiveTab("Historial"); setProfileMenuOpen(false); }}>↺ Partidas</button>
+                <button onClick={() => { setActiveTab("Conducta"); setProfileMenuOpen(false); }}>◆ Conducta</button>
+                <button onClick={() => { setActiveTab("Chat"); setProfileMenuOpen(false); }}># Chat y soporte</button>
+                <button onClick={() => { setActiveTab("Alertas"); setProfileMenuOpen(false); }}>● Alertas</button>
+                {tabs.includes("Staff") && <button onClick={() => { setActiveTab("Staff"); setProfileMenuOpen(false); }}>⚙ Staff</button>}
+                {tabs.includes("Finanzas") && <button onClick={() => { setActiveTab("Finanzas"); setProfileMenuOpen(false); }}>S/ Finanzas</button>}
+                <button onClick={() => { setActiveTab("Reglas legales"); setProfileMenuOpen(false); }}>§ Reglas legales</button>
+                <a href="/signout-with-chatgpt?return_to=/">⇥ Cerrar sesión</a>
+              </div>}
+            </div>
+          </div>
+        </nav>
         <header className="app-header">
           <div>
             <p className="eyebrow">
@@ -1534,16 +1520,6 @@ function EnhancedDashboard({
             <h1>
               {activeTab === "Inicio" ? `Buenos días, ${nickname}` : activeTab}
             </h1>
-          </div>
-          <div className="header-actions">
-            <button
-              className="balance-chip"
-              onClick={() => setActiveTab("Wallet")}
-            >
-              <small>SALDO DISPONIBLE</small>
-              <strong>S/ {balance.toFixed(2)}</strong>
-            </button>
-            <button className="icon-button">●</button>
           </div>
         </header>
         {activeTab === "Inicio" && (
@@ -1612,15 +1588,14 @@ function EnhancedDashboard({
                 ? "Agregar saldo"
                 : "Solicitar retiro"}
             </h2>
-            <label>
+            {walletAction === "withdraw" && <><label>
               Monto en soles
               <input
                 inputMode="decimal"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
               />
-            </label>
-            <label>
+            </label><label>
               Método
               <select
                 value={paymentMethod}
@@ -1631,21 +1606,21 @@ function EnhancedDashboard({
                 <option value="yape">Yape</option>
                 <option value="plin">Plin</option>
               </select>
-            </label>
+            </label></>}
             {walletAction === "deposit" ? (
-              <div className="qr-placeholder">
-                <strong>QR</strong>
-                <span>El comprobante se validará antes de acreditar</span>
-                <input
-                  value={operationCode}
-                  onChange={(event) => setOperationCode(event.target.value)}
-                  placeholder="Código de operación"
-                  aria-label="Código de operación"
-                />
-                <label className="proof-upload">
-                  <span>{paymentProof ? paymentProof.name : "Adjuntar comprobante (JPG, PNG o WebP)"}</span>
-                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setPaymentProof(event.target.files?.[0] ?? null)} />
-                </label>
+              <div className="voucher-form">
+                <div className="voucher-status">🔒 Revisa que los datos coincidan con tu voucher antes de enviarlo.</div>
+                <label className="voucher-preview">{proofPreview ? <img src={proofPreview} alt="Vista previa del voucher" /> : <span>Sube tu voucher<br/><small>JPG, PNG o WebP</small></span>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0] ?? null; setPaymentProof(file); if (!file) return setProofPreview(""); const reader = new FileReader(); reader.onload = () => setProofPreview(String(reader.result ?? "")); reader.readAsDataURL(file); }} /></label>
+                <div className="voucher-fields">
+                  <label>Aplicación<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as "yape" | "plin")}><option value="yape">Yape</option><option value="plin">Plin</option></select></label>
+                  <label>Llegó a la cuenta<input value="Cuenta oficial TENE" readOnly /></label>
+                  <label>Monto (S/)<input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
+                  <label>N.º de operación<input value={operationCode} onChange={(event) => setOperationCode(event.target.value.replace(/\s/g, ""))} placeholder="Código del voucher" /></label>
+                  <label>Fecha del pago<input type="date" value={paymentDate} onChange={(event) => setPaymentDate(event.target.value)} /></label>
+                  <label>Hora del pago<input type="time" value={paymentTime} onChange={(event) => setPaymentTime(event.target.value)} /></label>
+                  <label className="voucher-payer">Tu nombre en Yape/Plin (opcional)<input value={payerName} onChange={(event) => setPayerName(event.target.value)} placeholder="Como aparece al pagar" /></label>
+                </div>
+                <small className="voucher-warning">El saldo quedará pendiente hasta que el administrador valide el comprobante. Vouchers falsos o repetidos pueden generar suspensión.</small>
               </div>
             ) : (
               <div className="withdrawal-fields"><p className="wallet-help">Disponible: S/ {balance.toFixed(2)} · Retiro mínimo S/ 10 · Haber jugado una sala.</p><label>Titular de Yape/Plin<input value={withdrawalName} onChange={(event) => setWithdrawalName(event.target.value)} placeholder="Nombre completo" /></label><label>Celular de destino<input inputMode="numeric" value={withdrawalPhone} onChange={(event) => setWithdrawalPhone(event.target.value.replace(/\D/g, "").slice(0, 9))} placeholder="9XXXXXXXX" /></label></div>
@@ -1941,8 +1916,8 @@ function AccountPanel({ session }: { session: SessionData | null }) {
               <strong>{session?.rating?.losses ?? 0}</strong>
             </span>
             <span>
-              <small>Elo</small>
-              <strong>{session?.rating?.elo ?? 1000}</strong>
+              <small>Nivel</small>
+              <strong>LVL {session?.rating?.level ?? session?.user.level ?? 1}</strong>
             </span>
           </div>
         </div>
@@ -2091,7 +2066,7 @@ function HomePanel({
         <div className="level-orbit">
           <small>NIVEL</small>
           <strong>{rating?.level ?? user?.level ?? 1}</strong>
-          <span>{(rating?.elo ?? 1000).toLocaleString()} ELO</span>
+          <span>NIVEL {rating?.level ?? session?.user.level ?? 1}</span>
         </div>
       </article>
       <article className="wallet-card">
@@ -3059,7 +3034,7 @@ function PublicProfilePanel({ session }: { session: SessionData | null }) {
         <div className="profile-main-rating">
           <small>RATING COMPETITIVO</small>
           <strong>LVL {me?.level ?? session?.user.level ?? 1}</strong>
-          <b>{(me?.elo ?? 1000).toLocaleString()} ELO</b>
+          <b>Nivel competitivo verificado</b>
           <span>#{me?.position ?? "—"} esta temporada</span>
         </div>
       </article>
@@ -3170,7 +3145,7 @@ function PublicProfilePanel({ session }: { session: SessionData | null }) {
               <strong>{match.roomName ?? "Sala competitiva"}</strong>
               <small>{match.map ?? "Sin mapa"}</small>
               <b>{match.teamAScore ?? 0} — {match.teamBScore ?? 0}</b>
-              <em>{match.delta > 0 ? "+" : ""}{match.delta} ELO</em>
+              <em>{result}</em>
             </article>})}
           {competitive && !competitive.history.length && <p className="wallet-help">Aún no tienes partidas liquidadas.</p>}
         </div>
@@ -3194,8 +3169,7 @@ function HistoryPanel() {
           <span className="verified-badge">{history.length} PARTIDAS REGISTRADAS</span>
           <h2>Historial competitivo</h2>
           <p>
-            Resultados, mapas y variación de Elo registrados por nuestros
-            servidores.
+            Resultados, mapas y evolución de nivel registrados por nuestros servidores.
           </p>
         </div>
       </div>
@@ -3211,9 +3185,9 @@ function HistoryPanel() {
             <strong>{match.roomName ?? "Sala competitiva"}</strong>
             <span>{match.map ?? "Mapa sin registrar"}</span>
             <b>{match.teamAScore ?? 0} — {match.teamBScore ?? 0}</b>
-            <em>{match.delta > 0 ? "+" : ""}{match.delta} ELO</em>
+            <em>{result}</em>
             <button onClick={() => setExpandedId((current) => current === match.id ? null : match.id)}>{expandedId === match.id ? "Ocultar" : "Ver detalle"}</button>
-            {expandedId === match.id && <div className="history-detail"><span><small>FECHA</small>{new Date(match.createdAt).toLocaleString("es-PE")}</span><span><small>MAPA</small>{match.map ?? "Sin registrar"}</span><span><small>ELO</small>{match.beforeElo} → {match.afterElo}</span><span><small>RESULTADO</small>{match.teamAScore ?? 0} — {match.teamBScore ?? 0}</span></div>}
+            {expandedId === match.id && <div className="history-detail"><span><small>FECHA</small>{new Date(match.createdAt).toLocaleString("es-PE")}</span><span><small>MAPA</small>{match.map ?? "Sin registrar"}</span><span><small>PROGRESIÓN</small>Recalculada por el sistema</span><span><small>RESULTADO</small>{match.teamAScore ?? 0} — {match.teamBScore ?? 0}</span></div>}
           </article>;
         })}
         {!history.length && <p className="wallet-help">Todavía no tienes resultados competitivos confirmados.</p>}
@@ -3240,12 +3214,12 @@ function RankingPanel() {
       teams[side].push(player);
       totals[side] += player.elo;
     });
-    return { ...teams, aElo: totals.a, bElo: totals.b };
+    return { ...teams, aElo: totals.a, bElo: totals.b, aLevel: teams.a.length ? (teams.a.reduce((sum, player) => sum + player.level, 0) / teams.a.length).toFixed(1) : "0", bLevel: teams.b.length ? (teams.b.reduce((sum, player) => sum + player.level, 0) / teams.b.length).toFixed(1) : "0" };
   };
   const rankingPool = liveRanking.slice(0, 10);
   const alternatePool = rankingPool.length > 1 ? [...rankingPool.slice(1), rankingPool[0]] : rankingPool;
   const balance = buildBalance(balanceMode === "suggested" ? rankingPool : alternatePool);
-  const difference = Math.abs(balance.aElo - balance.bElo);
+  const difference = Math.abs(Number(balance.aLevel) - Number(balance.bLevel));
   const eloProgress = myRating ? Math.max(0, Math.min(100, ((myRating.elo - 900) % 100 + 100) % 100)) : 0;
   const seasonProgress = Math.min(100, ((myRating?.matches ?? 0) / 30) * 100);
   const topPercent = myRating && liveRanking.length ? Math.max(1, Math.ceil((myRating.position / liveRanking.length) * 100)) : null;
@@ -3257,7 +3231,7 @@ function RankingPanel() {
           <h2>Ranking competitivo</h2>
           <p>
             El staff asigna el nivel inicial y, después, cada resultado
-            confirmado actualiza el Elo automáticamente.
+            confirmado actualiza tu nivel automáticamente.
           </p>
         </div>
       </div>
@@ -3269,7 +3243,7 @@ function RankingPanel() {
               <strong>{myRating?.level ?? 1}</strong>
             </div>
             <div className="rating-progress">
-              <span>{myRating?.name ?? "Jugador"} · {(myRating?.elo ?? 1000).toLocaleString()} ELO</span>
+              <span>{myRating?.name ?? "Jugador"} · NIVEL {myRating?.level ?? 1}</span>
               <div>
                 <i style={{ width: `${eloProgress}%` }} />
               </div>
@@ -3291,7 +3265,7 @@ function RankingPanel() {
                   <span>#{String(player.position).padStart(2, "0")}</span>
                   <strong>{player.name}</strong>
                   <i>LVL {player.level}</i>
-                  <b>{player.elo.toLocaleString()} ELO</b>
+                  <b>NIVEL {player.level}</b>
                 </div>
               ))}
           </div>
@@ -3305,7 +3279,7 @@ function RankingPanel() {
             <span
               className={difference <= 25 ? "balance-good" : "balance-warning"}
             >
-              {rankingPool.length === 10 ? `${difference} ELO de diferencia` : `${rankingPool.length}/10 jugadores con ranking`}
+              {rankingPool.length === 10 ? `${difference.toFixed(1)} niveles de diferencia` : `${rankingPool.length}/10 jugadores con nivel`}
             </span>
           </div>
           <div className="balanced-teams">
@@ -3313,7 +3287,7 @@ function RankingPanel() {
               <div key={side}>
                 <span>EQUIPO {side.toUpperCase()}</span>
                 <strong>
-                  {side === "a" ? balance.aElo : balance.bElo} ELO
+                  Nivel promedio {side === "a" ? balance.aLevel : balance.bLevel}
                 </strong>
                 {(side === "a" ? balance.a : balance.b).map((player, index) => (
                   <p key={player.userId}>
@@ -3340,7 +3314,7 @@ function RankingPanel() {
               : "Usar balance recomendado"}
           </button>
           <p className="balance-note">
-            El sistema minimiza la diferencia total de Elo. Los dos jugadores
+            El sistema minimiza la diferencia de niveles. Los dos jugadores
             con mayor nivel siguen siendo capitanes.
           </p>
         </aside>
@@ -3358,7 +3332,7 @@ function RankingPanel() {
         </div>
         <div>
           <small>PROGRESIÓN</small>
-          <strong>Subes o bajas por tu Elo</strong>
+          <strong>Subes o bajas de nivel</strong>
           <span>Sin cambios manuales ocultos</span>
         </div>
       </div>
@@ -3398,7 +3372,7 @@ function RankingPanel() {
               <div>
                 <span>Tu posición</span>
                 <strong>{myRating ? `#${myRating.position}` : "—"}</strong>
-                <small>{myRating ? `Top ${topPercent}% · ${myRating.elo.toLocaleString()} ELO` : "Juega una sala liquidada para entrar al ranking"}</small>
+                <small>{myRating ? `Top ${topPercent}% · Nivel ${myRating.level}` : "Juega una sala liquidada para entrar al ranking"}</small>
               </div>
               <div className="season-progress">
                 <span>
@@ -3429,13 +3403,12 @@ function RankingPanel() {
             </div>
             <p className="season-policy">
               Los premios son reconocimientos dentro de TENE, no apuestas ni
-              dinero adicional. Al cerrar la temporada, el Elo se comprime
-              parcialmente para conservar el nivel sin congelar el ranking.
+              dinero adicional. Al cerrar la temporada, la puntuación interna se ajusta para conservar niveles competitivos.
             </p>
           </div>
         ) : (
           <div className="past-seasons">
-            {(seasonData?.closed ?? []).map((season) => <article key={season.id}><span>{season.name.toUpperCase()}</span><strong>{season.podium[0] ? `#1 ${season.podium[0].nickname}` : "Sin clasificados"}</strong><b>{season.podium[0] ? `${season.podium[0].elo} ELO` : "Temporada cerrada"}</b><small>{season.podium.slice(1).map((player) => `#${player.position} ${player.nickname}`).join(" · ") || `Finalizada ${new Date(season.endsAt).toLocaleDateString("es-PE")}`}</small></article>)}
+            {(seasonData?.closed ?? []).map((season) => <article key={season.id}><span>{season.name.toUpperCase()}</span><strong>{season.podium[0] ? `#1 ${season.podium[0].nickname}` : "Sin clasificados"}</strong><b>{season.podium[0] ? "Campeón de temporada" : "Temporada cerrada"}</b><small>{season.podium.slice(1).map((player) => `#${player.position} ${player.nickname}`).join(" · ") || `Finalizada ${new Date(season.endsAt).toLocaleDateString("es-PE")}`}</small></article>)}
             {seasonData && !seasonData.closed.length && <article><span>SIN TEMPORADAS CERRADAS</span><strong>La temporada actual sigue en curso</strong><b>{liveRanking.length} jugadores clasificados</b><small>El podio quedará guardado cuando el staff cierre la temporada.</small></article>}
           </div>
         )}
@@ -3716,7 +3689,7 @@ function LiveMatchOperations({ roomId, data, session, reload }: { roomId: string
     {data.room.status === "review" && <div className="result-confirm"><span>⌛</span><h3>{pending ? "Resultado congelado por revisión" : "Resultado recibido · pendiente de confirmación"}</h3><p>{pending ? "Ningún premio ni entrada se liquidará mientras exista una impugnación pendiente." : "El servidor envió el marcador. Un administrador debe confirmarlo antes de liquidar los premios."}</p>{pending && <div className="settlement-status"><small>CASO {pending.id.slice(-8).toUpperCase()}</small><b>{pending.description}</b></div>}</div>}
     {data.room.status === "review" && pending && isFinanceStaff && <div className="admin-result-controls"><h3>Resolver impugnación</h3><p>Descartar devuelve la partida a estado en vivo. Confirmar mantiene el dinero congelado para cancelar y sancionar.</p><button disabled={busy} className="secondary-button" onClick={() => void send(`/api/staff/disputes/${pending.id}/review`, { decision: "dismissed", resolution: "Reporte revisado por staff; no se encontró una infracción suficiente." })}>Descartar y reanudar</button><button disabled={busy} className="primary-button" onClick={() => void send(`/api/staff/disputes/${pending.id}/review`, { decision: "upheld", resolution: "Infracción confirmada por el staff. La sala debe cancelarse y aplicar la retención correspondiente." })}>Confirmar infracción</button></div>}
     {data.room.status === "live" && <div className="live-score"><div><small>EQUIPO A</small><strong>{scoreA}</strong></div><span><b>MARCADOR</b><i>STAFF</i><em>EN VIVO</em></span><div><small>EQUIPO B</small><strong>{scoreB}</strong></div></div>}
-    {["live", "review"].includes(data.room.status) && !pending && isFinanceStaff && <div className="admin-result-controls"><h3>Confirmar resultado y liquidar</h3><p>Esta acción libera los S/ 6 bloqueados, acredita S/ 10 a cada ganador y actualiza el ELO.</p><div className="score-inputs"><label>Equipo A<input type="number" min="0" value={scoreA} onChange={(e) => setScoreA(Number(e.target.value))} /></label><label>Equipo B<input type="number" min="0" value={scoreB} onChange={(e) => setScoreB(Number(e.target.value))} /></label></div><button disabled={busy} className="primary-button" onClick={() => void send(`/api/staff/rooms/${roomId}/result`, { teamAScore: scoreA, teamBScore: scoreB })}>Confirmar y liquidar</button></div>}
+    {["live", "review"].includes(data.room.status) && !pending && isFinanceStaff && <div className="admin-result-controls"><h3>Confirmar resultado y liquidar</h3><p>Esta acción libera los S/ 6 bloqueados, acredita S/ 10 a cada ganador y actualiza los niveles.</p><div className="score-inputs"><label>Equipo A<input type="number" min="0" value={scoreA} onChange={(e) => setScoreA(Number(e.target.value))} /></label><label>Equipo B<input type="number" min="0" value={scoreB} onChange={(e) => setScoreB(Number(e.target.value))} /></label></div><button disabled={busy} className="primary-button" onClick={() => void send(`/api/staff/rooms/${roomId}/result`, { teamAScore: scoreA, teamBScore: scoreB })}>Confirmar y liquidar</button></div>}
     {data.room.status === "live" && data.viewer && <div className="dispute-form"><h3>Impugnar partida</h3><p>Úsalo únicamente para hacks, coordinación ilegal, suplantación o marcador incorrecto.</p><label>Motivo<select value={reason} onChange={(e) => setReason(e.target.value)}><option value="hacking">Sospecha de hacks</option><option value="collusion">Coordinación o mafia</option><option value="wrong_result">Resultado incorrecto</option><option value="impersonation">Suplantación</option><option value="other">Otro</option></select></label><label>Jugador implicado (opcional)<select value={accusedUserId} onChange={(e) => setAccusedUserId(e.target.value)}><option value="">Sin seleccionar</option>{data.players.filter((p) => p.userId !== data.viewer?.userId).map((p) => <option key={p.userId} value={p.userId}>{p.nickname}</option>)}</select></label><label>Descripción<textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Indica jugador, ronda y lo ocurrido…" /></label><label className="evidence-upload"><span>{evidenceFile ? evidenceFile.name : "Adjuntar captura, clip o demo (opcional)"}</span><input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,.zip,.bz2,.dem" onChange={(event) => setEvidenceFile(event.target.files?.[0] ?? null)} /></label><button disabled={busy || description.trim().length < 10} className="dispute-button" onClick={() => void submitDispute()}>⚑ Enviar y congelar liquidación</button></div>}
     {["live", "review"].includes(data.room.status) && isFinanceStaff && <div className="cancel-match"><button disabled={busy} className="secondary-button" onClick={() => { const why = window.prompt("Motivo de cancelación (las entradas serán devueltas):"); if (why) void send(`/api/staff/rooms/${roomId}/cancel`, { reason: why, sanctionedUserId: pending?.accusedUserId || undefined }); }}>Cancelar sala {pending?.accusedUserId ? "y retener entrada del infractor" : "y devolver entradas"}</button></div>}
     {message && <p className="form-message">{message}</p>}
@@ -4309,7 +4282,7 @@ function SeasonsManager({ notify }: { notify: (message: string) => void }) {
     notify(response.ok ? (data?.active ? "Temporada cerrada, podio guardado y nueva temporada iniciada" : "Primera temporada iniciada") : result.error ? errors[result.error] ?? "No se pudo procesar la temporada" : "No se pudo procesar la temporada");
     if (response.ok) await load();
   };
-  return <section className="season-admin"><div className="roles-intro"><div><span className="staff-role">CONTROL COMPETITIVO</span><h3>Temporadas</h3><p>El cierre guarda todas las posiciones, entrega insignias y acerca 25% del Elo hacia 1,000.</p></div></div>{data?.active && <article className="account-surface"><span className="verified-badge">TEMPORADA ACTIVA</span><h3>{data.active.name}</h3><p className="wallet-help">Final programado: {new Date(data.active.endsAt).toLocaleDateString("es-PE")}</p></article>}<div className="admin-result-controls"><h3>{data?.active ? "Cerrar e iniciar la siguiente" : "Inicializar primera temporada"}</h3><label>Nombre<input value={name} onChange={(event) => setName(event.target.value)} /></label><label>Fecha de cierre<input type="date" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></label><button className="primary-button" disabled={busy || name.trim().length < 3} onClick={() => void submit()}>{busy ? "Procesando…" : data?.active ? "Cerrar temporada y guardar podio" : "Iniciar temporada"}</button></div><div className="staff-table"><div><strong>Archivo histórico</strong><span>{data?.closed.length ?? 0} temporadas</span></div>{(data?.closed ?? []).map((season) => <article key={season.id}><span>{season.name}</span><span>{season.podium.map((player) => `#${player.position} ${player.nickname}`).join(" · ") || "Sin clasificados"}</span></article>)}</div></section>;
+  return <section className="season-admin"><div className="roles-intro"><div><span className="staff-role">CONTROL COMPETITIVO</span><h3>Temporadas</h3><p>El cierre guarda todas las posiciones, entrega insignias y reajusta los niveles para la siguiente temporada.</p></div></div>{data?.active && <article className="account-surface"><span className="verified-badge">TEMPORADA ACTIVA</span><h3>{data.active.name}</h3><p className="wallet-help">Final programado: {new Date(data.active.endsAt).toLocaleDateString("es-PE")}</p></article>}<div className="admin-result-controls"><h3>{data?.active ? "Cerrar e iniciar la siguiente" : "Inicializar primera temporada"}</h3><label>Nombre<input value={name} onChange={(event) => setName(event.target.value)} /></label><label>Fecha de cierre<input type="date" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></label><button className="primary-button" disabled={busy || name.trim().length < 3} onClick={() => void submit()}>{busy ? "Procesando…" : data?.active ? "Cerrar temporada y guardar podio" : "Iniciar temporada"}</button></div><div className="staff-table"><div><strong>Archivo histórico</strong><span>{data?.closed.length ?? 0} temporadas</span></div>{(data?.closed ?? []).map((season) => <article key={season.id}><span>{season.name}</span><span>{season.podium.map((player) => `#${player.position} ${player.nickname}`).join(" · ") || "Sin clasificados"}</span></article>)}</div></section>;
 }
 
 type OperationsData = {
@@ -4664,6 +4637,9 @@ type PaymentRequest = {
   proofUrl?: string | null;
   destinationName?: string | null;
   destinationPhone?: string | null;
+  paymentDate?: string | null;
+  paymentTime?: string | null;
+  payerName?: string | null;
   status: "Pendiente" | "Aprobada" | "Rechazada";
 };
 const seedPayments: PaymentRequest[] = [
@@ -4728,6 +4704,9 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
         proofUrl: string | null;
         destinationName: string | null;
         destinationPhone: string | null;
+        paymentDate: string | null;
+        paymentTime: string | null;
+        payerName: string | null;
         status: string;
         nickname: string;
       }>;
@@ -4743,6 +4722,9 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
       proofUrl: item.proofUrl,
       destinationName: item.destinationName,
       destinationPhone: item.destinationPhone,
+      paymentDate: item.paymentDate,
+      paymentTime: item.paymentTime,
+      payerName: item.payerName,
       status:
         item.status === "pending"
           ? "Pendiente"
@@ -4915,6 +4897,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
                   <small>ESTADO</small>
                   {selected.status}
                 </span>
+                {selected.type === "Recarga" && <><span><small>FECHA Y HORA</small>{selected.paymentDate ?? "—"} · {selected.paymentTime ?? "—"}</span><span><small>NOMBRE DEL PAGADOR</small>{selected.payerName ?? "No indicado"}</span></>}
               </div>
               {selected.type === "Recarga" ? (
                 <div className="receipt-demo">

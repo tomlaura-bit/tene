@@ -58,7 +58,7 @@ export async function POST(request: Request) {
   const form = contentType.includes("multipart/form-data") ? await request.formData() : null;
   const json = form ? null : await request.json().catch(() => ({}));
   const body = (form ? {
-    type: form.get("type"), method: form.get("method"), amountCents: form.get("amountCents"), operationCode: form.get("operationCode"), destinationName: form.get("destinationName"), destinationPhone: form.get("destinationPhone"),
+    type: form.get("type"), method: form.get("method"), amountCents: form.get("amountCents"), operationCode: form.get("operationCode"), destinationName: form.get("destinationName"), destinationPhone: form.get("destinationPhone"), paymentDate: form.get("paymentDate"), paymentTime: form.get("paymentTime"), payerName: form.get("payerName"),
   } : json) as {
     type?: "deposit" | "withdrawal";
     method?: "yape" | "plin";
@@ -66,6 +66,9 @@ export async function POST(request: Request) {
     operationCode?: string | FormDataEntryValue | null;
     destinationName?: string | FormDataEntryValue | null;
     destinationPhone?: string | FormDataEntryValue | null;
+    paymentDate?: string | FormDataEntryValue | null;
+    paymentTime?: string | FormDataEntryValue | null;
+    payerName?: string | FormDataEntryValue | null;
   };
   const amountCents = Math.round(Number(body.amountCents));
   if (
@@ -87,11 +90,16 @@ export async function POST(request: Request) {
   const operationCode = typeof body.operationCode === "string" ? body.operationCode.trim() || null : null;
   const destinationName = typeof body.destinationName === "string" ? body.destinationName.trim() : "";
   const destinationPhone = typeof body.destinationPhone === "string" ? body.destinationPhone.replace(/\D/g, "") : "";
+  const paymentDate = typeof body.paymentDate === "string" ? body.paymentDate.trim() : "";
+  const paymentTime = typeof body.paymentTime === "string" ? body.paymentTime.trim() : "";
+  const payerName = typeof body.payerName === "string" ? body.payerName.trim().slice(0, 100) : "";
   if (body.type === "deposit" && (!operationCode || operationCode.length < 4))
     return Response.json(
       { ok: false, error: "operation_code_required" },
       { status: 400 },
     );
+  if (body.type === "deposit" && (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate) || !/^\d{2}:\d{2}$/.test(paymentTime)))
+    return Response.json({ ok: false, error: "payment_datetime_required" }, { status: 400 });
   if (body.type === "withdrawal" && (destinationName.length < 3 || !/^9\d{8}$/.test(destinationPhone)))
     return Response.json({ ok: false, error: "withdrawal_destination_required" }, { status: 400 });
 
@@ -155,6 +163,9 @@ export async function POST(request: Request) {
       operationCode,
       destinationName: body.type === "withdrawal" ? destinationName : null,
       destinationPhone: body.type === "withdrawal" ? destinationPhone : null,
+      paymentDate: body.type === "deposit" ? paymentDate : null,
+      paymentTime: body.type === "deposit" ? paymentTime : null,
+      payerName: body.type === "deposit" ? payerName || null : null,
       proofUrl: proofKey,
       status: "pending",
       requestedAt: new Date(),

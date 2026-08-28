@@ -351,6 +351,9 @@ export const paymentRequests = sqliteTable(
     operationCode: text("operation_code"),
     destinationName: text("destination_name"),
     destinationPhone: text("destination_phone"),
+    paymentDate: text("payment_date"),
+    paymentTime: text("payment_time"),
+    payerName: text("payer_name"),
     status: text("status", {
       enum: ["pending", "approved", "rejected", "paid", "cancelled"],
     })

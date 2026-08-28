@@ -5098,3 +5098,50 @@ button {
 .legal-note { display:flex; gap:14px; align-items:center; border-color:rgba(139,92,246,.35); }
 .legal-note strong { color:#c4b5fd; white-space:nowrap; }
 @media (max-width: 900px) { .legal-grid { grid-template-columns:1fr; } .legal-note { align-items:flex-start; flex-direction:column; } }
+
+/* Simplified TENE navigation */
+.landing-simple { min-height:620px; display:flex; align-items:center; }
+.app-sidebar { display:none !important; }
+.app-content { margin-left:0 !important; width:100% !important; max-width:none !important; padding-top:74px; }
+.dashboard-topbar { position:fixed; inset:0 0 auto 0; z-index:80; height:74px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:0 32px; border-bottom:1px solid rgba(255,255,255,.08); background:rgba(8,7,12,.94); backdrop-filter:blur(18px); }
+.topbar-brand { justify-self:start; display:flex; align-items:center; gap:12px; color:white; letter-spacing:.2em; }
+.topbar-brand .brand-mark { width:38px; height:38px; }
+.primary-navigation { display:flex; height:100%; align-items:center; gap:8px; }
+.primary-navigation button { height:100%; padding:0 24px; color:#8e8999; font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; border-bottom:2px solid transparent; }
+.primary-navigation button:hover,.primary-navigation button.active { color:white; border-bottom-color:#8b5cf6; }
+.topbar-account { justify-self:end; display:flex; align-items:center; gap:10px; }
+.topbar-balance { padding:10px 14px; border:1px solid rgba(139,92,246,.25); border-radius:10px; color:#c4b5fd; font-weight:800; }
+.profile-menu-wrap { position:relative; padding:8px 0; }
+.profile-trigger { display:flex; align-items:center; gap:10px; min-width:165px; padding:6px 10px 6px 7px; border-radius:11px; background:rgba(255,255,255,.055); color:white; text-align:left; }
+.profile-trigger img,.profile-trigger>span:first-child { width:34px; height:34px; object-fit:cover; display:grid; place-items:center; border-radius:9px; background:#6d28d9; }
+.profile-trigger>span:nth-child(2) { display:grid; flex:1; line-height:1.15; }
+.profile-trigger small { color:#858090; font-size:10px; margin-top:4px; }
+.profile-trigger i { color:#77717f; font-style:normal; }
+.profile-dropdown { position:absolute; right:0; top:64px; width:230px; display:grid; padding:8px; border:1px solid rgba(255,255,255,.1); border-radius:14px; background:#15121c; box-shadow:0 22px 70px rgba(0,0,0,.55); }
+.profile-dropdown button,.profile-dropdown a { display:block; width:100%; padding:11px 12px; border-radius:9px; color:#bbb5c6; text-align:left; font-size:13px; }
+.profile-dropdown button:hover,.profile-dropdown a:hover { color:white; background:rgba(139,92,246,.16); }
+.profile-dropdown a { border-top:1px solid rgba(255,255,255,.08); margin-top:5px; color:#ef9aa8; }
+.app-header { padding-top:34px !important; }
+@media (max-width:760px) {
+  .dashboard-topbar { height:auto; min-height:66px; padding:8px 12px; grid-template-columns:auto 1fr; }
+  .topbar-brand b,.topbar-balance,.profile-trigger>span:nth-child(2),.profile-trigger i { display:none; }
+  .profile-trigger { min-width:auto; padding:4px; }
+  .primary-navigation { grid-row:2; grid-column:1/3; justify-content:center; width:100%; height:44px; }
+  .primary-navigation button { padding:0 14px; font-size:11px; }
+  .topbar-account { grid-column:2; grid-row:1; }
+  .app-content { padding-top:118px; }
+  .profile-dropdown { top:48px; right:0; }
+  .landing-simple { min-height:540px; text-align:center; justify-content:center; }
+  .landing-simple .eyebrow,.landing-simple .mt-9,.landing-simple .mt-10 { justify-content:center; }
+}
+.wallet-modal:has(.voucher-form) { width:min(980px,calc(100vw - 28px)); max-width:980px; }
+.voucher-form { display:grid; grid-template-columns:150px 1fr; gap:14px; margin:18px 0; }
+.voucher-status { grid-column:1/-1; padding:11px 13px; border:1px solid rgba(52,211,153,.3); border-radius:10px; background:rgba(16,185,129,.08); color:#8ce8c2; font-size:12px; }
+.voucher-preview { grid-row:2/4; min-height:230px; display:grid !important; place-items:center; overflow:hidden; cursor:pointer; border:1px dashed rgba(139,92,246,.45) !important; border-radius:12px; background:rgba(124,58,237,.06); text-align:center; color:#aaa2b5; }
+.voucher-preview img { width:100%; height:100%; max-height:280px; object-fit:contain; }
+.voucher-preview input { display:none; }
+.voucher-fields { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.voucher-fields label { margin:0 !important; }
+.voucher-payer { grid-column:1/-1; }
+.voucher-warning { grid-column:2; color:#8b8495; line-height:1.55; }
+@media (max-width:700px) { .voucher-form { grid-template-columns:1fr; } .voucher-preview { grid-row:auto; min-height:160px; } .voucher-fields { grid-template-columns:1fr; } .voucher-payer,.voucher-warning { grid-column:1; } }

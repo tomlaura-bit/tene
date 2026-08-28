@@ -352,7 +352,7 @@ export default function Home() {
       >
         <div>
           <div className="eyebrow">
-            <span /> Temporada 01
+            <span /> Ranking abierto
           </div>
           <h2 className="mt-5 text-4xl font-black tracking-tight md:text-5xl">
             El nivel se
@@ -877,7 +877,7 @@ function Dashboard({
             />
           </article>
           <article className="stats-card">
-            <div className="card-label">TU TEMPORADA</div>
+            <div className="card-label">TU RENDIMIENTO</div>
             <div className="stat-big">
               <strong>68%</strong>
               <span>WIN RATE</span>
@@ -1005,10 +1005,6 @@ function RoomRow({
           </span>
           <span>
             <small>PREMIO</small>S/ 10
-          </span>
-          <span>
-            <small>PROMEDIO</small>
-            {average}
           </span>
         </div>
       </div>
@@ -2098,7 +2094,7 @@ function HomePanel({
         {!homeRooms.length && <p className="wallet-help">No hay salas registradas.</p>}
       </article>
       <article className="stats-card">
-        <div className="card-label">TU TEMPORADA</div>
+        <div className="card-label">TU RENDIMIENTO</div>
         <div className="stat-big">
           <strong>{winRate}%</strong>
           <span>WIN RATE</span>
@@ -2252,18 +2248,18 @@ function RoomsPanel({
 }
 
 function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
-  const average = room.players.length
-    ? room.players.reduce((sum, player) => sum + player.level, 0) /
-      room.players.length
-    : 0;
   const creatorName = room.creator?.nickname ?? "Staff TENE";
   return (
     <article className="room-row-rich">
       <div className="room-info">
         <div className="room-title-line">
           <span className="room-symbol">T</span>
-          <div>
-            <strong>{room.name}</strong>
+          <div className="room-title-copy">
+            <div className="room-heading">
+              <strong>{room.name}</strong>
+              <span>ENTRADA <b>S/ {(room.entryCents / 100).toFixed(0)}</b></span>
+              <span>PREMIO <b>S/ {(room.prizePerWinnerCents / 100).toFixed(0)}</b></span>
+            </div>
             <small>
               <i />{" "}
               {room.status === "open" ? "Esperando jugadores" : room.status}
@@ -2272,18 +2268,6 @@ function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
         </div>
         <div className="room-created">
           Creada por <b>{creatorName}</b>
-        </div>
-        <div className="room-economy">
-          <span>
-            <small>ENTRADA</small>S/ {(room.entryCents / 100).toFixed(0)}
-          </span>
-          <span>
-            <small>PREMIO</small>S/{" "}
-            {(room.prizePerWinnerCents / 100).toFixed(0)}
-          </span>
-          <span>
-            <small>PROMEDIO</small>LVL {average.toFixed(1)}
-          </span>
         </div>
       </div>
       <div className="room-people">
@@ -3027,7 +3011,7 @@ function PublicProfilePanel({ session }: { session: SessionData | null }) {
             <p>{Math.floor((session?.user.cs2Minutes ?? 0) / 60).toLocaleString()} horas de CS2 verificadas</p>
             <div className="profile-tags">
               <b>{session?.user.role ?? "Jugador"}</b>
-              <b>Temporada 01</b>
+              <b>CS2 competitivo</b>
             </div>
           </div>
         </div>
@@ -3035,7 +3019,7 @@ function PublicProfilePanel({ session }: { session: SessionData | null }) {
           <small>RATING COMPETITIVO</small>
           <strong>LVL {me?.level ?? session?.user.level ?? 1}</strong>
           <b>Nivel competitivo verificado</b>
-          <span>#{me?.position ?? "—"} esta temporada</span>
+          <span>#{me?.position ?? "—"} en el ranking</span>
         </div>
       </article>
       <nav className="profile-subnav">
@@ -3127,7 +3111,6 @@ function PublicProfilePanel({ session }: { session: SessionData | null }) {
               <div>
                 <b title="Cuenta fundadora">F</b>
                 <b title="Conducta">{conductScore}</b>
-                <b title="Temporada 01">S1</b>
               </div>
             </div>
           </aside>
@@ -3198,13 +3181,9 @@ function HistoryPanel() {
 function RankingPanel() {
   const [liveRanking, setLiveRanking] = useState<Array<{ userId: string; name: string; elo: number; level: number; matches: number; wins: number; losses: number; position: number }>>([]);
   const [myRating, setMyRating] = useState<{ userId: string; name: string; elo: number; level: number; matches: number; wins: number; losses: number; position: number } | null>(null);
-  const [seasonData, setSeasonData] = useState<{ active: { id: string; name: string; startsAt: string; endsAt: string } | null; closed: Array<{ id: string; name: string; endsAt: string; podium: Array<{ position: number; nickname: string; elo: number }> }> } | null>(null);
-  useEffect(() => { void fetch("/api/competitive").then(async (response) => { if (!response.ok) return; const data = await response.json() as { ranking: typeof liveRanking; me: typeof myRating }; setLiveRanking(data.ranking); setMyRating(data.me); }); void fetch("/api/seasons", { cache: "no-store" }).then(async (response) => { if (response.ok) setSeasonData(await response.json()); }); }, []);
+  useEffect(() => { void fetch("/api/competitive").then(async (response) => { if (!response.ok) return; const data = await response.json() as { ranking: typeof liveRanking; me: typeof myRating }; setLiveRanking(data.ranking); setMyRating(data.me); }); }, []);
   const [balanceMode, setBalanceMode] = useState<"suggested" | "alternate">(
     "suggested",
-  );
-  const [seasonView, setSeasonView] = useState<"current" | "previous">(
-    "current",
   );
   const buildBalance = (players: typeof liveRanking) => {
     const teams = { a: [] as typeof liveRanking, b: [] as typeof liveRanking };
@@ -3221,13 +3200,11 @@ function RankingPanel() {
   const balance = buildBalance(balanceMode === "suggested" ? rankingPool : alternatePool);
   const difference = Math.abs(Number(balance.aLevel) - Number(balance.bLevel));
   const eloProgress = myRating ? Math.max(0, Math.min(100, ((myRating.elo - 900) % 100 + 100) % 100)) : 0;
-  const seasonProgress = Math.min(100, ((myRating?.matches ?? 0) / 30) * 100);
-  const topPercent = myRating && liveRanking.length ? Math.max(1, Math.ceil((myRating.position / liveRanking.length) * 100)) : null;
   return (
     <section className="section-panel">
       <div className="section-intro">
         <div>
-          <span className="verified-badge">{seasonData?.active?.name?.toUpperCase() ?? "TEMPORADA SIN CONFIGURAR"}</span>
+          <span className="verified-badge">NIVELES 1–10</span>
           <h2>Ranking competitivo</h2>
           <p>
             El staff asigna el nivel inicial y, después, cada resultado
@@ -3247,7 +3224,7 @@ function RankingPanel() {
               <div>
                 <i style={{ width: `${eloProgress}%` }} />
               </div>
-              <small>Posición #{myRating?.position ?? "—"} de la temporada</small>
+              <small>Posición #{myRating?.position ?? "—"} del ranking general</small>
             </div>
             <div className="season-record">
               <b>{myRating?.matches ?? 0}</b>
@@ -3336,83 +3313,6 @@ function RankingPanel() {
           <span>Sin cambios manuales ocultos</span>
         </div>
       </div>
-      <section className="season-center">
-        <header>
-          <div>
-            <small>CENTRO DE TEMPORADA</small>
-            <h3>
-              {seasonView === "current"
-                ? seasonData?.active?.name ?? "Temporada pendiente de configuración"
-                : "Archivo de temporadas"}
-            </h3>
-            <p>
-              {seasonView === "current"
-                ? seasonData?.active ? `${new Date(seasonData.active.startsAt).toLocaleDateString("es-PE")} — ${new Date(seasonData.active.endsAt).toLocaleDateString("es-PE")}` : "El staff debe inicializar la primera temporada"
-                : `${seasonData?.closed.length ?? 0} temporadas cerradas`}
-            </p>
-          </div>
-          <div className="season-switch">
-            <button
-              className={seasonView === "current" ? "active" : ""}
-              onClick={() => setSeasonView("current")}
-            >
-              Actual
-            </button>
-            <button
-              className={seasonView === "previous" ? "active" : ""}
-              onClick={() => setSeasonView("previous")}
-            >
-              Historial
-            </button>
-          </div>
-        </header>
-        {seasonView === "current" ? (
-          <div className="season-body">
-            <div className="season-track">
-              <div>
-                <span>Tu posición</span>
-                <strong>{myRating ? `#${myRating.position}` : "—"}</strong>
-                <small>{myRating ? `Top ${topPercent}% · Nivel ${myRating.level}` : "Juega una sala liquidada para entrar al ranking"}</small>
-              </div>
-              <div className="season-progress">
-                <span>
-                  <i style={{ width: `${seasonProgress}%` }} />
-                </span>
-                <div>
-                  <small>Partida {myRating?.matches ?? 0}</small>
-                  <small>Meta: 30 partidas</small>
-                </div>
-              </div>
-            </div>
-            <div className="season-rewards">
-              <article>
-                <span>TOP 10</span>
-                <b>Insignia Violeta</b>
-                <small>Visible en perfil y salas</small>
-              </article>
-              <article>
-                <span>TOP 3</span>
-                <b>Podio de temporada</b>
-                <small>Marco exclusivo permanente</small>
-              </article>
-              <article>
-                <span>#1</span>
-                <b>Campeón TENE</b>
-                <small>Título histórico verificado</small>
-              </article>
-            </div>
-            <p className="season-policy">
-              Los premios son reconocimientos dentro de TENE, no apuestas ni
-              dinero adicional. Al cerrar la temporada, la puntuación interna se ajusta para conservar niveles competitivos.
-            </p>
-          </div>
-        ) : (
-          <div className="past-seasons">
-            {(seasonData?.closed ?? []).map((season) => <article key={season.id}><span>{season.name.toUpperCase()}</span><strong>{season.podium[0] ? `#1 ${season.podium[0].nickname}` : "Sin clasificados"}</strong><b>{season.podium[0] ? "Campeón de temporada" : "Temporada cerrada"}</b><small>{season.podium.slice(1).map((player) => `#${player.position} ${player.nickname}`).join(" · ") || `Finalizada ${new Date(season.endsAt).toLocaleDateString("es-PE")}`}</small></article>)}
-            {seasonData && !seasonData.closed.length && <article><span>SIN TEMPORADAS CERRADAS</span><strong>La temporada actual sigue en curso</strong><b>{liveRanking.length} jugadores clasificados</b><small>El podio quedará guardado cuando el staff cierre la temporada.</small></article>}
-          </div>
-        )}
-      </section>
     </section>
   );
 }

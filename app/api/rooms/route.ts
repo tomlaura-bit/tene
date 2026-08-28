@@ -21,6 +21,7 @@ export async function GET() {
       userId: users.id,
       nickname: users.nickname,
       avatarUrl: users.steamAvatarUrl,
+      steamId64: users.steamId64,
       hours: users.cs2Minutes,
       level: playerRatings.level,
       elo: playerRatings.elo,

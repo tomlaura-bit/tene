@@ -1539,7 +1539,10 @@ button {
   color: #ffffff2e;
   font-size: 6px;
 }
-.profile-popover > button {
+.profile-popover > button,
+.profile-popover > a,
+.profile-verified-label {
+  display: block;
   width: 100%;
   border: 1px solid #ffffff10;
   border-radius: 8px;
@@ -1548,6 +1551,8 @@ button {
   color: #ddd6fe;
   font-size: 8px;
   font-weight: 800;
+  text-align: center;
+  text-decoration: none;
 }
 .room-enter {
   border: 1px solid #a78bfa3d;

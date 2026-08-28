@@ -81,6 +81,7 @@ type RoomData = {
     userId: string;
     nickname: string;
     avatarUrl: string | null;
+    steamId64: string | null;
     hours: number;
     level: number;
     elo: number;
@@ -1047,6 +1048,7 @@ function ProfileAvatar({
     hours: number;
     conduct: string;
     avatarUrl?: string | null;
+    steamId64?: string | null;
   };
   compact?: boolean;
 }) {
@@ -1088,7 +1090,11 @@ function ProfileAvatar({
             {profile.conduct}
           </span>
         </span>
-        <button>Ver perfil completo</button>
+        {profile.steamId64 ? (
+          <a href={`https://steamcommunity.com/profiles/${profile.steamId64}`} target="_blank" rel="noreferrer">Ver perfil de Steam ↗</a>
+        ) : (
+          <span className="profile-verified-label">Perfil TENE verificado</span>
+        )}
       </span>
     </span>
   );
@@ -1893,7 +1899,7 @@ function AccountPanel({ session }: { session: SessionData | null }) {
         <div className="account-surface account-section-content">
           <div className="account-title">
             <div>
-              <span className="verified-badge">TEMPORADA ACTUAL</span>
+              <span className="verified-badge">HISTORIAL COMPETITIVO</span>
               <h2>Partidas competitivas</h2>
               <p>Tu actividad aparecerá aquí después de jugar una sala real.</p>
             </div>
@@ -2288,6 +2294,7 @@ function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
                 hours: player.hours,
                 conduct: player.conduct,
                 avatarUrl: player.avatarUrl,
+                steamId64: player.steamId64,
               }}
             />
           ))}
@@ -2629,7 +2636,7 @@ function CommunityChat({
             </button>
           ))}
           <small>SALAS ACTIVAS</small>
-          {(community?.rooms ?? []).filter((room) => !["settled", "cancelled"].includes(room.status)).slice(0, 4).map((room) => <button key={room.id}><span>●</span>{room.name}</button>)}
+          {(community?.rooms ?? []).filter((room) => !["settled", "cancelled"].includes(room.status)).slice(0, 4).map((room) => <button key={room.id} onClick={() => setChannel(room.name)}><span>●</span>{room.name}</button>)}
           <div className="discord-card">
             <b>Discord pendiente</b>
             <p>La sincronización se activará cuando exista una aplicación de Discord configurada.</p>
@@ -4022,7 +4029,6 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
           "Roles",
           "Sanciones",
           "Auditoría",
-          "Temporadas",
         ].map((tab) => (
           <button
             className={staffTab === tab ? "active" : ""}
@@ -4161,7 +4167,6 @@ function StaffPanel({ notify }: { notify: (message: string) => void }) {
       {staffTab === "Roles" && <RolesManager notify={notify} />}
       {staffTab === "Sanciones" && <StaffOperations mode="sanctions" notify={notify} />}
       {staffTab === "Auditoría" && <StaffOperations mode="audit" notify={notify} />}
-      {staffTab === "Temporadas" && <SeasonsManager notify={notify} />}
     </section>
   );
 }

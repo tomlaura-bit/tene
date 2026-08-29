@@ -2224,6 +2224,7 @@ function RoomsPanel({
         {canCreate && <button className="create-room-action" onClick={createRoom}>＋ Crear sala</button>}
       </div>
       <div className="rooms-with-chat">
+      <div className="rooms-main-column">
       <div className="rooms-catalog">
         {loading && <p className="wallet-help">Cargando salas…</p>}
         {!loading && !realRooms.length && (
@@ -2238,6 +2239,20 @@ function RoomsPanel({
         {realRooms.map((room) => (
           <RealRoomRow key={room.id} room={room} join={() => join(room.id)} />
         ))}
+      </div>
+      <section className="rooms-inspiration" aria-label="Cómo empezar a competir">
+        <div className="rooms-callout">
+          <span className="rooms-callout-kicker"><i /> COMPETITIVO 5V5 · PERÚ</span>
+          <h3>Tu próxima gran jugada empieza aquí.</h3>
+          <p>Reserva tu puesto, conoce a tu equipo y entra al servidor cuando la sala esté completa.</p>
+          <div className="rooms-callout-tags"><span>⚡ Servidor Lima</span><span>✓ Balance automático</span><span>⌖ Map pool competitivo</span></div>
+        </div>
+        <div className="rooms-steps">
+          <article><b>01</b><div><strong>Reserva</strong><span>Se bloquean S/ 6 de tu saldo.</span></div></article>
+          <article><b>02</b><div><strong>Completa la sala</strong><span>10 jugadores verificados.</span></div></article>
+          <article><b>03</b><div><strong>Compite</strong><span>Draft, veto y partida en vivo.</span></div></article>
+        </div>
+      </section>
       </div>
       <RoomsChat session={session} notify={notify} />
       </div>
@@ -2277,6 +2292,7 @@ function RoomsChat({ session, notify }: { session: SessionData | null; notify: (
   return (
     <aside className="rooms-chat">
       <header><div><span className="live-pulse" /><strong>Chat general</strong></div><small>Comunidad TENE</small></header>
+      <div className="rooms-chat-notice"><b>✦ JUEGA EN COMUNIDAD</b><span>Busca equipo, coordina tu sala y mantén el respeto.</span></div>
       <div className="rooms-chat-stream">
         {!messages.length && <p>Escribe el primer mensaje.</p>}
         {messages.slice(-30).map((message) => (

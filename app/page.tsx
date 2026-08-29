@@ -2209,7 +2209,7 @@ function RoomsPanel({
   const canCreate =
     session && ["owner", "admin", "mod"].includes(session.user.role);
   return (
-    <section className="section-panel">
+    <section className="section-panel rooms-section">
       <div className="section-intro">
         <div>
           <span className="verified-badge">

@@ -3786,8 +3786,10 @@ button {
   max-width: 1250px;
   padding-top: 26px;
 }
-.rooms-with-chat { display: grid; grid-template-columns: minmax(0, 1fr) minmax(430px, 32vw); align-items: start; gap: 28px; }
-.rooms-chat { position: sticky; top: 90px; display: grid; min-height: 650px; height: calc(100vh - 112px); max-height: 780px; grid-template-rows: auto 1fr auto; overflow: hidden; border: 1px solid #ffffff16; border-radius: 20px; background: #0e0c13; box-shadow: 0 24px 80px #00000038; }
+.rooms-section { --rooms-chat-width: clamp(400px, 31vw, 520px); max-width: none !important; padding-right: calc(var(--rooms-chat-width) + 28px); }
+.rooms-with-chat { display: block; }
+.rooms-catalog { container-type: inline-size; }
+.rooms-chat { position: fixed; z-index: 60; inset: 74px 0 0 auto; display: grid; width: var(--rooms-chat-width); min-height: 0; height: auto; max-height: none; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; border: 0; border-left: 1px solid #ffffff16; border-radius: 0; background: rgba(10, 8, 14, .94); box-shadow: -24px 0 80px #00000038; backdrop-filter: blur(20px); }
 .rooms-chat > header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ffffff0b; padding: 22px 22px; }
 .rooms-chat > header div { display: flex; align-items: center; gap: 10px; }
 .rooms-chat > header strong { font-size: 16px; }
@@ -3805,12 +3807,17 @@ button {
 .rooms-chat-compose input:focus { border-color: #a78bfa55; }
 .rooms-chat-compose button { min-height: 48px; border: 1px solid #a78bfa35; border-radius: 11px; background: #8b5cf620; color: #c4b5fd; font-size: 16px; }
 .rooms-chat-compose button:disabled { cursor: not-allowed; opacity: .35; }
-@media (max-width: 1280px) {
-  .rooms-with-chat { grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; }
+@container (max-width: 760px) {
+  .room-row-rich { grid-template-columns: 1fr auto; }
+  .room-people { grid-column: 1 / -1; }
+  .room-capacity, .avatar-strip { justify-content: flex-start; }
 }
-@media (max-width: 1020px) {
-  .rooms-with-chat { grid-template-columns: 1fr; }
-  .rooms-chat { position: static; min-height: 520px; height: 65vh; max-height: 650px; }
+@media (max-width: 1280px) {
+  .rooms-section { --rooms-chat-width: 370px; padding-right: calc(var(--rooms-chat-width) + 18px); }
+}
+@media (max-width: 760px) {
+  .rooms-section { padding-right: 0; }
+  .rooms-chat { position: static; width: 100%; min-height: 520px; height: 68vh; max-height: 650px; margin-top: 18px; border: 1px solid #ffffff16; border-radius: 16px; }
 }
 .chat-layout {
   display: grid;

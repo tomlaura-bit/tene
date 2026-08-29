@@ -42,13 +42,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
     const imageTypes = ["image/jpeg", "image/png", "image/webp"];
     const clipTypes = ["video/mp4", "video/webm"];
     const maxSize = imageTypes.includes(evidence.type) ? 5 * 1024 * 1024 : 25 * 1024 * 1024;
-    if (![...imageTypes, ...clipTypes, "application/zip", "application/x-bzip2", "application/octet-stream", ""].includes(evidence.type) || evidence.size > maxSize)
+    if (![...imageTypes, ...clipTypes].includes(evidence.type) || evidence.size > maxSize)
       return Response.json({ ok: false, error: "invalid_evidence" }, { status: 400 });
+    const signature = new Uint8Array(await evidence.slice(0, 16).arrayBuffer());
+    const isJpeg = evidence.type === "image/jpeg" && signature[0] === 0xff && signature[1] === 0xd8 && signature[2] === 0xff;
+    const isPng = evidence.type === "image/png" && signature.slice(0, 8).every((value, index) => value === [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a][index]);
+    const isWebp = evidence.type === "image/webp" && String.fromCharCode(...signature.slice(0, 4)) === "RIFF" && String.fromCharCode(...signature.slice(8, 12)) === "WEBP";
+    const isMp4 = evidence.type === "video/mp4" && String.fromCharCode(...signature.slice(4, 8)) === "ftyp";
+    const isWebm = evidence.type === "video/webm" && signature[0] === 0x1a && signature[1] === 0x45 && signature[2] === 0xdf && signature[3] === 0xa3;
+    if (!(isJpeg || isPng || isWebp || isMp4 || isWebm)) return Response.json({ ok: false, error: "invalid_evidence" }, { status: 400 });
     const evidenceId = `evd_${crypto.randomUUID()}`;
     const safeExtension = evidence.name.split(".").pop()?.replace(/[^a-z0-9]/gi, "").toLowerCase() || "bin";
     const storageKey = `dispute-evidence/${roomId}/${id}/${evidenceId}.${safeExtension}`;
     await env.UPLOADS.put(storageKey, await evidence.arrayBuffer(), { httpMetadata: { contentType: evidence.type || "application/octet-stream", contentDisposition: `attachment; filename="${evidence.name.replace(/["\r\n]/g, "_")}"` }, customMetadata: { disputeId: id, reporterId: reporter.id } });
-    evidenceRow = { id: evidenceId, disputeId: id, type: imageTypes.includes(evidence.type) ? "image" : clipTypes.includes(evidence.type) ? "clip" : "demo", storageKey, description: evidence.name, createdAt: now };
+    evidenceRow = { id: evidenceId, disputeId: id, type: imageTypes.includes(evidence.type) ? "image" : "clip", storageKey, description: evidence.name, createdAt: now };
   }
   try {
     await db.batch([

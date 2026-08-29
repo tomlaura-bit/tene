@@ -3,6 +3,7 @@ import type { BatchItem } from "drizzle-orm/batch";
 import { getDb } from "../../../../../db";
 import { matchEvents, matchServers, rooms } from "../../../../../db/schema";
 import { matchProviderConfig } from "../../../../../lib/match-provider";
+import { secureEqual, webhookReceipt } from "../../../../../lib/webhook-security";
 
 export const dynamic = "force-dynamic";
 
@@ -29,14 +30,17 @@ function scores(body: Record<string, unknown>) {
 
 export async function POST(request: Request) {
   const token = matchProviderConfig().dathost.webhookToken;
-  if (!token || request.headers.get("authorization") !== `Bearer ${token}`) return Response.json({ ok: false, error: "invalid_signature" }, { status: 401 });
+  if (!token || !(await secureEqual(request.headers.get("authorization"), `Bearer ${token}`))) return Response.json({ ok: false, error: "invalid_signature" }, { status: 401 });
   const roomId = new URL(request.url).searchParams.get("roomId");
-  const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+  const rawBody = await request.text();
+  const body = (() => { try { return JSON.parse(rawBody); } catch { return null; } })() as Record<string, unknown> | null;
   const event = body ? eventName(body) : undefined;
   if (!roomId || !body || !event || !allowedEvents.includes(event as DathostEvent)) return Response.json({ ok: false, error: "invalid_event" }, { status: 400 });
+  const receipt = await webhookReceipt("dathost", roomId, rawBody);
+  if (receipt.duplicate) return Response.json({ ok: true, duplicate: true });
   const db = getDb();
   const [server] = await db.select().from(matchServers).where(eq(matchServers.roomId, roomId)).limit(1);
-  if (!server) return Response.json({ ok: false, error: "server_not_found" }, { status: 404 });
+  if (!server) { await receipt.release(); return Response.json({ ok: false, error: "server_not_found" }, { status: 404 }); }
   const now = new Date();
   const score = scores(body);
   const [createdEvent] = await db.select().from(matchEvents).where(and(eq(matchEvents.serverId, server.id), eq(matchEvents.eventType, "provider_match_created"))).limit(1);
@@ -48,6 +52,6 @@ export async function POST(request: Request) {
     db.insert(matchEvents).values({ id: `evt_${crypto.randomUUID()}`, serverId: server.id, eventType: `dathost_${event}`, payloadJson: JSON.stringify(body), createdAt: now }),
   ];
   if (event === "match_ended" || event === "match_canceled") operations.push(db.update(rooms).set({ status: "review" }).where(eq(rooms.id, roomId)));
-  await db.batch(operations as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
+  try { await db.batch(operations as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]); } catch (error) { await receipt.release(); throw error; }
   return Response.json({ ok: true });
 }

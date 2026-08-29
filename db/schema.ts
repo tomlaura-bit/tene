@@ -460,6 +460,13 @@ export const matchEvents = sqliteTable(
   ],
 );
 
+export const webhookReceipts = sqliteTable("webhook_receipts", {
+  id: text("id").primaryKey(),
+  provider: text("provider").notNull(),
+  roomId: text("room_id").notNull(),
+  receivedAt: integer("received_at", { mode: "timestamp" }).notNull(),
+}, (table) => [index("idx_webhook_receipts_received").on(table.receivedAt)]);
+
 export const matchDisputes = sqliteTable(
   "match_disputes",
   {

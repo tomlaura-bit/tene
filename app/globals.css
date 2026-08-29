@@ -5253,6 +5253,108 @@ button {
   .hero-motivation { justify-content:center; flex-wrap:wrap; }
   .landing-page::before { background-image:linear-gradient(90deg,rgba(5,5,9,.92),rgba(5,5,9,.72)),linear-gradient(0deg,#09080d,transparent 55%),url('/tene-competitive-hero.webp'); background-position:68% center; opacity:.72; }
 }
+
+/* Salas v2 — cleaner competitive layout based on the approved reference. */
+.app-bg[data-section="Salas"] {
+  --rooms-chat-width: 320px;
+  background-image:linear-gradient(90deg,rgba(10,10,14,.98) 0,rgba(10,10,14,.92) 48%,rgba(10,10,14,.62)),linear-gradient(180deg,rgba(10,10,14,.18),#0a0a0e 780px),url('/tene-pro-arena-v2.png');
+}
+.app-bg[data-section="Salas"] .dashboard-topbar {
+  height:64px;
+  column-gap:30px;
+  padding:0 28px;
+  border-bottom-color:#1b1b24;
+  background:rgba(10,10,14,.92);
+  backdrop-filter:blur(10px);
+}
+.app-bg[data-section="Salas"] .topbar-brand { gap:10px; letter-spacing:.08em; }
+.app-bg[data-section="Salas"] .topbar-brand .brand-mark { width:30px; height:30px; border-radius:8px; }
+.app-bg[data-section="Salas"] .primary-navigation { gap:2px; }
+.app-bg[data-section="Salas"] .primary-navigation button {
+  height:auto;
+  border:0;
+  border-radius:6px;
+  padding:9px 14px;
+  color:#8f8da0;
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:.02em;
+  text-transform:none;
+}
+.app-bg[data-section="Salas"] .primary-navigation button:hover,
+.app-bg[data-section="Salas"] .primary-navigation button.active { background:rgba(124,92,255,.06); color:#f4f3f7; }
+.app-bg[data-section="Salas"] .topbar-balance { border-color:#232330; border-radius:6px; background:#111117; padding:8px 14px; color:#f4f3f7; font-family:monospace; font-size:13px; }
+.app-bg[data-section="Salas"] .profile-trigger { min-width:148px; border:1px solid #232330; border-radius:6px; background:#111117; padding:5px 11px 5px 7px; }
+.app-bg[data-section="Salas"] .profile-trigger img,
+.app-bg[data-section="Salas"] .profile-trigger > span:first-child { width:28px; height:28px; border-radius:50%; }
+.app-bg[data-section="Salas"] .app-content { padding-top:64px; }
+.app-bg[data-section="Salas"] .app-header { min-height:auto; padding:44px 56px 24px !important; border:0; }
+.app-bg[data-section="Salas"] .app-header::after { display:none; }
+.app-bg[data-section="Salas"] .app-header h1 { font-size:clamp(38px,3.5vw,52px); font-weight:600; letter-spacing:-.02em; text-shadow:none; }
+.app-bg[data-section="Salas"] .app-header .eyebrow { margin-bottom:18px; color:#7c5cff; font-size:12px; letter-spacing:.12em; }
+.app-bg[data-section="Salas"] .rooms-section { padding:0 calc(var(--rooms-chat-width) + 56px) 60px 56px; }
+.app-bg[data-section="Salas"] .section-intro { align-items:flex-end; gap:24px; margin-bottom:26px; }
+.app-bg[data-section="Salas"] .section-intro > div { display:flex; flex-direction:column; align-items:flex-start; }
+.app-bg[data-section="Salas"] .verified-badge { order:-1; margin-bottom:40px; border:1px solid rgba(51,209,126,.25); border-radius:999px; background:rgba(51,209,126,.12); padding:6px 13px; color:#33d17e; box-shadow:none; font-size:11px; letter-spacing:.03em; }
+.app-bg[data-section="Salas"] .section-intro h2 { margin:0 0 6px; color:#f4f3f7; font-size:24px; font-weight:600; letter-spacing:-.01em; text-shadow:none; }
+.app-bg[data-section="Salas"] .section-intro p { max-width:520px; margin:0; color:#8f8da0; font-size:13px; line-height:1.5; }
+.app-bg[data-section="Salas"] .create-room-action { min-width:0; border:0; border-radius:6px; background:#7c5cff; padding:12px 20px; color:#fff; font-size:13px; font-weight:600; }
+.app-bg[data-section="Salas"] .create-room-action:hover { border:0; background:#8a70ff; }
+.app-bg[data-section="Salas"] .rooms-catalog { max-width:920px; overflow:visible; border:0; border-radius:0; background:transparent; }
+.app-bg[data-section="Salas"] .room-row-rich { grid-template-columns:minmax(300px,1fr) 110px auto; gap:20px; border:1px solid #232330; border-radius:10px !important; background:#111117; padding:18px 22px; box-shadow:none; backdrop-filter:none; transition:border-color .15s ease,background .15s ease; }
+.app-bg[data-section="Salas"] .room-row-rich:hover { border-color:#333140; background:#16161d; }
+.app-bg[data-section="Salas"] .room-symbol { width:42px; height:42px; border:0; border-radius:9px; background:linear-gradient(135deg,#7c5cff,#5a3fe0); color:#fff; font-size:15px; }
+.app-bg[data-section="Salas"] .room-title-line { gap:14px; }
+.app-bg[data-section="Salas"] .room-heading { gap:9px; }
+.app-bg[data-section="Salas"] .room-heading > strong { margin-right:1px; font-size:15px; font-weight:600; }
+.app-bg[data-section="Salas"] .room-heading > span { border-color:#232330; border-radius:999px; background:#16161d; padding:3px 9px; color:#8f8da0; font-size:10px; font-weight:500; letter-spacing:0; }
+.app-bg[data-section="Salas"] .room-heading > span:last-child { border-color:rgba(124,92,255,.25); background:rgba(124,92,255,.06); color:#7c5cff; }
+.app-bg[data-section="Salas"] .room-heading > span b { color:#f4f3f7; font-size:10px; }
+.app-bg[data-section="Salas"] .room-title-line small { margin-top:6px; color:#8f8da0; font-size:12px; }
+.app-bg[data-section="Salas"] .room-title-line small i { width:5px; height:5px; box-shadow:none; }
+.app-bg[data-section="Salas"] .room-created { margin:5px 0 0 56px; color:#5a586a; font-size:11px; }
+.app-bg[data-section="Salas"] .room-created b { color:#8f8da0; }
+.app-bg[data-section="Salas"] .room-capacity { flex-direction:column-reverse; align-items:flex-end; gap:6px; margin:0; color:#5a586a; font-family:monospace; font-size:10px; }
+.app-bg[data-section="Salas"] .mini-progress { width:100%; background:#232330; }
+.app-bg[data-section="Salas"] .avatar-strip { margin-bottom:6px; }
+.app-bg[data-section="Salas"] .profile-anchor,
+.app-bg[data-section="Salas"] .vacant-avatar { width:28px; height:28px; margin-left:-7px; border:2px solid #111117; border-radius:50%; background:#16161d; }
+.app-bg[data-section="Salas"] .profile-anchor img { border-radius:50%; }
+.app-bg[data-section="Salas"] .avatar-strip > :nth-child(n+4) { display:none; }
+.app-bg[data-section="Salas"] .room-enter { border:1px solid #7c5cff; border-radius:6px; background:transparent; padding:10px 18px; color:#7c5cff; font-size:13px; font-weight:600; }
+.app-bg[data-section="Salas"] .room-enter:hover { background:#7c5cff; color:#fff; }
+.app-bg[data-section="Salas"] .rooms-chat { inset:64px 0 0 auto; width:320px; border-left-color:#1b1b24; background:#111117; box-shadow:none; backdrop-filter:none; }
+.app-bg[data-section="Salas"] .rooms-chat > header { padding:18px 20px; border-bottom-color:#1b1b24; }
+.app-bg[data-section="Salas"] .rooms-chat > header strong { font-size:14px; font-weight:600; }
+.app-bg[data-section="Salas"] .rooms-chat-stream { padding:18px 20px; }
+.app-bg[data-section="Salas"] .rooms-chat-stream article { grid-template-columns:28px 1fr; gap:10px; padding:8px 0; }
+.app-bg[data-section="Salas"] .rooms-chat-avatar { width:28px; height:28px; border-radius:50%; font-size:10px; }
+.app-bg[data-section="Salas"] .rooms-chat-stream article div > span { margin-top:2px; color:#8f8da0; font-size:12px; line-height:1.5; }
+.app-bg[data-section="Salas"] .rooms-chat-compose { padding:16px; border-top-color:#1b1b24; gap:8px; }
+.app-bg[data-section="Salas"] .rooms-chat-compose input { min-height:40px; border-color:#232330; border-radius:6px; background:#16161d; padding:10px 13px; }
+.app-bg[data-section="Salas"] .rooms-chat-compose button { min-height:40px; border:0; border-radius:6px; background:#7c5cff; color:#fff; }
+@media (max-width:1080px) {
+  .app-bg[data-section="Salas"] .app-header { padding-inline:28px !important; }
+  .app-bg[data-section="Salas"] .rooms-section { padding-left:28px; padding-right:348px; }
+  .app-bg[data-section="Salas"] .room-row-rich { grid-template-columns:minmax(0,1fr) auto; }
+  .app-bg[data-section="Salas"] .room-people { grid-column:1; }
+}
+@media (max-width:900px) {
+  .app-bg[data-section="Salas"] .rooms-section { padding-right:28px; }
+  .app-bg[data-section="Salas"] .rooms-chat { display:none; }
+}
+@media (max-width:760px) {
+  .app-bg[data-section="Salas"] .dashboard-topbar { min-height:64px; height:auto; }
+  .app-bg[data-section="Salas"] .app-content { padding-top:108px; }
+  .app-bg[data-section="Salas"] .app-header { padding:30px 16px 20px !important; }
+  .app-bg[data-section="Salas"] .rooms-section { padding:0 16px 40px; }
+  .app-bg[data-section="Salas"] .verified-badge { margin-bottom:28px; }
+  .app-bg[data-section="Salas"] .room-row-rich { grid-template-columns:1fr; padding:16px; }
+  .app-bg[data-section="Salas"] .room-people { grid-column:auto; }
+  .app-bg[data-section="Salas"] .room-capacity { align-items:flex-start; }
+  .app-bg[data-section="Salas"] .avatar-strip { justify-content:flex-start; }
+  .app-bg[data-section="Salas"] .room-enter { width:100%; }
+}
 .wallet-modal:has(.voucher-form) { width:min(980px,calc(100vw - 28px)); max-width:980px; }
 .voucher-form { display:grid; grid-template-columns:150px 1fr; gap:14px; margin:18px 0; }
 .voucher-status { grid-column:1/-1; padding:11px 13px; border:1px solid rgba(52,211,153,.3); border-radius:10px; background:rgba(16,185,129,.08); color:#8ce8c2; font-size:12px; }

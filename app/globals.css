@@ -5266,11 +5266,12 @@ button {
 @media (max-width:700px) { .voucher-form { grid-template-columns:1fr; } .voucher-preview { grid-row:auto; min-height:160px; } .voucher-fields { grid-template-columns:1fr; } .voucher-payer,.voucher-warning { grid-column:1; } }
 
 /* Unified competitive arena atmosphere across TENE. */
-.app-bg { min-height:100vh; overflow-x:clip; background-color:#07080d; background-image:linear-gradient(180deg,rgba(6,7,12,.18) 0,rgba(7,7,12,.72) 560px,#09080d 980px),linear-gradient(90deg,rgba(6,7,12,.94) 0,rgba(6,7,12,.64) 48%,rgba(6,7,12,.2) 100%),url('/tene-pro-arena-v2.png'); background-size:cover,cover,max(100vw,1680px) auto; background-position:center top,center top,center 74px; background-repeat:no-repeat; background-attachment:scroll,scroll,fixed; }
-.app-bg[data-section="Salas"] { background-position:center top,center top,66% 74px; }
-.app-bg[data-section="Beneficios"] { background-image:linear-gradient(180deg,rgba(6,7,12,.2),rgba(8,7,13,.9) 780px,#09080d),linear-gradient(90deg,rgba(7,6,12,.92),rgba(88,28,135,.22)),url('/tene-pro-arena-v2.png'); }
-.app-bg[data-section="Ranking"] { background-image:linear-gradient(180deg,rgba(6,7,12,.22),rgba(8,7,13,.92) 720px,#09080d),linear-gradient(90deg,rgba(7,6,12,.9),rgba(55,36,150,.2)),url('/tene-pro-arena-v2.png'); }
-.app-bg[data-section="Wallet"],.app-bg[data-section="Finanzas"] { background-image:linear-gradient(180deg,rgba(6,7,12,.5),rgba(8,7,13,.94) 650px,#09080d),linear-gradient(90deg,rgba(7,6,12,.96),rgba(20,45,75,.18)),url('/tene-pro-arena-v2.png'); }
+.app-bg { --section-art:url('/tene-team-arena.webp'); --section-art-position:center 74px; --section-tint:rgba(106,45,190,.16); min-height:100vh; overflow-x:clip; background-color:#07080d; background-image:linear-gradient(180deg,rgba(6,7,12,.2) 0,rgba(7,7,12,.74) 570px,#09080d 990px),linear-gradient(90deg,rgba(6,7,12,.94) 0,rgba(6,7,12,.64) 48%,var(--section-tint) 100%),var(--section-art); background-size:cover,cover,max(100vw,1680px) auto; background-position:center top,center top,var(--section-art-position); background-repeat:no-repeat; background-attachment:scroll,scroll,fixed; transition:background-color .35s ease; }
+.app-bg[data-section="Inicio"],.app-bg[data-section="Perfil"],.app-bg[data-section="Cuenta"] { --section-art:url('/tene-team-arena.webp'); --section-art-position:58% 74px; --section-tint:rgba(102,45,180,.18); }
+.app-bg[data-section="Salas"] { --section-art:url('/tene-pro-arena-v2.png'); --section-art-position:66% 74px; --section-tint:rgba(45,32,130,.12); }
+.app-bg[data-section="Beneficios"],.app-bg[data-section="Ranking"] { --section-art:url('/tene-ranking-arena.png'); --section-art-position:68% 74px; --section-tint:rgba(121,73,18,.1); }
+.app-bg[data-section="Conducta"],.app-bg[data-section="Chat"],.app-bg[data-section="Alertas"],.app-bg[data-section="Historial"] { --section-art:url('/tene-competitive-hero.webp'); --section-art-position:center 74px; --section-tint:rgba(19,77,87,.14); }
+.app-bg[data-section="Wallet"],.app-bg[data-section="Finanzas"],.app-bg[data-section="Staff"],.app-bg[data-section="Reglas legales"] { --section-art:url('/tene-team-arena.webp'); --section-art-position:72% 74px; --section-tint:rgba(18,65,110,.12); background-image:linear-gradient(180deg,rgba(6,7,12,.48),rgba(8,7,13,.94) 700px,#09080d),linear-gradient(90deg,rgba(7,6,12,.96),rgba(20,45,75,.16)),var(--section-art); }
 .app-bg .dashboard-topbar { background:rgba(7,7,12,.8); border-bottom-color:rgba(196,181,253,.14); }
 .app-bg .app-header { position:relative; min-height:150px; border-bottom-color:rgba(196,181,253,.14); }
 .app-bg .app-header::after { content:""; position:absolute; left:0; bottom:-1px; width:150px; height:2px; background:linear-gradient(90deg,#8b5cf6,transparent); box-shadow:0 0 18px #8b5cf6; }
@@ -5299,7 +5300,7 @@ button {
   .finance-summary { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
   .chat-layout { grid-template-columns:180px minmax(0,1fr); }
   .chat-layout .online-list { display:none; }
-  .app-bg { background-size:cover,cover,auto 900px; background-position:center top,center top,64% 74px; }
+  .app-bg { background-size:cover,cover,auto 900px; background-position:center top,center top,var(--section-art-position); }
 }
 @media (max-width:900px) {
   .finance-workspace,.benefits-hero,.account-form { grid-template-columns:minmax(0,1fr) !important; }
@@ -5309,7 +5310,7 @@ button {
   .app-content :where(table,.table-shell,.ledger-table) { max-width:100%; overflow-x:auto; }
 }
 @media (max-width:760px) {
-  .app-bg { background-position:center top,center top,68% 110px; background-size:cover,cover,auto 680px; }
+  .app-bg { background-position:center top,center top,var(--section-art-position); background-size:cover,cover,auto 680px; }
   .app-bg .app-header { min-height:110px; }
   .app-bg .app-header h1 { font-size:clamp(2rem,11vw,2.7rem); }
   .app-content { padding-inline:14px; }

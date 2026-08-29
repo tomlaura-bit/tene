@@ -5256,3 +5256,21 @@ button {
 .voucher-payer { grid-column:1/-1; }
 .voucher-warning { grid-column:2; color:#8b8495; line-height:1.55; }
 @media (max-width:700px) { .voucher-form { grid-template-columns:1fr; } .voucher-preview { grid-row:auto; min-height:160px; } .voucher-fields { grid-template-columns:1fr; } .voucher-payer,.voucher-warning { grid-column:1; } }
+
+/* Unified competitive broadcast atmosphere across TENE. */
+.app-bg { min-height:100vh; background-color:#07080d; background-image:linear-gradient(180deg,rgba(6,7,12,.34) 0,rgba(7,7,12,.82) 430px,#09080d 820px),linear-gradient(90deg,rgba(6,7,12,.9),rgba(6,7,12,.48) 58%,rgba(6,7,12,.28)),url('/tene-team-arena.webp'); background-size:cover,cover,min(1920px,100vw) auto; background-position:center top,center top,center 74px; background-repeat:no-repeat; background-attachment:scroll,scroll,fixed; }
+.app-bg[data-section="Salas"] { background-position:center top,center top,62% 74px; }
+.app-bg[data-section="Ranking"] { background-image:linear-gradient(180deg,rgba(6,7,12,.25),rgba(8,7,13,.9) 650px,#09080d),linear-gradient(90deg,rgba(7,6,12,.86),rgba(72,24,130,.18)),url('/tene-team-arena.webp'); }
+.app-bg .dashboard-topbar { background:rgba(7,7,12,.8); border-bottom-color:rgba(196,181,253,.14); }
+.app-bg .app-header { position:relative; min-height:150px; border-bottom-color:rgba(196,181,253,.14); }
+.app-bg .app-header::after { content:""; position:absolute; left:0; bottom:-1px; width:150px; height:2px; background:linear-gradient(90deg,#8b5cf6,transparent); box-shadow:0 0 18px #8b5cf6; }
+.app-bg .app-header h1 { font-size:clamp(2.25rem,4vw,4.5rem); text-shadow:0 8px 35px rgba(0,0,0,.55); }
+.app-bg .app-header .eyebrow { color:#c4b5fd; letter-spacing:.2em; }
+.app-bg :where(.verification-card,.wallet-card,.rooms-panel,.stats-card,.activity-card,.account-surface,.room-row-rich,.rooms-chat,.chat-layout,.benefits-hero,.rewards-board,.conduct-hero,.conduct-status,.sanction-history,.ranking-card,.balance-builder,.season-board,.wallet-hero,.wallet-ledger,.legal-hero,.legal-grid article,.legal-note,.staff-surface,.finance-card) { border-color:rgba(196,181,253,.13); background-color:rgba(11,9,17,.78); box-shadow:0 22px 70px rgba(0,0,0,.18); backdrop-filter:blur(16px); }
+.app-bg :where(.section-intro,.panel-title,.account-title,.veto-head,.server-head) { border-color:rgba(255,255,255,.1); }
+.app-bg .verified-badge { box-shadow:0 0 25px rgba(52,211,153,.08); }
+.app-bg .primary-button { box-shadow:0 12px 36px rgba(124,58,237,.32); }
+.app-bg .section-panel,.app-bg .dashboard-grid,.app-bg .community-panel,.app-bg .legal-panel { max-width:1440px; }
+.app-bg .section-intro h2,.app-bg .benefits-hero h2,.app-bg .conduct-hero h2 { text-shadow:0 7px 28px rgba(0,0,0,.55); }
+.app-bg .section-intro p,.app-bg .account-title p,.app-bg .wallet-help { color:rgba(229,224,238,.62); }
+@media (max-width:760px) { .app-bg { background-position:center top,center top,68% 110px; background-size:cover,cover,auto 620px; } .app-bg .app-header { min-height:120px; } .app-bg .app-header h1 { font-size:2.2rem; } }

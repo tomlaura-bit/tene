@@ -758,7 +758,7 @@ function Dashboard({
     "Reglas legales",
   ];
   return (
-    <main className="app-bg min-h-screen text-white">
+    <main className="app-bg min-h-screen text-white" data-section={activeTab}>
       <aside className="app-sidebar">
         <button className="flex items-center gap-3" onClick={goHome}>
           <span className="brand-mark">T</span>
@@ -808,7 +808,7 @@ function Dashboard({
         <header className="app-header">
           <div>
             <p className="eyebrow">
-              <span /> PANEL DEL JUGADOR
+              <span /> {({ Inicio: "CENTRO COMPETITIVO", Salas: "MATCHMAKING 5V5", Beneficios: "RECOMPENSAS DE COMUNIDAD", Ranking: "CAMINO A LA CIMA", Wallet: "FONDOS DEL JUGADOR", Chat: "COMUNIDAD EN VIVO", Conducta: "FAIR PLAY", Historial: "REGISTRO COMPETITIVO", Cuenta: "IDENTIDAD DEL JUGADOR", Perfil: "PERFIL COMPETITIVO", Alertas: "CENTRO DE AVISOS", Staff: "OPERACIONES TENE", Finanzas: "CONTROL FINANCIERO", "Reglas legales": "REGLAMENTO OFICIAL" } as Record<string, string>)[activeTab] ?? "PANEL DEL JUGADOR"}
             </p>
             <h1>{activeTab === "Inicio" ? "Buenos días, Tom" : activeTab}</h1>
           </div>

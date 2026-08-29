@@ -1428,7 +1428,7 @@ function EnhancedDashboard({
     setWalletAction(null);
   };
   return (
-    <main className="app-bg min-h-screen text-white">
+    <main className="app-bg min-h-screen text-white" data-section={activeTab}>
       <aside className="app-sidebar">
         <button className="flex items-center gap-3" onClick={goHome}>
           <span className="brand-mark">T</span>

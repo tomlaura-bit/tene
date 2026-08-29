@@ -2231,6 +2231,7 @@ function RoomsPanel({
           {canCreate && <button onClick={createRoom}>＋ Crear sala</button>}
         </div>
       </div>
+      <div className="rooms-with-chat">
       <div className="rooms-catalog">
         {loading && <p className="wallet-help">Cargando salas…</p>}
         {!loading && !realRooms.length && (
@@ -2249,7 +2250,58 @@ function RoomsPanel({
           <p className="wallet-help">No hay salas que coincidan con este rango de nivel.</p>
         )}
       </div>
+      <RoomsChat session={session} notify={notify} />
+      </div>
     </section>
+  );
+}
+
+function RoomsChat({ session, notify }: { session: SessionData | null; notify: (message: string) => void }) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const load = async () => {
+    const response = await fetch("/api/chat?channel=general", { cache: "no-store" });
+    if (!response.ok) return;
+    const data = (await response.json()) as { messages?: ChatMessage[] };
+    setMessages(data.messages ?? []);
+  };
+  useEffect(() => {
+    void load();
+    const timer = window.setInterval(() => void load(), 10000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const send = async () => {
+    if (!text.trim()) return;
+    if (!session) return notify("Inicia sesión para escribir en el chat");
+    setSending(true);
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ channel: "general", message: text.trim() }),
+    });
+    setSending(false);
+    if (!response.ok) return notify("No se pudo enviar el mensaje");
+    setText("");
+    await load();
+  };
+  return (
+    <aside className="rooms-chat">
+      <header><div><span className="live-pulse" /><strong>Chat general</strong></div><small>Comunidad TENE</small></header>
+      <div className="rooms-chat-stream">
+        {!messages.length && <p>Escribe el primer mensaje.</p>}
+        {messages.slice(-30).map((message) => (
+          <article key={message.id}>
+            <span className="rooms-chat-avatar">{message.name.slice(0, 1).toUpperCase()}</span>
+            <div><p><strong>{message.name}</strong><time>{new Date(message.createdAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}</time></p><span>{message.body}</span></div>
+          </article>
+        ))}
+      </div>
+      <div className="rooms-chat-compose">
+        <input aria-label="Mensaje para el chat general" maxLength={240} value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => event.key === "Enter" && void send()} placeholder={session ? "Escribe un mensaje…" : "Inicia sesión para escribir"} />
+        <button aria-label="Enviar mensaje" disabled={sending || !text.trim()} onClick={() => void send()}>➤</button>
+      </div>
+    </aside>
   );
 }
 

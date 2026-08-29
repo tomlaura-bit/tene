@@ -223,7 +223,7 @@ export default function Home() {
     );
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#09080d] text-white">
+    <main className="landing-page min-h-screen overflow-hidden bg-[#09080d] text-white">
       <div className="ambient ambient-one" />
       <div className="ambient ambient-two" />
       <header className="relative z-10 mx-auto flex max-w-[1440px] items-center justify-between px-5 py-5 md:px-10">
@@ -302,21 +302,12 @@ export default function Home() {
               <span className="text-xs text-white/40">competitivo</span>
             </div>
           </div>
+          <div className="hero-motivation">
+            <span>CLUTCH</span><i />
+            <span>COMUNICACIÓN</span><i />
+            <span>EQUIPO</span>
+          </div>
         </div>
-        <aside className="major-showcase" aria-label="Experiencia competitiva estilo Major">
-          <div className="major-topline"><span>● EN VIVO</span><b>TENE CHAMPIONS STAGE</b><small>LIMA · PERÚ</small></div>
-          <div className="major-arena">
-            <div className="arena-lights"><i /><i /><i /><i /><i /></div>
-            <div className="major-trophy"><span>T</span><b>MAJOR</b><small>COMMUNITY SERIES</small></div>
-            <div className="arena-stage"><i /><i /><i /></div>
-          </div>
-          <div className="major-scoreboard">
-            <div><span className="team-logo violet">A</span><b>TEAM ALFA</b><strong>11</strong></div>
-            <section><small>MAPA 2 · MIRAGE</small><b>RONDA 21</b><span>BO3</span></section>
-            <div><strong>9</strong><b>TEAM BRAVO</b><span className="team-logo cyan">B</span></div>
-          </div>
-          <div className="major-map-strip"><span>MIRAGE <b>11—9</b></span><span>ANUBIS <b>PRÓXIMO</b></span><span>INFERNO <b>DECIDER</b></span></div>
-        </aside>
       </section>
 
       <section

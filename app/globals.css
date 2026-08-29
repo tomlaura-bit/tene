@@ -5173,7 +5173,13 @@ button {
 @media (max-width: 900px) { .legal-grid { grid-template-columns:1fr; } .legal-note { align-items:flex-start; flex-direction:column; } }
 
 /* Simplified TENE navigation */
-.landing-simple { min-height:620px; display:grid; grid-template-columns:minmax(0,1fr) minmax(420px,.88fr); align-items:center; gap:64px; }
+.landing-page { position:relative; isolation:isolate; background:#06070b; }
+.landing-page::before { content:""; position:absolute; z-index:-3; inset:0 0 auto; height:min(880px,100vh); background-image:linear-gradient(90deg,rgba(5,5,9,.98) 0%,rgba(5,5,9,.9) 30%,rgba(5,5,9,.33) 64%,rgba(5,5,9,.22) 100%),linear-gradient(0deg,#09080d 0%,transparent 42%),url('/tene-competitive-hero.webp'); background-size:cover; background-position:center right; }
+.landing-page::after { content:""; position:absolute; z-index:-2; inset:0 0 auto; height:min(880px,100vh); background:radial-gradient(circle at 75% 42%,rgba(124,58,237,.15),transparent 38%),linear-gradient(115deg,transparent 55%,rgba(34,211,238,.06)); pointer-events:none; }
+.landing-simple { min-height:700px; display:flex; align-items:center; }
+.landing-simple > div { position:relative; z-index:2; }
+.hero-motivation { display:flex; align-items:center; gap:12px; margin-top:24px; color:rgba(255,255,255,.6); font-size:10px; font-weight:900; letter-spacing:.18em; }
+.hero-motivation i { width:4px; height:4px; border-radius:50%; background:#8b5cf6; box-shadow:0 0 10px #8b5cf6; }
 .major-showcase { overflow:hidden; border:1px solid rgba(167,139,250,.25); border-radius:24px; background:linear-gradient(145deg,rgba(18,13,28,.96),rgba(7,8,14,.98)); box-shadow:0 35px 100px rgba(76,29,149,.2); }
 .major-topline { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,.08); padding:14px 17px; }
 .major-topline span { color:#6ee7b7; font-size:10px; font-weight:900; letter-spacing:.08em; }
@@ -5234,11 +5240,11 @@ button {
   .topbar-account { grid-column:2; grid-row:1; }
   .app-content { padding-top:118px; }
   .profile-dropdown { top:48px; right:0; }
-  .landing-simple { min-height:540px; grid-template-columns:1fr; text-align:center; justify-content:center; }
+  .landing-simple { min-height:600px; text-align:center; justify-content:center; }
   .landing-simple .eyebrow,.landing-simple .mt-9,.landing-simple .mt-10 { justify-content:center; }
-  .major-showcase { display:none; }
+  .hero-motivation { justify-content:center; flex-wrap:wrap; }
+  .landing-page::before { background-image:linear-gradient(90deg,rgba(5,5,9,.92),rgba(5,5,9,.72)),linear-gradient(0deg,#09080d,transparent 55%),url('/tene-competitive-hero.webp'); background-position:68% center; opacity:.72; }
 }
-@media (min-width:761px) and (max-width:1100px) { .landing-simple { grid-template-columns:1fr; } .major-showcase { display:none; } }
 .wallet-modal:has(.voucher-form) { width:min(980px,calc(100vw - 28px)); max-width:980px; }
 .voucher-form { display:grid; grid-template-columns:150px 1fr; gap:14px; margin:18px 0; }
 .voucher-status { grid-column:1/-1; padding:11px 13px; border:1px solid rgba(52,211,153,.3); border-radius:10px; background:rgba(16,185,129,.08); color:#8ce8c2; font-size:12px; }

@@ -972,6 +972,18 @@ button {
   background: #8b5cf617;
   color: #c4b5fd;
 }
+.create-room-action {
+  align-self: flex-end;
+  min-width: 132px;
+  border: 1px solid #a78bfa45;
+  border-radius: 10px;
+  background: #8b5cf61c;
+  padding: 11px 17px;
+  color: #ddd6fe;
+  font-size: 12px;
+  font-weight: 800;
+}
+.create-room-action:hover { border-color: #a78bfa80; background: #8b5cf62b; }
 .rooms-catalog {
   overflow: hidden;
   border: 1px solid #ffffff0d;

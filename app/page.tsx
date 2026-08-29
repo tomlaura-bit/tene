@@ -2144,7 +2144,6 @@ function RoomsPanel({
 }) {
   const [realRooms, setRealRooms] = useState<RoomData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [levelFilter, setLevelFilter] = useState<"all" | "low" | "high">("all");
   const loadRooms = async () => {
     const response = await fetch("/api/rooms");
     if (response.ok) {
@@ -2205,12 +2204,6 @@ function RoomsPanel({
   };
   const canCreate =
     session && ["owner", "admin", "mod"].includes(session.user.role);
-  const visibleRooms = realRooms.filter((room) => {
-    if (levelFilter === "all") return true;
-    if (!room.players.length) return true;
-    const averageLevel = room.players.reduce((sum, player) => sum + player.level, 0) / room.players.length;
-    return levelFilter === "low" ? averageLevel <= 5 : averageLevel >= 6;
-  });
   return (
     <section className="section-panel">
       <div className="section-intro">
@@ -2224,12 +2217,7 @@ function RoomsPanel({
             jugar; el draft mantiene el balance.
           </p>
         </div>
-        <div className="filter-pills">
-          <button className={levelFilter === "all" ? "active" : ""} onClick={() => setLevelFilter("all")}>Todas</button>
-          <button className={levelFilter === "low" ? "active" : ""} onClick={() => setLevelFilter("low")}>LVL 1–5</button>
-          <button className={levelFilter === "high" ? "active" : ""} onClick={() => setLevelFilter("high")}>LVL 6–10</button>
-          {canCreate && <button onClick={createRoom}>＋ Crear sala</button>}
-        </div>
+        {canCreate && <button className="create-room-action" onClick={createRoom}>＋ Crear sala</button>}
       </div>
       <div className="rooms-with-chat">
       <div className="rooms-catalog">
@@ -2243,12 +2231,9 @@ function RoomsPanel({
             </p>
           </article>
         )}
-        {visibleRooms.map((room) => (
+        {realRooms.map((room) => (
           <RealRoomRow key={room.id} room={room} join={() => join(room.id)} />
         ))}
-        {!loading && realRooms.length > 0 && visibleRooms.length === 0 && (
-          <p className="wallet-help">No hay salas que coincidan con este rango de nivel.</p>
-        )}
       </div>
       <RoomsChat session={session} notify={notify} />
       </div>

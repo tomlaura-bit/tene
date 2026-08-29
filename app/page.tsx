@@ -2371,21 +2371,12 @@ function BenefitsPanel({ notify }: { notify: (message: string) => void }) {
         <article>
           <span>02</span>
           <h3>Prefijo exclusivo</h3>
-          <p>Etiqueta SUB visible en perfil, salas, chat y Discord.</p>
+          <p>Etiqueta SUB visible en tu perfil, las salas y el chat general.</p>
           <div className="prefix-preview">
             <b>SUB</b>
             <strong>Tom</strong>
             <small>LVL 5</small>
           </div>
-        </article>
-        <article>
-          <span>03</span>
-          <h3>Beneficios futuros</h3>
-          <p>
-            Acceso anticipado a eventos y salas especiales, sin ventajas
-            competitivas.
-          </p>
-          <i>Próximamente</i>
         </article>
       </div>
       <div className="rewards-board">
@@ -2620,17 +2611,6 @@ function CommunityChat({
             <span>#</span>
             General
           </button>
-          <div className="discord-card">
-            <b>Discord pendiente</b>
-            <p>La sincronización se activará cuando exista una aplicación de Discord configurada.</p>
-            <button
-              onClick={() =>
-                notify("Vinculación con Discord disponible próximamente")
-              }
-            >
-              Configurar
-            </button>
-          </div>
         </aside>
         <main className="chat-main">
           <header>

@@ -5679,3 +5679,41 @@ body :where(h1,h2,h3,.brand-mark,.sidebar-brand,.topbar-brand,.wallet-total,.sta
   .landing-simple > div { margin-inline:auto; }
   #como-funciona article { min-height:154px; }
 }
+
+/* TENE semantic palette — every color has one clear purpose. */
+:root {
+  --tene-accent:#8b5cf6;
+  --tene-accent-hover:#a78bfa;
+  --tene-accent-soft:rgba(139,92,246,.14);
+  --tene-success:#34d399;
+  --tene-success-soft:rgba(52,211,153,.12);
+  --tene-warning:#fbbf24;
+  --tene-warning-soft:rgba(251,191,36,.11);
+  --tene-danger:#fb7185;
+  --tene-danger-soft:rgba(251,113,133,.11);
+  --tene-discord:#5865f2;
+  --tene-text:#f4f3f7;
+  --tene-text-muted:#aaa6b1;
+  --tene-text-subtle:#77737f;
+}
+.app-bg { color:var(--tene-text); }
+.app-bg :where(.section-intro p,.account-title p,.wallet-help,.sidebar-destination-panel > p,.destination-steps span,.conduct-rules p,.legal-note p) { color:var(--tene-text-muted); }
+.app-bg :where(.primary-button,.create-room-action,.join-button,.rooms-chat-compose button) {
+  border-color:transparent;
+  background:var(--tene-accent);
+  color:#fff;
+}
+.app-bg :where(.primary-button,.create-room-action,.join-button,.rooms-chat-compose button):hover:not(:disabled) { background:var(--tene-accent-hover); }
+.app-bg :where(.text-action,.panel-title button,.sanction-history button) { color:var(--tene-accent-hover); }
+.app-bg :where(.player-sidebar-nav button.active,.profile-dropdown button:hover) { background:var(--tene-accent-soft); }
+.app-bg :where(.live-pulse,.sanction-dot.good) { background:var(--tene-success); box-shadow:0 0 10px rgba(52,211,153,.45); }
+.app-bg :where(.verified-badge,.approved,.status-approved,.success-text) { color:var(--tene-success); }
+.app-bg :where(.pending-seal,.pending,.status-pending,.warning) { border-color:rgba(251,191,36,.3); background-color:var(--tene-warning-soft); color:var(--tene-warning); }
+.app-bg :where(.review-actions .reject,.danger,.error,.status-rejected) { border-color:rgba(251,113,133,.3); background-color:var(--tene-danger-soft); color:var(--tene-danger); }
+.app-bg .review-actions .approve { border-color:rgba(52,211,153,.3); background:var(--tene-success-soft); color:var(--tene-success); }
+.app-bg :where(.rule-icon.danger,.rule-icon.ban) { background:var(--tene-danger-soft); color:var(--tene-danger); }
+.app-bg .sanction-dot { background:var(--tene-warning); }
+.app-bg .sanction-history article > strong { color:var(--tene-danger); }
+.app-bg .profile-dropdown a { color:var(--tene-danger); }
+.player-sidebar-nav .sidebar-lower-group .discord-sidebar,.player-sidebar-nav .sidebar-lower-group .discord-sidebar:hover { border-color:rgba(88,101,242,.45); background:var(--tene-discord); color:#fff; }
+.player-sidebar-nav .sidebar-lower-group .discord-sidebar > span { background:rgba(255,255,255,.16); }

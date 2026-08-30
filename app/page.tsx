@@ -121,7 +121,7 @@ export default function Home() {
   const [session, setSession] = useState<SessionData | null>(null);
   const [onboardingIdentity, setOnboardingIdentity] = useState<{ email: string; fullName: string | null } | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("Inicio");
+  const [activeTab, setActiveTab] = useState("Salas");
   const [bannedMaps, setBannedMaps] = useState<string[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [publicData, setPublicData] = useState<{ activePlayers: number; rooms: Array<{ id: string; name: string; status: string; entryCents: number; players: Array<{ nickname: string; avatarUrl: string | null; level: number | null; isCaptain: boolean }> }>; ranking: Array<{ userId: string; name: string; elo: number; level: number; position: number }> } | null>(null);
@@ -153,7 +153,7 @@ export default function Home() {
     );
     if (steamResult === "verified" || steamResult === "linked") {
       setScreen("dashboard");
-      setActiveTab("Cuenta");
+      setActiveTab("Salas");
       setNotice(
         steamResult === "verified"
           ? "Steam verificado · Cuenta apta para revisión del staff"
@@ -179,7 +179,7 @@ export default function Home() {
         setOnboardingIdentity(null);
         if (data.wallet) setBalance(data.wallet.availableCents / 100);
         setScreen("dashboard");
-        setActiveTab("Cuenta");
+        setActiveTab("Salas");
       }
     }
     setNotice("Solicitud registrada · el staff debe aprobar tu cuenta antes de jugar");
@@ -249,9 +249,14 @@ export default function Home() {
         <button
           className="steam-button"
           disabled={sessionLoading}
-          onClick={() =>
-            session ? setScreen("dashboard") : setSteamOpen(true)
-          }
+          onClick={() => {
+            if (session) {
+              setActiveTab("Salas");
+              setScreen("dashboard");
+            } else {
+              setSteamOpen(true);
+            }
+          }}
         >
           <span className="steam-dot">
             {session?.user.nickname?.slice(0, 1).toUpperCase() ?? "T"}
@@ -814,7 +819,7 @@ function Dashboard({
             <p className="eyebrow">
               <span /> {({ Inicio: "CENTRO COMPETITIVO", Salas: "MATCHMAKING 5V5", Beneficios: "RECOMPENSAS DE COMUNIDAD", Ranking: "CAMINO A LA CIMA", Wallet: "FONDOS DEL JUGADOR", Chat: "COMUNIDAD EN VIVO", Conducta: "FAIR PLAY", Historial: "REGISTRO COMPETITIVO", Cuenta: "IDENTIDAD DEL JUGADOR", Perfil: "PERFIL COMPETITIVO", Alertas: "CENTRO DE AVISOS", Staff: "OPERACIONES TENE", Finanzas: "CONTROL FINANCIERO", "Reglas legales": "REGLAMENTO OFICIAL" } as Record<string, string>)[activeTab] ?? "PANEL DEL JUGADOR"}
             </p>
-            <h1>{activeTab === "Inicio" ? "Buenos días, Tom" : activeTab}</h1>
+            <h1>{activeTab === "Inicio" ? "Resumen de cuenta" : activeTab}</h1>
           </div>
           <div className="header-actions">
             <button className="balance-chip">
@@ -1482,7 +1487,7 @@ function EnhancedDashboard({
                 <span><b>{nickname}</b><small>LVL {session?.rating?.level ?? session?.user.level ?? 1}</small></span><i>⌄</i>
               </button>
               {profileMenuOpen && <div className="profile-dropdown">
-                <button onClick={() => { setActiveTab("Cuenta"); setProfileMenuOpen(false); }}>◎ Mi cuenta</button>
+                <button onClick={() => { setActiveTab("Inicio"); setProfileMenuOpen(false); }}>◎ Resumen de cuenta</button>
                 <button onClick={() => { setActiveTab("Wallet"); setProfileMenuOpen(false); }}>◈ Wallet</button>
                 <button onClick={() => { setWalletAction("deposit"); setProfileMenuOpen(false); }}>＋ Recargar</button>
                 <button onClick={() => { setWalletAction("withdraw"); setProfileMenuOpen(false); }}>↗ Retirar</button>
@@ -1503,7 +1508,7 @@ function EnhancedDashboard({
               <span /> PANEL DEL JUGADOR
             </p>
             <h1>
-              {activeTab === "Inicio" ? `Buenos días, ${nickname}` : activeTab}
+              {activeTab === "Inicio" ? "Resumen de cuenta" : activeTab}
             </h1>
           </div>
         </header>

@@ -5254,6 +5254,88 @@ button {
   .landing-page::before { background-image:linear-gradient(90deg,rgba(5,5,9,.92),rgba(5,5,9,.72)),linear-gradient(0deg,#09080d,transparent 55%),url('/tene-competitive-hero.webp'); background-position:68% center; opacity:.72; }
 }
 
+/* Player shell v3 — neutral FACEIT-inspired structure, original TENE styling. */
+.app-bg { background:#171717 !important; background-image:none !important; }
+.app-sidebar {
+  position:fixed;
+  z-index:90;
+  inset:0 auto 0 0;
+  display:flex !important;
+  width:244px;
+  min-height:100vh;
+  flex-direction:column;
+  border-right:1px solid #2b2b2b;
+  background:#121212;
+  padding:20px 16px;
+  box-shadow:none;
+}
+.sidebar-brand { display:flex; align-items:center; gap:11px; min-height:40px; padding:0 8px 18px; color:#f2f2f2; font-size:17px; font-weight:800; letter-spacing:.05em; }
+.sidebar-brand .brand-mark { width:30px; height:30px; border:0; border-radius:7px; background:#6f56d9; color:white; }
+.player-sidebar-nav { display:flex; flex:1; flex-direction:column; gap:4px; margin-top:10px; }
+.player-sidebar-nav > button { display:flex; width:100%; min-height:42px; align-items:center; gap:11px; border:0; border-radius:6px; background:transparent; padding:10px 11px; color:#b4b4b4; font-size:13px; font-weight:600; text-align:left; }
+.player-sidebar-nav > button > span { display:grid; width:20px; place-items:center; color:#8b8b8b; font-size:17px; }
+.player-sidebar-nav > button:hover { background:#202020; color:white; }
+.player-sidebar-nav > button.active { background:#2a2a2a; color:white; box-shadow:inset 2px 0 #7c5cff; }
+.player-sidebar-nav > button.active > span,.player-sidebar-nav .plus-link > span { color:#8d72ff; }
+.player-sidebar-nav i { margin-left:auto; border-radius:4px; background:#6f56d9; padding:2px 5px; color:white; font-size:8px; font-style:normal; letter-spacing:.06em; }
+.sidebar-rule { height:1px; margin:14px 0; background:#2a2a2a; }
+.player-sidebar-nav .discord-sidebar { display:grid; grid-template-columns:34px 1fr; min-height:88px; border:1px solid #423b76; background:linear-gradient(135deg,#383165,#262243); color:white; padding:15px; }
+.player-sidebar-nav .discord-sidebar:hover { background:linear-gradient(135deg,#443a7b,#302950); }
+.player-sidebar-nav .discord-sidebar > span { grid-row:1; width:34px; height:34px; border-radius:50%; background:#5865f2; color:white; }
+.player-sidebar-nav .discord-sidebar b { align-self:center; font-size:13px; line-height:1.35; }
+.app-sidebar .sidebar-bottom { margin-top:auto; border-top:1px solid #2a2a2a; padding:16px 6px 0; }
+.app-content { margin-left:244px !important; width:calc(100% - 244px) !important; padding-top:64px; padding-inline:28px; background:#171717; }
+.dashboard-topbar,.app-bg[data-section="Salas"] .dashboard-topbar { left:244px; height:64px; grid-template-columns:1fr auto; padding:0 24px; border-bottom:1px solid #2b2b2b; background:rgba(18,18,18,.96); backdrop-filter:blur(10px); }
+.dashboard-topbar .topbar-brand,.dashboard-topbar .primary-navigation { display:none; }
+.dashboard-topbar .topbar-account { grid-column:2; }
+.topbar-balance,.app-bg[data-section="Salas"] .topbar-balance { border-color:#343434; border-radius:6px; background:#202020; color:#f0f0f0; box-shadow:none; }
+.profile-trigger,.app-bg[data-section="Salas"] .profile-trigger { border:1px solid #343434; border-radius:6px; background:#202020; }
+.app-header,.app-bg[data-section="Salas"] .app-header { min-height:auto; border-bottom:1px solid #292929; padding:34px 2px 22px !important; }
+.app-header::after,.app-bg[data-section="Salas"] .app-header::after { display:none; }
+.app-header h1,.app-bg[data-section="Salas"] .app-header h1 { font-size:clamp(30px,3vw,44px); font-weight:650; text-shadow:none; }
+.app-header .eyebrow { color:#8d72ff; }
+.app-bg :where(.verification-card,.wallet-card,.rooms-panel,.stats-card,.activity-card,.account-surface,.room-row-rich,.rooms-chat,.chat-layout,.benefits-hero,.rewards-board,.conduct-hero,.conduct-status,.sanction-history,.ranking-card,.balance-builder,.season-board,.wallet-hero,.wallet-ledger,.legal-hero,.legal-grid article,.legal-note,.staff-surface,.finance-card) { border-color:#303030; background-color:#1d1d1d; box-shadow:none; backdrop-filter:none; }
+.section-panel,.community-panel,.legal-panel,.dashboard-grid { max-width:1320px !important; margin-inline:auto; }
+.app-bg[data-section="Salas"] .rooms-section { padding-left:0; padding-right:348px; }
+.app-bg[data-section="Salas"] .rooms-chat { inset:64px 0 0 auto; background:#181818; border-left-color:#2b2b2b; }
+.sidebar-destination-panel { max-width:1050px; margin:0 auto; border:1px solid #303030; border-radius:10px; background:#1d1d1d; padding:30px; }
+.destination-kicker { color:#8d72ff; font-size:10px; font-weight:800; letter-spacing:.12em; }
+.sidebar-destination-panel h2 { margin-top:10px; font-size:30px; letter-spacing:-.03em; }
+.sidebar-destination-panel > p { max-width:650px; margin-top:8px; color:#979797; font-size:13px; line-height:1.6; }
+.destination-empty { display:flex; align-items:center; gap:14px; margin-top:28px; border:1px solid #303030; border-radius:8px; background:#181818; padding:22px; }
+.destination-empty > span { display:grid; width:38px; height:38px; place-items:center; border-radius:50%; background:#272727; color:#8d72ff; }
+.destination-empty div { display:grid; gap:5px; }
+.destination-empty small { color:#777; }
+.destination-steps { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:28px; }
+.destination-steps article { display:grid; gap:8px; min-height:150px; border:1px solid #303030; border-radius:8px; background:#181818; padding:18px; }
+.destination-steps b { color:#8d72ff; font-size:11px; }
+.destination-steps strong { font-size:14px; }
+.destination-steps span { color:#858585; font-size:12px; line-height:1.5; }
+.destination-faq { display:grid; gap:8px; margin-top:28px; }
+.destination-faq details { border:1px solid #303030; border-radius:7px; background:#181818; padding:15px 17px; }
+.destination-faq summary { cursor:pointer; font-size:13px; font-weight:650; }
+.destination-faq p { margin-top:10px; color:#909090; font-size:12px; line-height:1.55; }
+@media (max-width:1100px) {
+  .destination-steps { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .app-bg[data-section="Salas"] .rooms-section { padding-right:0; }
+  .app-bg[data-section="Salas"] .rooms-chat { position:static; display:grid; width:100%; height:560px; margin-top:18px; border:1px solid #2b2b2b; border-radius:8px; }
+}
+@media (max-width:900px) {
+  .app-sidebar { inset:64px 0 auto; width:100%; min-height:0; height:58px; padding:7px 10px; border-right:0; border-bottom:1px solid #2b2b2b; }
+  .app-sidebar .sidebar-brand,.app-sidebar .sidebar-bottom,.sidebar-rule { display:none; }
+  .player-sidebar-nav { flex-direction:row; overflow-x:auto; margin:0; gap:4px; }
+  .player-sidebar-nav > button { width:auto; min-width:max-content; min-height:42px; padding:9px 12px; }
+  .player-sidebar-nav .discord-sidebar { display:flex; min-height:42px; grid-template-columns:none; background:#272341; }
+  .player-sidebar-nav .discord-sidebar > span { width:22px; height:22px; }
+  .dashboard-topbar,.app-bg[data-section="Salas"] .dashboard-topbar { left:0; }
+  .app-content { margin-left:0 !important; width:100% !important; padding-top:122px; }
+}
+@media (max-width:650px) {
+  .app-content { padding-inline:14px; }
+  .destination-steps { grid-template-columns:1fr; }
+  .sidebar-destination-panel { padding:22px 16px; }
+}
+
 /* Salas v2 — cleaner competitive layout based on the approved reference. */
 .app-bg[data-section="Salas"] {
   --rooms-chat-width: 320px;
@@ -5418,3 +5500,7 @@ button {
   .chat-layout { display:block; min-height:0; }
   .chat-layout .channel-list { border-right:0; border-bottom:1px solid #ffffff0b; }
 }
+
+/* Final neutral-theme guard: authenticated pages never restore photographic art. */
+.app-bg,.app-bg[data-section] { background:#171717 !important; background-image:none !important; }
+.app-bg .dashboard-topbar { border-bottom-color:#2b2b2b; background:rgba(18,18,18,.96); }

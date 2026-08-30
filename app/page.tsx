@@ -755,6 +755,10 @@ function Dashboard({
     "Ranking",
     "Staff",
     "Finanzas",
+    "Jugadores baneados",
+    "Tienda",
+    "Cómo jugar",
+    "Preguntas frecuentes",
     "Reglas legales",
   ];
   return (
@@ -1429,41 +1433,18 @@ function EnhancedDashboard({
   return (
     <main className="app-bg min-h-screen text-white" data-section={activeTab}>
       <aside className="app-sidebar">
-        <button className="flex items-center gap-3" onClick={goHome}>
-          <span className="brand-mark">T</span>
-          <span className="font-black tracking-[.2em]">TENE</span>
-        </button>
-        <nav>
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={activeTab === tab ? "active" : ""}
-            >
-              <span>
-                {
-                  (
-                    {
-                      Inicio: "⌂",
-                      Perfil: "◉",
-                      Cuenta: "◎",
-                      Salas: "◫",
-                      Wallet: "◈",
-                      Beneficios: "★",
-                      Conducta: "◆",
-                      Chat: "#",
-                      Alertas: "●",
-                      Historial: "↺",
-                      Ranking: "⌁",
-                      Staff: "⚙",
-                    } as Record<string, string>
-                  )[tab]
-                }
-              </span>
-              {tab}
-              {tab === "Staff" && <i className="staff-count">3</i>}
-            </button>
-          ))}
+        <button className="sidebar-brand" onClick={goHome}><span className="brand-mark">T</span><span>TENE</span></button>
+        <nav className="player-sidebar-nav">
+          <button onClick={() => setActiveTab("Salas")} className={activeTab === "Salas" ? "active" : ""}><span>▷</span>Salas</button>
+          <button onClick={() => setActiveTab("Ranking")} className={activeTab === "Ranking" ? "active" : ""}><span>▥</span>Tabla de clasificación</button>
+          <button onClick={() => setActiveTab("Jugadores baneados")} className={activeTab === "Jugadores baneados" ? "active" : ""}><span>⊘</span>Jugadores baneados</button>
+          <button onClick={() => setActiveTab("Beneficios")} className={activeTab === "Beneficios" ? "active plus-link" : "plus-link"}><span>✦</span>Plus <i>SUB</i></button>
+          <div className="sidebar-rule" />
+          <button className="discord-sidebar" onClick={() => flash("El enlace oficial de Discord está pendiente de configurar")}><span>◉</span><b>Únete a nuestro Discord</b></button>
+          <div className="sidebar-rule" />
+          <button onClick={() => setActiveTab("Tienda")} className={activeTab === "Tienda" ? "active" : ""}><span>⌑</span>Tienda <i>PRONTO</i></button>
+          <button onClick={() => setActiveTab("Cómo jugar")} className={activeTab === "Cómo jugar" ? "active" : ""}><span>◇</span>Cómo jugar</button>
+          <button onClick={() => setActiveTab("Preguntas frecuentes")} className={activeTab === "Preguntas frecuentes" ? "active" : ""}><span>?</span>Preguntas frecuentes</button>
         </nav>
         <div className="sidebar-bottom">
           {session?.user.steamAvatarUrl ? (
@@ -1490,9 +1471,6 @@ function EnhancedDashboard({
       <div className="app-content">
         <nav className="dashboard-topbar">
           <button className="topbar-brand" onClick={goHome}><span className="brand-mark">T</span><b>TENE</b></button>
-          <div className="primary-navigation">
-            {["Salas", "Beneficios", "Ranking"].map((tab) => <button key={tab} className={activeTab === tab ? "active" : ""} onClick={() => { setActiveTab(tab); setProfileMenuOpen(false); }}>{tab}</button>)}
-          </div>
           <div className="topbar-account">
             <button className="topbar-balance" onClick={() => { setActiveTab("Wallet"); setProfileMenuOpen(false); }}>S/ {balance.toFixed(2)}</button>
             <div className="profile-menu-wrap" onMouseEnter={() => setProfileMenuOpen(true)} onMouseLeave={() => setProfileMenuOpen(false)}>
@@ -1556,6 +1534,10 @@ function EnhancedDashboard({
         {activeTab === "Alertas" && <NotificationsPanel notify={flash} />}
         {activeTab === "Historial" && <HistoryPanel />}
         {activeTab === "Ranking" && <RankingPanel />}
+        {activeTab === "Jugadores baneados" && <SidebarDestinationPanel type="banned" />}
+        {activeTab === "Tienda" && <SidebarDestinationPanel type="store" />}
+        {activeTab === "Cómo jugar" && <SidebarDestinationPanel type="how" />}
+        {activeTab === "Preguntas frecuentes" && <SidebarDestinationPanel type="faq" />}
         {activeTab === "Staff" && <StaffPanel notify={flash} />}
         {activeTab === "Finanzas" && <FinancePanel notify={flash} />}
         {activeTab === "Cuenta" && <AccountPanel session={session} />}
@@ -2352,6 +2334,49 @@ function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
         Unirse por S/ 6 <span>→</span>
       </button>
     </article>
+  );
+}
+
+function SidebarDestinationPanel({ type }: { type: "banned" | "store" | "how" | "faq" }) {
+  if (type === "banned") return (
+    <section className="sidebar-destination-panel">
+      <span className="destination-kicker">TRANSPARENCIA DE LA COMUNIDAD</span>
+      <h2>Jugadores baneados</h2>
+      <p>Las sanciones públicas confirmadas aparecerán aquí con su motivo y fecha de finalización.</p>
+      <div className="destination-empty"><span>✓</span><div><strong>Sin sanciones públicas activas</strong><small>La lista se actualiza después de cada revisión del staff.</small></div></div>
+    </section>
+  );
+  if (type === "store") return (
+    <section className="sidebar-destination-panel">
+      <span className="destination-kicker">PRÓXIMAMENTE</span>
+      <h2>Tienda TENE</h2>
+      <p>Este espacio está reservado para artículos y beneficios de la comunidad. El catálogo se añadirá cuando esté definido.</p>
+      <div className="destination-empty"><span>⌑</span><div><strong>Catálogo en preparación</strong><small>No se aceptan pagos ni pedidos todavía.</small></div></div>
+    </section>
+  );
+  if (type === "how") return (
+    <section className="sidebar-destination-panel">
+      <span className="destination-kicker">EMPIEZA A COMPETIR</span>
+      <h2>Cómo jugar</h2>
+      <div className="destination-steps">
+        <article><b>01</b><strong>Vincula Steam</strong><span>Verifica tu perfil y recibe un nivel inicial.</span></article>
+        <article><b>02</b><strong>Recarga saldo</strong><span>Agrega fondos para cubrir la entrada de la sala.</span></article>
+        <article><b>03</b><strong>Únete a una sala</strong><span>Elige un puesto entre los diez slots disponibles.</span></article>
+        <article><b>04</b><strong>Compite</strong><span>Completa draft, veto y juega en el servidor asignado.</span></article>
+      </div>
+    </section>
+  );
+  return (
+    <section className="sidebar-destination-panel">
+      <span className="destination-kicker">AYUDA RÁPIDA</span>
+      <h2>Preguntas frecuentes</h2>
+      <div className="destination-faq">
+        <details><summary>¿Cuánto cuesta unirse a una sala?</summary><p>La entrada actual es de S/ 6 y se bloquea al confirmar tu puesto.</p></details>
+        <details><summary>¿Cuántos jugadores participan?</summary><p>Cada sala competitiva reúne a diez jugadores para una partida 5 contra 5.</p></details>
+        <details><summary>¿Cómo se asigna mi nivel?</summary><p>El staff revisa inicialmente tu perfil; después, los resultados actualizan tu nivel.</p></details>
+        <details><summary>¿Dónde está el chat?</summary><p>El único chat general está integrado en la sección Salas.</p></details>
+      </div>
+    </section>
   );
 }
 function BenefitsPanel({ notify }: { notify: (message: string) => void }) {

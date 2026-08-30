@@ -1344,7 +1344,6 @@ function EnhancedDashboard({
     "Wallet",
     "Beneficios",
     "Conducta",
-    "Chat",
     "Alertas",
     "Historial",
     "Ranking",
@@ -1508,7 +1507,6 @@ function EnhancedDashboard({
                 <button onClick={() => { setWalletAction("withdraw"); setProfileMenuOpen(false); }}>↗ Retirar</button>
                 <button onClick={() => { setActiveTab("Historial"); setProfileMenuOpen(false); }}>↺ Partidas</button>
                 <button onClick={() => { setActiveTab("Conducta"); setProfileMenuOpen(false); }}>◆ Conducta</button>
-                <button onClick={() => { setActiveTab("Chat"); setProfileMenuOpen(false); }}># Chat y soporte</button>
                 <button onClick={() => { setActiveTab("Alertas"); setProfileMenuOpen(false); }}>● Alertas</button>
                 {tabs.includes("Staff") && <button onClick={() => { setActiveTab("Staff"); setProfileMenuOpen(false); }}>⚙ Staff</button>}
                 {tabs.includes("Finanzas") && <button onClick={() => { setActiveTab("Finanzas"); setProfileMenuOpen(false); }}>S/ Finanzas</button>}
@@ -1555,9 +1553,6 @@ function EnhancedDashboard({
         )}
         {activeTab === "Beneficios" && <BenefitsPanel notify={flash} />}
         {activeTab === "Conducta" && <ConductPanel notify={flash} />}
-        {activeTab === "Chat" && (
-          <CommunityChat notify={flash} session={session} />
-        )}
         {activeTab === "Alertas" && <NotificationsPanel notify={flash} />}
         {activeTab === "Historial" && <HistoryPanel />}
         {activeTab === "Ranking" && <RankingPanel />}
@@ -2354,7 +2349,7 @@ function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
         onClick={join}
         disabled={room.players.length >= 10}
       >
-        Reservar S/ 6 <span>→</span>
+        Unirse por S/ 6 <span>→</span>
       </button>
     </article>
   );

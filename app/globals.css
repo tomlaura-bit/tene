@@ -5617,3 +5617,65 @@ body :where(h1,h2,h3,.brand-mark,.sidebar-brand,.topbar-brand,.wallet-total,.sta
 @media (max-width:760px) {
   :root { --tene-title-lg:34px; --tene-title-sm:24px; }
 }
+
+/* TENE layout system — shared geometry and visual rhythm. */
+:root {
+  --tene-content-max:1280px;
+  --tene-space-1:8px;
+  --tene-space-2:12px;
+  --tene-space-3:16px;
+  --tene-space-4:24px;
+  --tene-space-5:32px;
+  --tene-radius:10px;
+  --tene-line:#303030;
+  --tene-surface:#1d1d1d;
+  --tene-surface-raised:#222;
+}
+.app-content { padding-inline:32px; padding-bottom:48px; }
+.app-content > :where(.app-header,.dashboard-grid,.account-panel,.legal-panel,.section-panel,.sidebar-destination-panel,.benefits-panel,.conduct-panel,.community-panel,.notifications-panel,.public-profile-panel,.staff-panel,.finance-panel) {
+  width:min(100%,var(--tene-content-max));
+  margin-inline:auto;
+}
+.app-header {
+  min-height:118px;
+  padding:32px 0 24px !important;
+  align-items:flex-end;
+}
+.app-header > div { width:100%; }
+.app-header .eyebrow { margin:0 0 14px; }
+.app-header h1 { margin:0; }
+.dashboard-grid { gap:16px; padding-top:24px; }
+.section-panel,.account-panel,.legal-panel,.benefits-panel,.conduct-panel,.community-panel,.notifications-panel,.public-profile-panel,.staff-panel,.finance-panel { padding-top:24px; }
+.app-bg :where(.verification-card,.wallet-card,.rooms-panel,.stats-card,.activity-card,.account-surface,.room-row-rich,.rooms-chat,.chat-layout,.benefits-hero,.rewards-board,.conduct-hero,.conduct-status,.sanction-history,.ranking-card,.balance-builder,.season-board,.wallet-hero,.wallet-ledger,.legal-hero,.legal-grid article,.legal-note,.staff-surface,.finance-card,.sidebar-destination-panel,.destination-empty,.destination-steps article,.destination-faq details) {
+  border-radius:var(--tene-radius);
+}
+.app-bg :where(.verification-card,.wallet-card,.stats-card,.activity-card,.account-surface,.benefits-hero,.rewards-board,.conduct-hero,.conduct-status,.sanction-history,.ranking-card,.balance-builder,.season-board,.wallet-hero,.wallet-ledger,.legal-hero,.staff-surface,.finance-card) { padding:24px; }
+.app-bg :where(.benefit-grid,.conduct-grid,.conduct-rules,.legal-grid,.destination-steps,.finance-summary,.staff-workspace,.finance-workspace,.competitive-grid) { gap:16px; }
+.app-bg :where(.primary-button,.secondary-button,.wallet-actions button,.profile-dropdown button,.profile-dropdown a) { min-height:40px; border-radius:7px; }
+.app-bg :where(input,select,textarea) { min-height:42px; border-radius:7px; }
+.room-row-rich { min-height:76px; padding:12px 14px; }
+.panel-title { min-height:54px; padding-inline:16px; }
+.sidebar-destination-panel { padding:28px; }
+.app-sidebar .sidebar-brand { padding-inline:10px; }
+.sidebar-primary-group,.sidebar-lower-group { gap:4px; }
+.sidebar-primary-group > button,.sidebar-lower-group > button { padding-inline:12px; }
+.dashboard-topbar { padding-inline:32px; }
+.landing-simple { width:min(100%,1280px); }
+.landing-simple > div { width:min(100%,680px); }
+#como-funciona > div { max-width:1280px; }
+#como-funciona article { min-height:176px; }
+
+@media (max-width:1100px) {
+  .app-content { padding-inline:24px; }
+  .dashboard-topbar { padding-inline:24px; }
+}
+@media (max-width:760px) {
+  .app-content { padding-inline:16px; padding-bottom:32px; }
+  .app-header { min-height:104px; padding:24px 0 18px !important; }
+  .dashboard-grid { gap:12px; padding-top:16px; }
+  .app-bg :where(.verification-card,.wallet-card,.stats-card,.activity-card,.account-surface,.benefits-hero,.rewards-board,.conduct-hero,.conduct-status,.sanction-history,.ranking-card,.balance-builder,.season-board,.wallet-hero,.wallet-ledger,.legal-hero,.staff-surface,.finance-card,.sidebar-destination-panel) { padding:18px; }
+  .dashboard-topbar { padding-inline:14px; }
+  .landing-simple { padding-inline:24px !important; }
+  .landing-simple > div { margin-inline:auto; }
+  #como-funciona article { min-height:154px; }
+}

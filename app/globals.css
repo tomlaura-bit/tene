@@ -5504,3 +5504,70 @@ button {
 /* Final neutral-theme guard: authenticated pages never restore photographic art. */
 .app-bg,.app-bg[data-section] { background:#171717 !important; background-image:none !important; }
 .app-bg .dashboard-topbar { border-bottom-color:#2b2b2b; background:rgba(18,18,18,.96); }
+
+/* Sidebar v4 — compact groups with secondary actions anchored near the bottom. */
+.app-sidebar { width:232px; padding:18px 14px 14px; }
+.app-sidebar .player-sidebar-nav {
+  display:flex;
+  min-height:0;
+  flex:1;
+  flex-direction:column;
+  gap:0;
+  margin-top:16px;
+}
+.sidebar-primary-group,.sidebar-lower-group { display:grid; gap:2px; }
+.sidebar-lower-group { margin-top:auto; padding-top:20px; }
+.sidebar-primary-group > button,.sidebar-lower-group > button {
+  display:flex;
+  width:100%;
+  min-height:38px;
+  align-items:center;
+  gap:9px;
+  border:0;
+  border-radius:6px;
+  background:transparent;
+  padding:8px 10px;
+  color:#aaa;
+  font-size:12px;
+  font-weight:600;
+  line-height:1.25;
+  text-align:left;
+}
+.sidebar-primary-group > button > span,.sidebar-lower-group > button > span {
+  display:grid;
+  width:18px;
+  flex:0 0 18px;
+  place-items:center;
+  color:#858585;
+  font-size:15px;
+}
+.sidebar-primary-group > button:hover,.sidebar-lower-group > button:hover { background:#202020; color:white; }
+.sidebar-primary-group > button.active,.sidebar-lower-group > button.active { background:#29262f; color:white; box-shadow:inset 2px 0 #7c5cff; }
+.sidebar-primary-group > button.active > span,.sidebar-primary-group .plus-link > span,.sidebar-lower-group > button.active > span { color:#8d72ff; }
+.player-sidebar-nav .sidebar-lower-group .discord-sidebar {
+  display:grid;
+  min-height:78px;
+  grid-template-columns:30px 1fr;
+  margin-bottom:10px;
+  border:1px solid #423b76;
+  background:linear-gradient(135deg,#383165,#262243);
+  padding:13px;
+}
+.player-sidebar-nav .sidebar-lower-group .discord-sidebar > span { width:30px; height:30px; }
+.player-sidebar-nav .sidebar-lower-group .discord-sidebar b { font-size:12px; }
+.sidebar-lower-group .sidebar-rule { margin:2px 0 9px; }
+.app-sidebar .sidebar-bottom { margin-top:12px; padding:12px 6px 0; }
+.app-content { margin-left:232px !important; width:calc(100% - 232px) !important; }
+.dashboard-topbar,.app-bg[data-section="Salas"] .dashboard-topbar { left:232px; }
+
+@media (max-width:900px) {
+  .app-sidebar { width:100%; padding:7px 10px; }
+  .app-sidebar .player-sidebar-nav { flex-direction:row; gap:4px; margin:0; overflow-x:auto; }
+  .sidebar-primary-group,.sidebar-lower-group { display:contents; }
+  .sidebar-primary-group > button,.sidebar-lower-group > button { width:auto; min-width:max-content; min-height:42px; padding:9px 12px; }
+  .player-sidebar-nav .sidebar-lower-group .discord-sidebar { display:flex; min-height:42px; margin:0; padding:9px 12px; }
+  .player-sidebar-nav .sidebar-lower-group .discord-sidebar > span { width:22px; height:22px; }
+  .sidebar-lower-group .sidebar-rule { display:none; }
+  .dashboard-topbar,.app-bg[data-section="Salas"] .dashboard-topbar { left:0; }
+  .app-content { margin-left:0 !important; width:100% !important; }
+}

@@ -1435,16 +1435,19 @@ function EnhancedDashboard({
       <aside className="app-sidebar">
         <button className="sidebar-brand" onClick={goHome}><span className="brand-mark">T</span><span>TENE</span></button>
         <nav className="player-sidebar-nav">
-          <button onClick={() => setActiveTab("Salas")} className={activeTab === "Salas" ? "active" : ""}><span>▷</span>Salas</button>
-          <button onClick={() => setActiveTab("Ranking")} className={activeTab === "Ranking" ? "active" : ""}><span>▥</span>Tabla de clasificación</button>
-          <button onClick={() => setActiveTab("Jugadores baneados")} className={activeTab === "Jugadores baneados" ? "active" : ""}><span>⊘</span>Jugadores baneados</button>
-          <button onClick={() => setActiveTab("Beneficios")} className={activeTab === "Beneficios" ? "active plus-link" : "plus-link"}><span>✦</span>Plus <i>SUB</i></button>
-          <div className="sidebar-rule" />
-          <button className="discord-sidebar" onClick={() => flash("El enlace oficial de Discord está pendiente de configurar")}><span>◉</span><b>Únete a nuestro Discord</b></button>
-          <div className="sidebar-rule" />
-          <button onClick={() => setActiveTab("Tienda")} className={activeTab === "Tienda" ? "active" : ""}><span>⌑</span>Tienda <i>PRONTO</i></button>
-          <button onClick={() => setActiveTab("Cómo jugar")} className={activeTab === "Cómo jugar" ? "active" : ""}><span>◇</span>Cómo jugar</button>
-          <button onClick={() => setActiveTab("Preguntas frecuentes")} className={activeTab === "Preguntas frecuentes" ? "active" : ""}><span>?</span>Preguntas frecuentes</button>
+          <div className="sidebar-primary-group">
+            <button onClick={() => setActiveTab("Salas")} className={activeTab === "Salas" ? "active" : ""}><span>▷</span>Salas</button>
+            <button onClick={() => setActiveTab("Ranking")} className={activeTab === "Ranking" ? "active" : ""}><span>▥</span>Tabla de clasificación</button>
+            <button onClick={() => setActiveTab("Jugadores baneados")} className={activeTab === "Jugadores baneados" ? "active" : ""}><span>⊘</span>Jugadores baneados</button>
+            <button onClick={() => setActiveTab("Beneficios")} className={activeTab === "Beneficios" ? "active plus-link" : "plus-link"}><span>✦</span>Plus <i>SUB</i></button>
+          </div>
+          <div className="sidebar-lower-group">
+            <button className="discord-sidebar" onClick={() => flash("El enlace oficial de Discord está pendiente de configurar")}><span>◉</span><b>Únete a nuestro Discord</b></button>
+            <div className="sidebar-rule" />
+            <button onClick={() => setActiveTab("Tienda")} className={activeTab === "Tienda" ? "active" : ""}><span>⌑</span>Tienda <i>PRONTO</i></button>
+            <button onClick={() => setActiveTab("Cómo jugar")} className={activeTab === "Cómo jugar" ? "active" : ""}><span>◇</span>Cómo jugar</button>
+            <button onClick={() => setActiveTab("Preguntas frecuentes")} className={activeTab === "Preguntas frecuentes" ? "active" : ""}><span>?</span>Preguntas frecuentes</button>
+          </div>
         </nav>
         <div className="sidebar-bottom">
           {session?.user.steamAvatarUrl ? (

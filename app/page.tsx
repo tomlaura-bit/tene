@@ -38,6 +38,30 @@ const draftPool = [
 ];
 type Screen = "landing" | "dashboard" | "room";
 
+const dashboardTabRoutes: Record<string, string> = {
+  Inicio: "resumen",
+  Cuenta: "cuenta",
+  Salas: "salas",
+  Wallet: "wallet",
+  Beneficios: "plus",
+  Conducta: "conducta",
+  Alertas: "alertas",
+  Historial: "partidas",
+  Ranking: "clasificacion",
+  "Jugadores baneados": "jugadores-baneados",
+  Tienda: "tienda",
+  "Cómo jugar": "como-jugar",
+  "Preguntas frecuentes": "preguntas-frecuentes",
+  Staff: "staff",
+  Finanzas: "finanzas",
+  "Reglas legales": "reglas-legales",
+};
+
+function dashboardTabFromHash(hash: string) {
+  const route = hash.startsWith("#panel/") ? hash.slice(7) : "";
+  return Object.entries(dashboardTabRoutes).find(([, value]) => value === route)?.[0] ?? null;
+}
+
 type SessionData = {
   user: {
     email: string | null;
@@ -145,6 +169,11 @@ export default function Home() {
       .then((data) => {
         setSession(data);
         if (data?.wallet) setBalance(data.wallet.availableCents / 100);
+        const restoredTab = dashboardTabFromHash(window.location.hash);
+        if (data && restoredTab) {
+          setActiveTab(restoredTab);
+          setScreen("dashboard");
+        }
       })
       .finally(() => setSessionLoading(false));
 
@@ -162,6 +191,19 @@ export default function Home() {
       window.setTimeout(() => setNotice(""), 5000);
     }
   }, []);
+
+  useEffect(() => {
+    if (screen !== "dashboard") return;
+    const route = dashboardTabRoutes[activeTab] ?? dashboardTabRoutes.Salas;
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#panel/${route}`);
+  }, [activeTab, screen]);
+
+  function goToLanding() {
+    setScreen("landing");
+    if (window.location.hash.startsWith("#panel/")) {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    }
+  }
 
   function joinRoom() {
     if (!session) return setSteamOpen(true);
@@ -194,7 +236,7 @@ export default function Home() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         openRoom={(roomId) => { setSelectedRoomId(roomId ?? null); setScreen("room"); }}
-        goHome={() => setScreen("landing")}
+        goHome={goToLanding}
         notice={notice}
         setNotice={setNotice}
         session={session}

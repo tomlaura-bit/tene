@@ -1581,7 +1581,7 @@ function EnhancedDashboard({
         )}
         {activeTab === "Beneficios" && <BenefitsPanel notify={flash} />}
         {activeTab === "Conducta" && <ConductPanel notify={flash} />}
-        {activeTab === "Alertas" && <NotificationsPanel notify={flash} />}
+        {activeTab === "Alertas" && <NotificationsPanel setActiveTab={setActiveTab} openRoom={openRoom} />}
         {activeTab === "Historial" && <HistoryPanel />}
         {activeTab === "Ranking" && <RankingPanel />}
         {activeTab === "Jugadores baneados" && <SidebarDestinationPanel type="banned" />}
@@ -2821,7 +2821,7 @@ function CommunityChat({
   );
 }
 
-function NotificationsPanel({ notify }: { notify: (message: string) => void }) {
+function NotificationsPanel({ setActiveTab, openRoom }: { setActiveTab: (tab: string) => void; openRoom: (roomId?: string) => void }) {
   const [filter, setFilter] = useState("Todas");
   const [read, setRead] = useState<string[]>([]);
   const [prefs, setPrefs] = useState({
@@ -2830,8 +2830,27 @@ function NotificationsPanel({ notify }: { notify: (message: string) => void }) {
     staff: true,
     community: false,
   });
-  const [items, setItems] = useState<Array<{ id: string; type: string; icon: string; title: string; copy: string; time: string; action: string }>>([]);
-  useEffect(() => { void fetch("/api/notifications").then(async (response) => { if (!response.ok) return; const data = await response.json() as { items: Array<{ id: string; type: string; title: string; body: string; createdAt: string; readAt: string | null }>; preferences: { matches: boolean; wallet: boolean; staff: boolean; community: boolean } }; setItems(data.items.map((item) => ({ id: item.id, type: ({ match: "Partida", wallet: "Dinero", staff: "Staff", community: "Comunidad", sanction: "Staff", birthday: "Comunidad", security: "Staff" } as Record<string,string>)[item.type] ?? "Comunidad", icon: item.type === "wallet" ? "S/" : item.type === "match" ? "▶" : item.type === "staff" ? "✓" : "#", title: item.title, copy: item.body, time: new Date(item.createdAt).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" }), action: "Abrir" }))); setRead(data.items.filter((item) => item.readAt).map((item) => item.id)); setPrefs({ rooms: data.preferences.matches, money: data.preferences.wallet, staff: data.preferences.staff, community: data.preferences.community }); }); }, []);
+  const [items, setItems] = useState<Array<{ id: string; type: string; sourceType: string; icon: string; title: string; copy: string; time: string; actionUrl: string | null }>>([]);
+  useEffect(() => { void fetch("/api/notifications").then(async (response) => { if (!response.ok) return; const data = await response.json() as { items: Array<{ id: string; type: string; title: string; body: string; actionUrl: string | null; createdAt: string; readAt: string | null }>; preferences: { matches: boolean; wallet: boolean; staff: boolean; community: boolean } }; setItems(data.items.map((item) => ({ id: item.id, sourceType: item.type, type: ({ match: "Partida", wallet: "Dinero", staff: "Staff", community: "Comunidad", sanction: "Staff", birthday: "Comunidad", security: "Staff" } as Record<string,string>)[item.type] ?? "Comunidad", icon: item.type === "wallet" ? "S/" : item.type === "match" ? "▶" : item.type === "staff" ? "✓" : "#", title: item.title, copy: item.body, time: new Date(item.createdAt).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" }), actionUrl: item.actionUrl }))); setRead(data.items.filter((item) => item.readAt).map((item) => item.id)); setPrefs({ rooms: data.preferences.matches, money: data.preferences.wallet, staff: data.preferences.staff, community: data.preferences.community }); }); }, []);
+  const markRead = (id: string) => {
+    setRead((current) => [...new Set([...current, id])]);
+    void fetch("/api/notifications", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ notificationId: id }) });
+  };
+  const notificationTarget = (item: (typeof items)[number]) => {
+    if (item.actionUrl?.startsWith("/rooms/")) return { kind: "room" as const, value: item.actionUrl.slice(7), label: "Ver partida" };
+    const tabByUrl: Record<string, string> = { "/ranking": "Ranking", "/conduct": "Conducta", "/wallet": "Wallet", "/account": "Cuenta", "/history": "Historial", "/benefits": "Beneficios" };
+    if (item.actionUrl && tabByUrl[item.actionUrl]) return { kind: "tab" as const, value: tabByUrl[item.actionUrl], label: "Revisar" };
+    if (item.sourceType === "security") return { kind: "tab" as const, value: "Cuenta", label: "Revisar cuenta" };
+    if (item.sourceType === "sanction") return { kind: "tab" as const, value: "Conducta", label: "Ver sanción" };
+    return null;
+  };
+  const openNotification = (item: (typeof items)[number]) => {
+    const target = notificationTarget(item);
+    if (!target) return;
+    markRead(item.id);
+    if (target.kind === "room") openRoom(target.value);
+    else setActiveTab(target.value);
+  };
   const visible =
     filter === "Todas" ? items : items.filter((item) => item.type === filter);
   return (
@@ -2865,11 +2884,12 @@ function NotificationsPanel({ notify }: { notify: (message: string) => void }) {
             )}
           </div>
           <div className="notification-list">
-            {visible.map((item) => (
-              <article
-                className={read.includes(item.id) ? "read" : ""}
+            {visible.map((item) => {
+              const target = notificationTarget(item);
+              return <article
+                className={`${read.includes(item.id) ? "read" : ""}${target ? " actionable" : " informational"}`}
                 key={item.id}
-                onClick={() => setRead([...new Set([...read, item.id])])}
+                onClick={target ? () => openNotification(item) : undefined}
               >
                 <span
                   className={`notification-icon ${item.type.toLowerCase()}`}
@@ -2884,18 +2904,9 @@ function NotificationsPanel({ notify }: { notify: (message: string) => void }) {
                   <p>{item.copy}</p>
                   <small>{item.time}</small>
                 </div>
-                <button
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setRead([...new Set([...read, item.id])]);
-                    void fetch("/api/notifications", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ notificationId: item.id }) });
-                    notify(item.title);
-                  }}
-                >
-                  {item.action} →
-                </button>
+                {target && <button onClick={(event) => { event.stopPropagation(); openNotification(item); }}>{target.label} →</button>}
               </article>
-            ))}
+            })}
           </div>
         </main>
         <aside className="notification-prefs">

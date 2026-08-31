@@ -4158,6 +4158,10 @@ button {
   padding: 14px;
   cursor: pointer;
 }
+.notification-list article.informational { cursor:default; }
+.notification-list article.actionable { transition:border-color .18s ease,background .18s ease,transform .18s ease; }
+.notification-list article.actionable:hover { border-color:rgba(139,92,246,.28); background:rgba(139,92,246,.1); transform:translateX(2px); }
+.notification-list article.actionable > button { min-height:34px; border:1px solid rgba(139,92,246,.24); border-radius:7px; background:rgba(139,92,246,.1); padding:7px 10px; }
 .notification-list article.read {
   background: transparent;
   opacity: 0.62;

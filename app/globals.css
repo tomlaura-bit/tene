@@ -5572,52 +5572,6 @@ button {
   .app-content { margin-left:0 !important; width:100% !important; }
 }
 
-/* TENE type system — one consistent competitive voice across the whole product. */
-:root {
-  --tene-font-ui: "Segoe UI Variable Text", "Segoe UI", Inter, Arial, sans-serif;
-  --tene-font-display: Bahnschrift, "Arial Narrow", "Segoe UI Variable Display", "Segoe UI", sans-serif;
-  --tene-text-xs: 11px;
-  --tene-text-sm: 12px;
-  --tene-text-md: 14px;
-  --tene-text-lg: 18px;
-  --tene-title-sm: 26px;
-  --tene-title-lg: 42px;
-}
-html,body { font-family:var(--tene-font-ui); font-size:14px; }
-button,input,select,textarea { font-family:inherit; }
-body :where(h1,h2,h3,.brand-mark,.sidebar-brand,.topbar-brand,.wallet-total,.stat-big strong) {
-  font-family:var(--tene-font-display);
-  font-stretch:condensed;
-}
-.app-bg { font-family:var(--tene-font-ui); font-size:var(--tene-text-md); }
-.app-bg .app-header h1,.app-bg[data-section="Salas"] .app-header h1 {
-  font-family:var(--tene-font-display);
-  font-size:var(--tene-title-lg);
-  font-weight:700;
-  line-height:1;
-  letter-spacing:-.02em;
-}
-.app-bg :where(.section-intro h2,.account-title h2,.panel-title h2,.benefits-hero h2,.conduct-hero h2,.sidebar-destination-panel h2) {
-  font-family:var(--tene-font-display);
-  font-size:var(--tene-title-sm);
-  font-weight:700;
-  line-height:1.1;
-  letter-spacing:-.01em;
-}
-.app-bg :where(.eyebrow,.card-label,.destination-kicker,.verified-badge) {
-  font-family:var(--tene-font-ui);
-  font-size:var(--tene-text-xs);
-  font-weight:750;
-  letter-spacing:.12em;
-}
-.app-sidebar :where(button,strong,small),.dashboard-topbar :where(button,strong,small) { font-family:var(--tene-font-ui); }
-.sidebar-primary-group > button,.sidebar-lower-group > button { font-size:var(--tene-text-sm); }
-.app-bg :where(input,select,textarea) { font-size:13px; }
-
-@media (max-width:760px) {
-  :root { --tene-title-lg:34px; --tene-title-sm:24px; }
-}
-
 /* TENE layout system — shared geometry and visual rhythm. */
 :root {
   --tene-content-max:1280px;

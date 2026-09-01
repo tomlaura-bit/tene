@@ -1,0 +1,82 @@
+name: Calidad TENE
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, pruebas y compilación
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+
+      - name: Instalar dependencias reproducibles
+        run: npm ci
+
+      - name: Revisar el código
+        run: npm run lint
+
+      - name: Ejecutar pruebas unitarias, de componentes, integración y concurrencia
+        run: npm test
+
+      - name: Auditar dependencias de producción
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Compilar la aplicación
+        run: npm run build
+
+  e2e:
+    name: Recorridos E2E en Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: quality
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+
+      - name: Instalar dependencias reproducibles
+        run: npm ci
+
+      - name: Instalar Chromium y dependencias del sistema
+        run: npx playwright install --with-deps chromium
+
+      - name: Ejecutar recorridos E2E
+        run: npm run test:e2e
+
+      - name: Guardar diagnóstico cuando falle
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-diagnostics
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

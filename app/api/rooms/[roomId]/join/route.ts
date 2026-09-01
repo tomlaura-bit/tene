@@ -1,5 +1,5 @@
 import { and, asc, eq, gt, gte, isNull, or, sql } from "drizzle-orm";
-import { getDb } from "../../../../../db";
+import { getD1, getDb } from "../../../../../db";
 import {
   benefitPasses,
   ledgerEntries,
@@ -11,6 +11,7 @@ import {
 } from "../../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../../lib/auth";
 import { enforceRateLimit } from "../../../../../lib/rate-limit";
+import { claimRoomSlot, releaseRoomSlot } from "../../../../../lib/room-reservation";
 
 export const dynamic = "force-dynamic";
 
@@ -58,11 +59,13 @@ export async function POST(
     .where(and(eq(roomPlayers.roomId, roomId), eq(roomPlayers.userId, user.id)))
     .limit(1);
   if (existing) return Response.json({ ok: true, alreadyJoined: true });
-  const members = await db
-    .select({ id: roomPlayers.id })
-    .from(roomPlayers)
-    .where(eq(roomPlayers.roomId, roomId));
-  if (members.length >= 10)
+  const reservationId = `rp_${crypto.randomUUID()}`;
+  const slotNumber = await claimRoomSlot(getD1(), {
+    id: reservationId,
+    roomId,
+    userId: user.id,
+  });
+  if (!slotNumber)
     return Response.json({ ok: false, error: "room_full" }, { status: 409 });
 
   const now = new Date();
@@ -85,20 +88,16 @@ export async function POST(
       availableCents: wallets.availableCents,
       lockedCents: wallets.lockedCents,
     });
-  if (!charged.length)
+  if (!charged.length) {
+    await releaseRoomSlot(getD1(), reservationId);
     return Response.json(
       { ok: false, error: "insufficient_balance" },
       { status: 402 },
     );
+  }
 
   try {
     await db.batch([
-      db.insert(roomPlayers).values({
-        id: `rp_${crypto.randomUUID()}`,
-        roomId,
-        userId: user.id,
-        joinedAt: new Date(),
-      }),
       ...(pass ? [db.update(benefitPasses).set({ status: "used" }).where(and(eq(benefitPasses.id, pass.id), eq(benefitPasses.status, "reserved")))] : []),
       db.insert(ledgerEntries).values({
         id: `led_${crypto.randomUUID()}`,
@@ -111,6 +110,7 @@ export async function POST(
       }),
     ]);
   } catch {
+    await releaseRoomSlot(getD1(), reservationId);
     if (pass) await db.update(benefitPasses).set({ status: "available", roomId: null }).where(eq(benefitPasses.id, pass.id));
     else await db
       .update(wallets)

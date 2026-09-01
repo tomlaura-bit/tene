@@ -169,6 +169,13 @@
       "when": 1788007985113,
       "tag": "0023_premium_gravity",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1788222827574,
+      "tag": "0024_sticky_umar",
+      "breakpoints": true
     }
   ]
 }

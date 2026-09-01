@@ -178,10 +178,12 @@ export const roomPlayers = sqliteTable(
     isCaptain: integer("is_captain", { mode: "boolean" })
       .notNull()
       .default(false),
+    slotNumber: integer("slot_number"),
     joinedAt: integer("joined_at", { mode: "timestamp" }).notNull(),
   },
   (table) => [
     uniqueIndex("idx_room_players_room_user").on(table.roomId, table.userId),
+    uniqueIndex("idx_room_players_room_slot").on(table.roomId, table.slotNumber),
   ],
 );
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { RoomSlots } from "./components/room-slots";
 
 const players = [
   { name: "hoxhi", level: 10, tone: "from-fuchsia-500 to-violet-500" },
@@ -2346,15 +2347,9 @@ function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
           Creada por <b>{creatorName}</b>
         </div>
       </div>
-      <div className="room-people">
-        <div className="room-capacity">
-          <span>{room.players.length} / 10 jugadores</span>
-          <div className="mini-progress">
-            <i style={{ width: `${room.players.length * 10}%` }} />
-          </div>
-        </div>
-        <div className="avatar-strip">
-          {room.players.map((player) => (
+      <RoomSlots
+        players={room.players}
+        renderPlayer={(player) => (
             <ProfileAvatar
               key={player.userId}
               profile={{
@@ -2367,15 +2362,8 @@ function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
                 steamId64: player.steamId64,
               }}
             />
-          ))}
-          {Array.from(
-            { length: Math.max(0, 10 - room.players.length) },
-            (_, i) => (
-              <span className="vacant-avatar" key={i} />
-            ),
-          )}
-        </div>
-      </div>
+        )}
+      />
       <button
         className="room-enter"
         onClick={join}

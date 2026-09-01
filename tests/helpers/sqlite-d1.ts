@@ -1,5 +1,15 @@
 import { DatabaseSync } from "node:sqlite";
 
+function normalizeBindings(sql: string, values: unknown[]) {
+  const bindings: unknown[] = [];
+  const normalizedSql = sql.replace(/\?(\d+)/g, (_placeholder, index: string) => {
+    bindings.push(values[Number(index) - 1]);
+    return "?";
+  });
+
+  return { sql: normalizedSql, bindings };
+}
+
 export function createReservationDatabase() {
   const database = new DatabaseSync(":memory:");
   database.exec(`
@@ -28,10 +38,12 @@ export function asD1(database: DatabaseSync) {
           return this;
         },
         async first<T>() {
-          return (database.prepare(sql).get(...bindings) as T | undefined) ?? null;
+          const statement = normalizeBindings(sql, bindings);
+          return (database.prepare(statement.sql).get(...statement.bindings) as T | undefined) ?? null;
         },
         async run() {
-          const result = database.prepare(sql).run(...bindings);
+          const statement = normalizeBindings(sql, bindings);
+          const result = database.prepare(statement.sql).run(...statement.bindings);
           return { success: true, meta: { changes: Number(result.changes) } };
         },
       };

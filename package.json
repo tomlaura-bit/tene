@@ -5,6 +5,11 @@
   "engines": {
     "node": ">=22.22.2"
   },
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "0.25.12"
+    }
+  },
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",

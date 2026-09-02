@@ -20,6 +20,8 @@ TENE busca reducir la fricción de organizar partidas competitivas: cada sala mu
 - Perfiles de usuario, vinculación con Steam y revisión de elegibilidad.
 - Beneficios de suscripción y recompensas.
 - Notificaciones con navegación contextual cuando requieren una acción.
+- Solicitudes financieras idempotentes, conciliación y auditoría operativa.
+- Exportación de datos personales y solicitudes de privacidad trazables.
 - Paneles administrativos para usuarios, pagos, verificaciones, disputas y resultados.
 - Integraciones preparadas para servidores CS2 mediante DatHost o MatchZy.
 
@@ -63,6 +65,8 @@ El proyecto cubre cinco niveles de validación siguiendo la estructura Arrange�
 | E2E | Navegación y recorridos principales en Chromium |
 
 Cada `push` y pull request ejecuta automáticamente lint, pruebas, auditoría de dependencias, compilación y recorridos E2E mediante [GitHub Actions](https://github.com/tomlaura-bit/tene/actions).
+
+La guía de operación, mantenimiento, incidentes y recuperación se encuentra en [docs/OPERATIONS.md](docs/OPERATIONS.md). Las reglas de seguridad y privacidad están en [SECURITY.md](SECURITY.md).
 
 ## Ejecución local
 
@@ -118,4 +122,3 @@ TENE se encuentra en desarrollo activo. Antes de operar con pagos o partidas rea
 ## Autor
 
 Desarrollado por [Tom Laura](https://github.com/tomlaura-bit) como proyecto de producto web, arquitectura full stack, automatización de pruebas e integración para esports.
-

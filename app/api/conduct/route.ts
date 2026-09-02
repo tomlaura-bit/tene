@@ -1,4 +1,4 @@
-import { desc, eq, isNull } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { sanctionAppeals, sanctions, users, wallets } from "../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../lib/auth";

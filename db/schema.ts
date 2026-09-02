@@ -375,6 +375,32 @@ export const paymentRequests = sqliteTable(
   ],
 );
 
+export const idempotencyKeys = sqliteTable(
+  "idempotency_keys",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    scope: text("scope").notNull(),
+    requestKey: text("request_key").notNull(),
+    status: text("status", { enum: ["processing", "completed"] })
+      .notNull()
+      .default("processing"),
+    resourceId: text("resource_id"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_idempotency_user_scope_key").on(
+      table.userId,
+      table.scope,
+      table.requestKey,
+    ),
+    index("idx_idempotency_expires").on(table.expiresAt),
+  ],
+);
+
 export const reconciliations = sqliteTable("reconciliations", {
   id: text("id").primaryKey(),
   dateKey: text("date_key").notNull().unique(),
@@ -729,3 +755,30 @@ export const publicPlayerProfiles = sqliteTable("public_player_profiles", {
     .default(true),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
+
+export const privacyRequests = sqliteTable(
+  "privacy_requests",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    type: text("type", { enum: ["export", "deletion"] }).notNull(),
+    status: text("status", { enum: ["pending", "completed", "rejected"] })
+      .notNull()
+      .default("pending"),
+    resolution: text("resolution"),
+    requestedAt: integer("requested_at", { mode: "timestamp" }).notNull(),
+    completedAt: integer("completed_at", { mode: "timestamp" }),
+  },
+  (table) => [
+    index("idx_privacy_requests_user_requested").on(
+      table.userId,
+      table.requestedAt,
+    ),
+    index("idx_privacy_requests_status_requested").on(
+      table.status,
+      table.requestedAt,
+    ),
+  ],
+);

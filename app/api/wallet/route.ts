@@ -2,6 +2,7 @@ import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import {
   ledgerEntries,
+  idempotencyKeys,
   paymentRequests,
   roomPlayers,
   rooms,
@@ -11,6 +12,7 @@ import {
 import { getAuthenticatedUser, unauthorized } from "../../../lib/auth";
 import { env } from "cloudflare:workers";
 import { enforceRateLimit } from "../../../lib/rate-limit";
+import { readIdempotencyKey } from "../../../lib/idempotency";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +56,12 @@ export async function POST(request: Request) {
   if (!user) return unauthorized();
   const limited = await enforceRateLimit(request, "wallet_request", 5, 600);
   if (limited) return limited;
+  const requestKey = readIdempotencyKey(request);
+  if (!requestKey)
+    return Response.json(
+      { ok: false, error: "idempotency_key_required" },
+      { status: 400 },
+    );
   const contentType = request.headers.get("content-type") ?? "";
   const form = contentType.includes("multipart/form-data") ? await request.formData() : null;
   const json = form ? null : await request.json().catch(() => ({}));
@@ -111,6 +119,48 @@ export async function POST(request: Request) {
   }
 
   const db = getDb();
+  const now = new Date();
+  const idempotencyId = `idem_${crypto.randomUUID()}`;
+  const claimed = await db
+    .insert(idempotencyKeys)
+    .values({
+      id: idempotencyId,
+      userId: user.id,
+      scope: "wallet_request",
+      requestKey,
+      status: "processing",
+      createdAt: now,
+      expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+    })
+    .onConflictDoNothing()
+    .returning({ id: idempotencyKeys.id });
+  if (!claimed.length) {
+    const [existing] = await db
+      .select()
+      .from(idempotencyKeys)
+      .where(
+        and(
+          eq(idempotencyKeys.userId, user.id),
+          eq(idempotencyKeys.scope, "wallet_request"),
+          eq(idempotencyKeys.requestKey, requestKey),
+        ),
+      )
+      .limit(1);
+    if (existing?.status === "completed") {
+      const [wallet] = await db
+        .select()
+        .from(wallets)
+        .where(eq(wallets.userId, user.id))
+        .limit(1);
+      return Response.json({ ok: true, wallet: wallet ?? null, replayed: true });
+    }
+    return Response.json(
+      { ok: false, error: "request_in_progress" },
+      { status: 409 },
+    );
+  }
+  const releaseIdempotency = () =>
+    db.delete(idempotencyKeys).where(eq(idempotencyKeys.id, idempotencyId));
   if (body.type === "withdrawal") {
     const played = await db
       .select({ id: roomPlayers.id })
@@ -118,11 +168,13 @@ export async function POST(request: Request) {
       .innerJoin(rooms, eq(roomPlayers.roomId, rooms.id))
       .where(and(eq(roomPlayers.userId, user.id), eq(rooms.status, "settled")))
       .limit(1);
-    if (!played.length)
+    if (!played.length) {
+      await releaseIdempotency();
       return Response.json(
         { ok: false, error: "one_room_required" },
         { status: 403 },
       );
+    }
     const locked = await db
       .update(wallets)
       .set({
@@ -139,11 +191,13 @@ export async function POST(request: Request) {
         availableCents: wallets.availableCents,
         lockedCents: wallets.lockedCents,
       });
-    if (!locked.length)
+    if (!locked.length) {
+      await releaseIdempotency();
       return Response.json(
         { ok: false, error: "insufficient_balance" },
         { status: 402 },
       );
+    }
   }
 
   const paymentId = `pay_${crypto.randomUUID()}`;
@@ -154,22 +208,28 @@ export async function POST(request: Request) {
     await env.UPLOADS.put(proofKey, await proof.arrayBuffer(), { httpMetadata: { contentType: proof.type }, customMetadata: { paymentId, userId: user.id } });
   }
   try {
-    await db.insert(paymentRequests).values({
-      id: paymentId,
-      userId: user.id,
-      type: body.type!,
-      method: body.method!,
-      amountCents,
-      operationCode,
-      destinationName: body.type === "withdrawal" ? destinationName : null,
-      destinationPhone: body.type === "withdrawal" ? destinationPhone : null,
-      paymentDate: body.type === "deposit" ? paymentDate : null,
-      paymentTime: body.type === "deposit" ? paymentTime : null,
-      payerName: body.type === "deposit" ? payerName || null : null,
-      proofUrl: proofKey,
-      status: "pending",
-      requestedAt: new Date(),
-    });
+    await db.batch([
+      db.insert(paymentRequests).values({
+        id: paymentId,
+        userId: user.id,
+        type: body.type!,
+        method: body.method!,
+        amountCents,
+        operationCode,
+        destinationName: body.type === "withdrawal" ? destinationName : null,
+        destinationPhone: body.type === "withdrawal" ? destinationPhone : null,
+        paymentDate: body.type === "deposit" ? paymentDate : null,
+        paymentTime: body.type === "deposit" ? paymentTime : null,
+        payerName: body.type === "deposit" ? payerName || null : null,
+        proofUrl: proofKey,
+        status: "pending",
+        requestedAt: now,
+      }),
+      db
+        .update(idempotencyKeys)
+        .set({ status: "completed", resourceId: paymentId })
+        .where(eq(idempotencyKeys.id, idempotencyId)),
+    ]);
   } catch {
     if (proofKey) await env.UPLOADS.delete(proofKey);
     if (body.type === "withdrawal") {
@@ -181,6 +241,7 @@ export async function POST(request: Request) {
         })
         .where(eq(wallets.userId, user.id));
     }
+    await releaseIdempotency();
     return Response.json(
       { ok: false, error: "duplicate_operation" },
       { status: 409 },

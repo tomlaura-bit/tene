@@ -1421,6 +1421,7 @@ function EnhancedDashboard({
   const [payerName, setPayerName] = useState("");
   const [withdrawalName, setWithdrawalName] = useState("");
   const [withdrawalPhone, setWithdrawalPhone] = useState("");
+  const [walletRequestKey, setWalletRequestKey] = useState(() => crypto.randomUUID());
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const flash = (message: string) => {
     setNotice(message);
@@ -1443,7 +1444,11 @@ function EnhancedDashboard({
       form.set("destinationName", withdrawalName);
       form.set("destinationPhone", withdrawalPhone);
     }
-    const response = await fetch("/api/wallet", { method: "POST", body: form });
+    const response = await fetch("/api/wallet", {
+      method: "POST",
+      headers: { "Idempotency-Key": walletRequestKey },
+      body: form,
+    });
     const body = (await response.json()) as {
       error?: string;
       wallet?: { availableCents: number };
@@ -1459,6 +1464,8 @@ function EnhancedDashboard({
       invalid_request: "Revisa el monto y los datos de la solicitud",
       withdrawal_destination_required: "Ingresa el titular y un celular peruano válido de 9 dígitos",
       payment_datetime_required: "Confirma la fecha y hora que aparecen en el voucher",
+      idempotency_key_required: "La solicitud no tiene un identificador seguro; vuelve a abrir el formulario",
+      request_in_progress: "Esta solicitud ya se está procesando",
     };
     if (!response.ok)
       return flash(
@@ -1476,6 +1483,7 @@ function EnhancedDashboard({
     setPayerName("");
     setWithdrawalName("");
     setWithdrawalPhone("");
+    setWalletRequestKey(crypto.randomUUID());
     setWalletAction(null);
   };
   return (

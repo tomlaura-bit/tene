@@ -10,6 +10,21 @@ const headers: Record<string, string> = {
 };
 
 export function proxy(request: NextRequest) {
+  const isMutation = ["POST", "PUT", "PATCH", "DELETE"].includes(request.method);
+  const isWebhook = request.nextUrl.pathname.startsWith("/api/integrations/");
+  const fetchSite = request.headers.get("sec-fetch-site");
+  const origin = request.headers.get("origin");
+  if (
+    request.nextUrl.pathname.startsWith("/api/") &&
+    isMutation &&
+    !isWebhook &&
+    (fetchSite === "cross-site" || (origin && origin !== request.nextUrl.origin))
+  ) {
+    return NextResponse.json(
+      { ok: false, error: "cross_site_request_blocked" },
+      { status: 403 },
+    );
+  }
   const response = NextResponse.next();
   for (const [name, value] of Object.entries(headers)) response.headers.set(name, value);
   if (request.nextUrl.pathname.startsWith("/api/")) response.headers.set("Cache-Control", "no-store");

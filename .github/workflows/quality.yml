@@ -27,7 +27,7 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 22.13.0
+          node-version: 22.22.2
           cache: npm
 
       - name: Instalar dependencias reproducibles
@@ -38,6 +38,9 @@ jobs:
 
       - name: Ejecutar pruebas unitarias, de componentes, integración y concurrencia
         run: npm test
+
+      - name: Verificar migraciones e integridad de la base de datos
+        run: npm run test:db
 
       - name: Auditar dependencias de producción
         run: npm audit --omit=dev --audit-level=high
@@ -58,7 +61,7 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 22.13.0
+          node-version: 22.22.2
           cache: npm
 
       - name: Instalar dependencias reproducibles

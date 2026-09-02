@@ -98,6 +98,8 @@ npm run lint             # análisis estático
 npm test                 # suite automatizada completa de Vitest
 npm run test:unit        # pruebas unitarias y de componentes
 npm run test:integration # integración y concurrencia
+npm run test:db          # aplica y verifica todas las migraciones en SQLite
+npm run test:docker      # repite las pruebas de base de datos en Linux aislado
 npm run test:e2e         # recorridos E2E con Playwright
 npm run test:coverage    # reporte de cobertura
 npm run db:generate      # generar migraciones de Drizzle

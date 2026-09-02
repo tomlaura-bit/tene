@@ -1,0 +1,8 @@
+services:
+  tene-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      NODE_ENV: test
+    init: true

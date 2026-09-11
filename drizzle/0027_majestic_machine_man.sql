@@ -109,18 +109,18 @@ CREATE UNIQUE INDEX `idx_webhook_receipts_provider_event` ON `webhook_receipts` 
 --> statement-breakpoint
 CREATE TRIGGER `guard_ledger_transaction_post_balance`
 BEFORE UPDATE OF status ON `ledger_transactions`
-WHEN OLD.status = 'draft' AND NEW.status = 'posted'
-BEGIN SELECT CASE WHEN COALESCE((SELECT SUM(CASE direction WHEN 'debit' THEN amount_cents ELSE -amount_cents END) FROM ledger_entries WHERE transaction_id = NEW.id), 0) != 0 THEN RAISE(ABORT, 'ledger_transaction_unbalanced') END; END;
+WHEN OLD.status = 'draft' AND NEW.status = 'posted' AND COALESCE((SELECT SUM(CASE direction WHEN 'debit' THEN amount_cents ELSE -amount_cents END) FROM ledger_entries WHERE transaction_id = NEW.id), 0) != 0
+BEGIN SELECT RAISE(ABORT, 'ledger_transaction_unbalanced'); END;
 --> statement-breakpoint
 CREATE TRIGGER `guard_ledger_transaction_post_entry_count`
 BEFORE UPDATE OF status ON `ledger_transactions`
-WHEN OLD.status = 'draft' AND NEW.status = 'posted'
-BEGIN SELECT CASE WHEN (SELECT COUNT(*) FROM ledger_entries WHERE transaction_id = NEW.id) < 2 THEN RAISE(ABORT, 'ledger_transaction_requires_two_entries') END; END;
+WHEN OLD.status = 'draft' AND NEW.status = 'posted' AND (SELECT COUNT(*) FROM ledger_entries WHERE transaction_id = NEW.id) < 2
+BEGIN SELECT RAISE(ABORT, 'ledger_transaction_requires_two_entries'); END;
 --> statement-breakpoint
 CREATE TRIGGER `guard_ledger_transaction_post_entries_valid`
 BEFORE UPDATE OF status ON `ledger_transactions`
-WHEN OLD.status = 'draft' AND NEW.status = 'posted'
-BEGIN SELECT CASE WHEN EXISTS (SELECT 1 FROM ledger_entries WHERE transaction_id = NEW.id AND (amount_cents <= 0 OR direction NOT IN ('debit','credit') OR account_id IS NULL)) THEN RAISE(ABORT, 'ledger_entry_invalid') END; END;
+WHEN OLD.status = 'draft' AND NEW.status = 'posted' AND EXISTS (SELECT 1 FROM ledger_entries WHERE transaction_id = NEW.id AND (amount_cents <= 0 OR direction NOT IN ('debit','credit') OR account_id IS NULL))
+BEGIN SELECT RAISE(ABORT, 'ledger_entry_invalid'); END;
 --> statement-breakpoint
 CREATE TRIGGER `guard_posted_ledger_entry_update`
 BEFORE UPDATE ON `ledger_entries`

@@ -12,7 +12,7 @@ import {
 import { getAuthenticatedUser, unauthorized } from "../../../lib/auth";
 import { env } from "cloudflare:workers";
 import { enforceRateLimit } from "../../../lib/rate-limit";
-import { readIdempotencyKey } from "../../../lib/idempotency";
+import { hashIdempotentRequest, readIdempotencyKey } from "../../../lib/idempotency";
 
 export const dynamic = "force-dynamic";
 
@@ -101,6 +101,7 @@ export async function POST(request: Request) {
   const paymentDate = typeof body.paymentDate === "string" ? body.paymentDate.trim() : "";
   const paymentTime = typeof body.paymentTime === "string" ? body.paymentTime.trim() : "";
   const payerName = typeof body.payerName === "string" ? body.payerName.trim().slice(0, 100) : "";
+  const requestHash = await hashIdempotentRequest({ type: body.type, method: body.method, amountCents, operationCode, destinationName, destinationPhone, paymentDate, paymentTime, payerName });
   if (body.type === "deposit" && (!operationCode || operationCode.length < 4))
     return Response.json(
       { ok: false, error: "operation_code_required" },
@@ -128,6 +129,7 @@ export async function POST(request: Request) {
       userId: user.id,
       scope: "wallet_request",
       requestKey,
+      requestHash,
       status: "processing",
       createdAt: now,
       expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
@@ -147,12 +149,10 @@ export async function POST(request: Request) {
       )
       .limit(1);
     if (existing?.status === "completed") {
-      const [wallet] = await db
-        .select()
-        .from(wallets)
-        .where(eq(wallets.userId, user.id))
-        .limit(1);
-      return Response.json({ ok: true, wallet: wallet ?? null, replayed: true });
+      if (existing.requestHash && existing.requestHash !== requestHash)
+        return Response.json({ ok: false, error: "idempotency_payload_conflict" }, { status: 409 });
+      if (existing.responseBody && existing.responseStatus)
+        return new Response(existing.responseBody, { status: existing.responseStatus, headers: { "content-type": "application/json", "idempotent-replayed": "true" } });
     }
     return Response.json(
       { ok: false, error: "request_in_progress" },
@@ -253,5 +253,7 @@ export async function POST(request: Request) {
     .from(wallets)
     .where(eq(wallets.userId, user.id))
     .limit(1);
-  return Response.json({ ok: true, wallet });
+  const responseBody = JSON.stringify({ ok: true, wallet });
+  await db.update(idempotencyKeys).set({ responseStatus: 200, responseBody }).where(eq(idempotencyKeys.id, idempotencyId));
+  return new Response(responseBody, { status: 200, headers: { "content-type": "application/json" } });
 }

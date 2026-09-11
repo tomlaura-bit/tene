@@ -36,7 +36,8 @@ export async function POST(request: Request) {
   const body = (() => { try { return JSON.parse(rawBody); } catch { return null; } })() as Record<string, unknown> | null;
   const event = body ? eventName(body) : undefined;
   if (!roomId || !body || !event || !allowedEvents.includes(event as DathostEvent)) return Response.json({ ok: false, error: "invalid_event" }, { status: 400 });
-  const receipt = await webhookReceipt("dathost", roomId, rawBody);
+  const eventId = request.headers.get("x-dathost-event-id") ?? (typeof body.id === "string" ? body.id : null);
+  const receipt = await webhookReceipt("dathost", roomId, rawBody, eventId);
   if (receipt.duplicate) return Response.json({ ok: true, duplicate: true });
   const db = getDb();
   const [server] = await db.select().from(matchServers).where(eq(matchServers.roomId, roomId)).limit(1);

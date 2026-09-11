@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import { getD1, getDb } from "../../../../db";
-import { auditLogs, reconciliations, users } from "../../../../db/schema";
+import { auditLogs, reconciliationItems, reconciliations, users } from "../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../lib/auth";
 import { enforceRateLimit } from "../../../../lib/rate-limit";
+import { hasFinancialPermission } from "../../../../lib/finance/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
     .from(users)
     .where(eq(users.authSubjectId, identity.id))
     .limit(1);
-  if (!actor || !["owner", "admin"].includes(actor.role))
+  if (!actor || !(await hasFinancialPermission(actor, "reconciliation.run")))
     return Response.json(
       { ok: false, error: "finance_permission_required" },
       { status: 403 },
@@ -53,7 +54,26 @@ export async function POST(request: Request) {
   const dateKey = now.toISOString().slice(0, 10);
   const id = `rec_${dateKey}`;
 
-  await db.batch([
+  const operations = await d1.prepare(`
+    SELECT p.id, p.amount_cents, p.status, p.operation_code,
+      COUNT(l.id) AS internal_count,
+      COUNT(e.id) AS external_count,
+      MAX(e.amount_cents) AS external_cents
+    FROM payment_requests p
+    LEFT JOIN ledger_entries l ON l.payment_request_id = p.id
+    LEFT JOIN external_financial_movements e ON e.operation_ref = COALESCE(p.operation_code, p.id)
+    GROUP BY p.id, p.amount_cents, p.status, p.operation_code
+    ORDER BY p.requested_at DESC LIMIT 500
+  `).all<{ id: string; amount_cents: number; status: string; operation_code: string | null; internal_count: number; external_count: number; external_cents: number | null }>();
+  const items = operations.results.map((operation) => {
+    const internalCount = Number(operation.internal_count);
+    const externalCount = Number(operation.external_count);
+    const terminal = ["approved", "paid", "rejected"].includes(operation.status);
+    const itemStatus = !terminal ? "PENDING" : internalCount === 0 ? "MISSING_INTERNAL" : externalCount === 0 ? "MISSING_EXTERNAL" : externalCount > 1 ? "DUPLICATE" : Number(operation.external_cents) !== operation.amount_cents ? "AMOUNT_MISMATCH" : "MATCHED";
+    return { id: `rci_${crypto.randomUUID()}`, reconciliationId: id, operationRef: operation.operation_code ?? operation.id, source: "provider" as const, internalCents: operation.amount_cents, externalCents: operation.external_cents, status: itemStatus as "MATCHED" | "MISSING_INTERNAL" | "MISSING_EXTERNAL" | "AMOUNT_MISMATCH" | "DUPLICATE" | "PENDING" | "MANUAL_REVIEW", detailsJson: JSON.stringify({ paymentId: operation.id, paymentStatus: operation.status, internalCount, externalCount }), createdAt: now };
+  });
+
+  const writes = [
     db
       .insert(reconciliations)
       .values({
@@ -78,6 +98,8 @@ export async function POST(request: Request) {
           closedAt: status === "matched" ? now : null,
         },
       }),
+    db.delete(reconciliationItems).where(eq(reconciliationItems.reconciliationId, id)),
+    ...items.map((item) => db.insert(reconciliationItems).values(item)),
     db.insert(auditLogs).values({
       id: `aud_${crypto.randomUUID()}`,
       actorId: actor.id,
@@ -87,10 +109,11 @@ export async function POST(request: Request) {
       afterJson: JSON.stringify({ expectedCents, actualCents, differenceCents, invalidRecords, status }),
       createdAt: now,
     }),
-  ]);
+  ];
+  await db.batch(writes as [never, ...never[]]);
 
   return Response.json({
     ok: true,
-    reconciliation: { dateKey, expectedCents, actualCents, differenceCents, invalidRecords, status },
+    reconciliation: { dateKey, expectedCents, actualCents, differenceCents, invalidRecords, status, items: items.length, discrepancies: items.filter((item) => !["MATCHED", "PENDING"].includes(item.status)).length },
   });
 }

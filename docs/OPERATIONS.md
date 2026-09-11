@@ -8,6 +8,8 @@ Este documento define la operación mínima segura del servicio. Las acciones ad
 - Toda escritura web interna bloquea solicitudes explícitamente provenientes de otro origen.
 - Las solicitudes de wallet requieren `Idempotency-Key` para evitar duplicados por doble clic o reintentos.
 - Los webhooks generan recibos únicos para evitar procesar dos veces el mismo evento.
+- Los efectos recuperables se escriben en `outbox_events`; `POST /api/internal/outbox` los procesa con `Authorization: Bearer $CRON_SECRET`.
+- El ledger formal exige doble entrada balanceada y no permite editar ni borrar transacciones publicadas.
 - La base rechaza saldos negativos, slots fuera del rango 1–10, pagos no positivos y ratings inválidos.
 - GitHub Actions ejecuta lint, pruebas, auditoría, compilación y E2E en cada cambio.
 
@@ -16,8 +18,9 @@ Este documento define la operación mínima segura del servicio. Las acciones ad
 1. Comprobar que `/api/health` responda `200` y `ok: true`.
 2. Revisar solicitudes de recarga y retiro pendientes.
 3. Ejecutar `POST /api/staff/reconciliation`.
-4. Si `status` es `review`, detener nuevas liquidaciones y comparar wallet, retiros pendientes, entradas bloqueadas y ledger.
-5. Revisar disputas, verificaciones y alertas de seguridad pendientes.
+4. Confirmar que el outbox no tenga eventos `failed` con 10 intentos.
+5. Si `status` es `review`, detener nuevas liquidaciones y comparar wallet, retiros pendientes, entradas bloqueadas y ledger.
+6. Revisar disputas, verificaciones y alertas de seguridad pendientes.
 
 ## Rutina de mantenimiento
 
@@ -72,4 +75,3 @@ No habilitar dinero o partidas reales hasta completar:
 - revisión legal y política de privacidad;
 - responsables y escalamiento de incidentes;
 - conciliación ejecutada sin diferencias.
-

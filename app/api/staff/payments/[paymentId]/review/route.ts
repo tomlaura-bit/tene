@@ -3,11 +3,13 @@ import { getDb } from "../../../../../../db";
 import {
   auditLogs,
   ledgerEntries,
+  outboxEvents,
   paymentRequests,
   users,
   wallets,
 } from "../../../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../../../lib/auth";
+import { hasFinancialPermission } from "../../../../../../lib/finance/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +25,7 @@ export async function POST(
     .from(users)
     .where(eq(users.authSubjectId, identity.id))
     .limit(1);
-  if (!actor || !["owner", "admin"].includes(actor.role))
+  if (!actor || !(await hasFinancialPermission(actor, "payment.review")))
     return Response.json(
       { ok: false, error: "finance_permission_required" },
       { status: 403 },
@@ -48,6 +50,8 @@ export async function POST(
       { ok: false, error: "already_processed" },
       { status: 409 },
     );
+  if (body.decision === "approve" && payment.type === "withdrawal" && !(await hasFinancialPermission(actor, "withdrawal.approve")))
+    return Response.json({ ok: false, error: "withdrawal_approval_permission_required" }, { status: 403 });
 
   const approved = body.decision === "approve";
   const walletMutation =
@@ -116,6 +120,30 @@ export async function POST(
       createdAt: now,
     }) as never,
   );
+  if (approved) {
+    const debitWallet = payment.type === "withdrawal";
+    batch.push(db.insert(outboxEvents).values({
+      id: `out_${crypto.randomUUID()}`,
+      deduplicationKey: `ledger:payment:${payment.id}`,
+      topic: "ledger.post",
+      aggregateType: "payment_request",
+      aggregateId: payment.id,
+      payloadJson: JSON.stringify({
+        externalRef: `payment:${payment.id}`,
+        type: payment.type,
+        description: `Pago ${payment.id}`,
+        userId: payment.userId,
+        legacyType: payment.type,
+        postings: [
+          { accountCode: debitWallet ? `user:${payment.userId}:wallet` : "platform:cash", accountName: debitWallet ? "Wallet del jugador" : "Caja", accountKind: debitWallet ? "liability" : "asset", normalBalance: debitWallet ? "credit" : "debit", direction: "debit", amountCents: payment.amountCents },
+          { accountCode: debitWallet ? "platform:cash" : `user:${payment.userId}:wallet`, accountName: debitWallet ? "Caja" : "Wallet del jugador", accountKind: debitWallet ? "asset" : "liability", normalBalance: debitWallet ? "debit" : "credit", direction: "credit", amountCents: payment.amountCents },
+        ],
+      }),
+      status: "pending",
+      availableAt: now,
+      createdAt: now,
+    }) as never);
+  }
   try {
     await db.batch(batch as [never, ...never[]]);
   } catch {

@@ -35,6 +35,13 @@ try {
     "rooms",
     "room_players",
     "ledger_entries",
+    "ledger_accounts",
+    "ledger_transactions",
+    "reconciliation_items",
+    "external_financial_movements",
+    "outbox_events",
+    "role_permissions",
+    "user_permissions",
     "payment_requests",
     "idempotency_keys",
     "privacy_requests",
@@ -57,6 +64,7 @@ try {
   if (triggerCount < 10) {
     throw new Error(`Expected at least 10 integrity triggers, found ${triggerCount}`);
   }
+  if (triggerCount < 15) throw new Error(`Expected financial integrity triggers, found ${triggerCount}`);
 
   const now = Math.floor(Date.now() / 1000);
   database

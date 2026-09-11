@@ -1,5 +1,9 @@
 # TENE
 
+> Plataforma competitiva de CS2 con salas 5v5, wallet, revisión de pagos, ranking y operación auditable sobre Cloudflare Workers, D1 y R2.
+
+La arquitectura financiera posterior al MVP está documentada en [docs/FINANCIAL-ARCHITECTURE.md](docs/FINANCIAL-ARCHITECTURE.md).
+
 ![TENE — CS2 competitivo en Perú](public/og.png)
 
 Plataforma web para organizar partidas privadas 5v5 de Counter-Strike 2 en la comunidad peruana. TENE reúne salas, jugadores, clasificación, chat, control de saldo y operaciones administrativas en una experiencia competitiva unificada.

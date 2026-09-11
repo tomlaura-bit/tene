@@ -189,6 +189,9 @@ export const roomPlayers = sqliteTable(
 
 export const ledgerEntries = sqliteTable("ledger_entries", {
   id: text("id").primaryKey(),
+  transactionId: text("transaction_id").references(() => ledgerTransactions.id),
+  accountId: text("account_id").references(() => ledgerAccounts.id),
+  direction: text("direction", { enum: ["debit", "credit"] }),
   paymentRequestId: text("payment_request_id").unique(),
   userId: text("user_id")
     .notNull()
@@ -210,6 +213,40 @@ export const ledgerEntries = sqliteTable("ledger_entries", {
   description: text("description").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
+
+export const ledgerAccounts = sqliteTable(
+  "ledger_accounts",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").references(() => users.id),
+    code: text("code").notNull().unique(),
+    name: text("name").notNull(),
+    kind: text("kind", {
+      enum: ["asset", "liability", "revenue", "expense", "equity"],
+    }).notNull(),
+    normalBalance: text("normal_balance", { enum: ["debit", "credit"] }).notNull(),
+    currency: text("currency").notNull().default("PEN"),
+    status: text("status", { enum: ["active", "closed"] }).notNull().default("active"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [index("idx_ledger_accounts_user").on(table.userId)],
+);
+
+export const ledgerTransactions = sqliteTable(
+  "ledger_transactions",
+  {
+    id: text("id").primaryKey(),
+    externalRef: text("external_ref").unique(),
+    type: text("type").notNull(),
+    status: text("status", { enum: ["draft", "posted", "reversed"] }).notNull().default("draft"),
+    currency: text("currency").notNull().default("PEN"),
+    description: text("description").notNull(),
+    reversalOfId: text("reversal_of_id").unique(),
+    postedAt: integer("posted_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [index("idx_ledger_transactions_status_created").on(table.status, table.createdAt)],
+);
 
 export const verificationReviews = sqliteTable(
   "verification_reviews",
@@ -388,6 +425,9 @@ export const idempotencyKeys = sqliteTable(
       .notNull()
       .default("processing"),
     resourceId: text("resource_id"),
+    requestHash: text("request_hash"),
+    responseStatus: integer("response_status"),
+    responseBody: text("response_body"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
   },
@@ -414,6 +454,89 @@ export const reconciliations = sqliteTable("reconciliations", {
   closedAt: integer("closed_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
+
+export const reconciliationItems = sqliteTable(
+  "reconciliation_items",
+  {
+    id: text("id").primaryKey(),
+    reconciliationId: text("reconciliation_id").notNull().references(() => reconciliations.id),
+    operationRef: text("operation_ref").notNull(),
+    source: text("source", { enum: ["ledger", "wallet", "provider"] }).notNull(),
+    internalCents: integer("internal_cents"),
+    externalCents: integer("external_cents"),
+    status: text("status", { enum: ["MATCHED", "MISSING_INTERNAL", "MISSING_EXTERNAL", "AMOUNT_MISMATCH", "DUPLICATE", "PENDING", "MANUAL_REVIEW"] }).notNull(),
+    detailsJson: text("details_json"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_reconciliation_items_run_ref_source").on(table.reconciliationId, table.operationRef, table.source),
+    index("idx_reconciliation_items_status").on(table.status),
+  ],
+);
+
+export const externalFinancialMovements = sqliteTable(
+  "external_financial_movements",
+  {
+    id: text("id").primaryKey(),
+    provider: text("provider").notNull(),
+    externalId: text("external_id").notNull(),
+    operationRef: text("operation_ref"),
+    amountCents: integer("amount_cents").notNull(),
+    currency: text("currency").notNull().default("PEN"),
+    status: text("status").notNull(),
+    occurredAt: integer("occurred_at", { mode: "timestamp" }).notNull(),
+    payloadHash: text("payload_hash").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_external_movements_provider_id").on(table.provider, table.externalId),
+    index("idx_external_movements_operation").on(table.operationRef),
+  ],
+);
+
+export const outboxEvents = sqliteTable(
+  "outbox_events",
+  {
+    id: text("id").primaryKey(),
+    deduplicationKey: text("deduplication_key").notNull().unique(),
+    topic: text("topic").notNull(),
+    aggregateType: text("aggregate_type").notNull(),
+    aggregateId: text("aggregate_id").notNull(),
+    payloadJson: text("payload_json").notNull(),
+    status: text("status", { enum: ["pending", "processing", "completed", "failed"] }).notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    availableAt: integer("available_at", { mode: "timestamp" }).notNull(),
+    lockedAt: integer("locked_at", { mode: "timestamp" }),
+    lastError: text("last_error"),
+    completedAt: integer("completed_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [index("idx_outbox_ready").on(table.status, table.availableAt)],
+);
+
+export const rolePermissions = sqliteTable(
+  "role_permissions",
+  {
+    role: text("role").notNull(),
+    permission: text("permission").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [uniqueIndex("idx_role_permissions_role_permission").on(table.role, table.permission)],
+);
+
+export const userPermissions = sqliteTable(
+  "user_permissions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => users.id),
+    permission: text("permission").notNull(),
+    effect: text("effect", { enum: ["allow", "deny"] }).notNull(),
+    grantedById: text("granted_by_id").notNull().references(() => users.id),
+    grantedAt: integer("granted_at", { mode: "timestamp" }).notNull(),
+    revokedAt: integer("revoked_at", { mode: "timestamp" }),
+  },
+  (table) => [index("idx_user_permissions_user_permission").on(table.userId, table.permission)],
+);
 
 export const steamProfileChecks = sqliteTable(
   "steam_profile_checks",
@@ -492,8 +615,14 @@ export const webhookReceipts = sqliteTable("webhook_receipts", {
   id: text("id").primaryKey(),
   provider: text("provider").notNull(),
   roomId: text("room_id").notNull(),
+  externalEventId: text("external_event_id"),
+  payloadHash: text("payload_hash"),
+  occurredAt: integer("occurred_at", { mode: "timestamp" }),
   receivedAt: integer("received_at", { mode: "timestamp" }).notNull(),
-}, (table) => [index("idx_webhook_receipts_received").on(table.receivedAt)]);
+}, (table) => [
+  index("idx_webhook_receipts_received").on(table.receivedAt),
+  uniqueIndex("idx_webhook_receipts_provider_event").on(table.provider, table.externalEventId),
+]);
 
 export const matchDisputes = sqliteTable(
   "match_disputes",

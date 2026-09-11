@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../../../../../db";
 import { matchEvents, matchServers, rooms } from "../../../../../db/schema";
 import { matchzyConfig } from "../../../../../lib/matchzy";
-import { secureEqual, webhookReceipt } from "../../../../../lib/webhook-security";
+import { secureEqual, verifyHmacWebhook, webhookReceipt } from "../../../../../lib/webhook-security";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +16,17 @@ function score(value: unknown, fallback: number) {
 
 export async function POST(request: Request) {
   const secret = matchzyConfig().webhookSecret;
-  if (!secret || !(await secureEqual(request.headers.get("x-matchzy-secret"), secret))) return Response.json({ ok: false, error: "invalid_signature" }, { status: 401 });
   const rawBody = await request.text();
-  const body = (() => { try { return JSON.parse(rawBody); } catch { return null; } })() as { roomId?: string; event?: MatchEvent; address?: string; teamAScore?: number; teamBScore?: number; payload?: unknown } | null;
+  const hmacPresent = Boolean(request.headers.get("x-matchzy-signature"));
+  const authenticated = secret && (hmacPresent
+    ? await verifyHmacWebhook({ rawBody, secret, signature: request.headers.get("x-matchzy-signature"), timestamp: request.headers.get("x-matchzy-timestamp") })
+    : await secureEqual(request.headers.get("x-matchzy-secret"), secret));
+  if (!authenticated) return Response.json({ ok: false, error: "invalid_signature" }, { status: 401 });
+  const body = (() => { try { return JSON.parse(rawBody); } catch { return null; } })() as { roomId?: string; event?: MatchEvent; eventId?: string; occurredAt?: string; address?: string; teamAScore?: number; teamBScore?: number; payload?: unknown } | null;
   if (!body?.roomId || !body.event || !allowedEvents.includes(body.event)) return Response.json({ ok: false, error: "invalid_event" }, { status: 400 });
-  const receipt = await webhookReceipt("matchzy", body.roomId, rawBody);
+  const eventId = request.headers.get("x-matchzy-event-id") ?? body.eventId ?? null;
+  const occurredAt = body.occurredAt && !Number.isNaN(Date.parse(body.occurredAt)) ? new Date(body.occurredAt) : null;
+  const receipt = await webhookReceipt("matchzy", body.roomId, rawBody, eventId, occurredAt);
   if (receipt.duplicate) return Response.json({ ok: true, duplicate: true });
   const db = getDb();
   const [server] = await db.select().from(matchServers).where(eq(matchServers.roomId, body.roomId)).limit(1);

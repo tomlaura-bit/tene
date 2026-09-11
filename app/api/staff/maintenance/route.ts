@@ -11,6 +11,8 @@ import {
 } from "../../../../db/schema";
 import { getAuthenticatedUser, unauthorized } from "../../../../lib/auth";
 import { enforceRateLimit } from "../../../../lib/rate-limit";
+import { processOutbox } from "../../../../lib/finance/outbox";
+import { LedgerService, type PostLedgerTransaction } from "../../../../lib/finance/ledger-service";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +71,10 @@ export async function POST(request: Request) {
     deletedIdempotencyKeys: changes(idempotency),
     deletedRateLimits: changes(limits),
     deletedWebhookReceipts: changes(webhooks),
+    outbox: await processOutbox(async (event) => {
+      if (event.topic !== "ledger.post") throw new Error(`unsupported_outbox_topic:${event.topic}`);
+      await new LedgerService().post(event.payload as PostLedgerTransaction);
+    }),
   };
   await db.insert(auditLogs).values({
     id: `aud_${crypto.randomUUID()}`,

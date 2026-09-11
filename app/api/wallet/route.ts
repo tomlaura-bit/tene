@@ -3,6 +3,7 @@ import { getDb } from "../../../db";
 import {
   ledgerEntries,
   idempotencyKeys,
+  paymentDestinations,
   paymentRequests,
   roomPlayers,
   rooms,
@@ -12,7 +13,8 @@ import {
 import { getAuthenticatedUser, unauthorized } from "../../../lib/auth";
 import { env } from "cloudflare:workers";
 import { enforceRateLimit } from "../../../lib/rate-limit";
-import { hashIdempotentRequest, readIdempotencyKey } from "../../../lib/idempotency";
+import { hashIdempotentRequest, readIdempotencyKey, sha256Bytes } from "../../../lib/idempotency";
+import { matchesImageSignature } from "../../../lib/payment-proof";
 
 export const dynamic = "force-dynamic";
 
@@ -101,7 +103,6 @@ export async function POST(request: Request) {
   const paymentDate = typeof body.paymentDate === "string" ? body.paymentDate.trim() : "";
   const paymentTime = typeof body.paymentTime === "string" ? body.paymentTime.trim() : "";
   const payerName = typeof body.payerName === "string" ? body.payerName.trim().slice(0, 100) : "";
-  const requestHash = await hashIdempotentRequest({ type: body.type, method: body.method, amountCents, operationCode, destinationName, destinationPhone, paymentDate, paymentTime, payerName });
   if (body.type === "deposit" && (!operationCode || operationCode.length < 4))
     return Response.json(
       { ok: false, error: "operation_code_required" },
@@ -113,13 +114,24 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: "withdrawal_destination_required" }, { status: 400 });
 
   const proof = form?.get("proof");
+  let proofBytes: ArrayBuffer | null = null;
   if (body.type === "deposit") {
     if (!(proof instanceof File)) return Response.json({ ok: false, error: "proof_required" }, { status: 400 });
     if (!["image/jpeg", "image/png", "image/webp"].includes(proof.type) || proof.size < 1 || proof.size > 5 * 1024 * 1024)
       return Response.json({ ok: false, error: "invalid_proof" }, { status: 400 });
+    proofBytes = await proof.arrayBuffer();
+    if (!matchesImageSignature(proofBytes, proof.type))
+      return Response.json({ ok: false, error: "invalid_proof_signature" }, { status: 400 });
   }
+  const proofHash = proofBytes ? await sha256Bytes(proofBytes) : null;
+  const requestHash = await hashIdempotentRequest({ type: body.type, method: body.method, amountCents, operationCode, destinationName, destinationPhone, paymentDate, paymentTime, payerName, proofHash });
 
   const db = getDb();
+  if (body.type === "deposit") {
+    const [destination] = await db.select({ id: paymentDestinations.id }).from(paymentDestinations)
+      .where(and(eq(paymentDestinations.method, body.method!), eq(paymentDestinations.status, "active"))).limit(1);
+    if (!destination) return Response.json({ ok: false, error: "payment_method_unavailable" }, { status: 503 });
+  }
   const now = new Date();
   const idempotencyId = `idem_${crypto.randomUUID()}`;
   const claimed = await db
@@ -205,7 +217,7 @@ export async function POST(request: Request) {
   if (proof instanceof File) {
     const extension = proof.type === "image/png" ? "png" : proof.type === "image/webp" ? "webp" : "jpg";
     proofKey = `payment-proofs/${user.id}/${paymentId}.${extension}`;
-    await env.UPLOADS.put(proofKey, await proof.arrayBuffer(), { httpMetadata: { contentType: proof.type }, customMetadata: { paymentId, userId: user.id } });
+    await env.UPLOADS.put(proofKey, proofBytes!, { httpMetadata: { contentType: proof.type }, customMetadata: { paymentId, userId: user.id, sha256: proofHash! } });
   }
   try {
     await db.batch([

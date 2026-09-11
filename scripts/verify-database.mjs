@@ -43,6 +43,7 @@ try {
     "role_permissions",
     "user_permissions",
     "payment_requests",
+    "payment_destinations",
     "idempotency_keys",
     "privacy_requests",
     "audit_logs",

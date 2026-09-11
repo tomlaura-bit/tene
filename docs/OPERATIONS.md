@@ -13,6 +13,17 @@ Este documento define la operación mínima segura del servicio. Las acciones ad
 - La base rechaza saldos negativos, slots fuera del rango 1–10, pagos no positivos y ratings inválidos.
 - GitHub Actions ejecuta lint, pruebas, auditoría, compilación y E2E en cada cambio.
 
+## Activación de Yape o Plin
+
+1. Ingresar con la cuenta `owner` y abrir `Finanzas > Cuentas de cobro`.
+2. Elegir el método e ingresar exactamente el titular y el celular peruano de nueve dígitos.
+3. Subir el QR oficial en PNG, JPEG o WebP y mantener el destino inactivo durante la revisión.
+4. Comparar número, titular y QR con la aplicación bancaria usando una transferencia mínima controlada.
+5. Cambiar el estado a activo. Desde ese momento aparecerá en la recarga y el backend aceptará comprobantes para ese método.
+6. Verificar el evento correspondiente en `audit_logs`.
+
+No activar una cuenta incompleta, de terceros o cuyo QR no haya sido verificado. Para rotarla, cargar primero el nuevo QR y confirmar los datos; el objeto anterior se elimina solamente después de que D1 confirma el cambio.
+
 ## Rutina diaria
 
 1. Comprobar que `/api/health` responda `200` y `ok: true`.

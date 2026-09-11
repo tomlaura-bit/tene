@@ -1413,6 +1413,7 @@ function EnhancedDashboard({
   >(null);
   const [amount, setAmount] = useState("20");
   const [paymentMethod, setPaymentMethod] = useState<"yape" | "plin">("yape");
+  const [paymentDestinations, setPaymentDestinations] = useState<Array<{ method: "yape" | "plin"; displayName: string; phone: string; hasQr: boolean; qrUrl: string | null }>>([]);
   const [operationCode, setOperationCode] = useState("");
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState("");
@@ -1423,6 +1424,19 @@ function EnhancedDashboard({
   const [withdrawalPhone, setWithdrawalPhone] = useState("");
   const [walletRequestKey, setWalletRequestKey] = useState(() => crypto.randomUUID());
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  useEffect(() => {
+    let active = true;
+    fetch("/api/payment-destinations", { cache: "no-store" })
+      .then(async (response) => response.ok ? response.json() as Promise<{ destinations: Array<{ method: "yape" | "plin"; displayName: string; phone: string; hasQr: boolean; qrUrl: string | null }> }> : { destinations: [] })
+      .then((result) => {
+        if (!active) return;
+        setPaymentDestinations(result.destinations);
+        if (result.destinations.length) setPaymentMethod(result.destinations[0].method);
+      })
+      .catch(() => { if (active) setPaymentDestinations([]); });
+    return () => { active = false; };
+  }, []);
+  const paymentDestination = paymentDestinations.find((item) => item.method === paymentMethod) ?? null;
   const flash = (message: string) => {
     setNotice(message);
     window.setTimeout(() => setNotice(""), 3500);
@@ -1430,6 +1444,7 @@ function EnhancedDashboard({
   const applyWallet = async () => {
     const value = Number(amount);
     if (!Number.isFinite(value) || value <= 0) return;
+    if (walletAction === "deposit" && !paymentDestination) return flash("Las recargas están temporalmente desactivadas hasta configurar la cuenta oficial");
     const form = new FormData();
     form.set("type", walletAction === "deposit" ? "deposit" : "withdrawal");
     form.set("method", paymentMethod);
@@ -1457,6 +1472,9 @@ function EnhancedDashboard({
       operation_code_required: "Ingresa el código de operación de Yape o Plin",
       proof_required: "Adjunta una captura del comprobante",
       invalid_proof: "El comprobante debe ser JPG, PNG o WebP y pesar máximo 5 MB",
+      invalid_proof_signature: "El archivo no contiene una imagen válida",
+      payment_method_unavailable: "Este método de recarga está temporalmente desactivado",
+      idempotency_payload_conflict: "La solicitud cambió después de enviarse; vuelve a abrir el formulario",
       withdrawal_minimum: "El retiro mínimo es S/ 10",
       one_room_required: "Debes haber participado en una sala antes de retirar",
       insufficient_balance: "No tienes saldo suficiente",
@@ -1598,7 +1616,7 @@ function EnhancedDashboard({
         {activeTab === "Cómo jugar" && <SidebarDestinationPanel type="how" />}
         {activeTab === "Preguntas frecuentes" && <SidebarDestinationPanel type="faq" />}
         {activeTab === "Staff" && <StaffPanel notify={flash} />}
-        {activeTab === "Finanzas" && <FinancePanel notify={flash} />}
+        {activeTab === "Finanzas" && <FinancePanel notify={flash} session={session} />}
         {activeTab === "Cuenta" && <AccountPanel session={session} />}
         {activeTab === "Reglas legales" && <LegalPanel />}
       </div>
@@ -1651,11 +1669,15 @@ function EnhancedDashboard({
             </label></>}
             {walletAction === "deposit" ? (
               <div className="voucher-form">
-                <div className="voucher-status">🔒 Revisa que los datos coincidan con tu voucher antes de enviarlo.</div>
+                {paymentDestination ? <div className="payment-destination-card">
+                  <div>{paymentDestination.qrUrl ? <img src={paymentDestination.qrUrl} alt={`QR oficial de ${paymentMethod === "yape" ? "Yape" : "Plin"} para TENE`} /> : <span className="payment-qr-empty">QR pendiente</span>}</div>
+                  <p><small>ENVÍA A LA CUENTA OFICIAL</small><strong>{paymentDestination.displayName}</strong><b>{paymentDestination.phone}</b><span>{paymentMethod === "yape" ? "Yape" : "Plin"} · Verifica el nombre antes de pagar</span></p>
+                </div> : <div className="payment-destination-missing"><strong>Recargas temporalmente desactivadas</strong><span>La cuenta oficial de cobro todavía no ha sido configurada.</span></div>}
+                <div className="voucher-status">🔒 Verifica el nombre y número oficiales antes de pagar. Luego adjunta tu voucher.</div>
                 <label className="voucher-preview">{proofPreview ? <img src={proofPreview} alt="Vista previa del voucher" /> : <span>Sube tu voucher<br/><small>JPG, PNG o WebP</small></span>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0] ?? null; setPaymentProof(file); if (!file) return setProofPreview(""); const reader = new FileReader(); reader.onload = () => setProofPreview(String(reader.result ?? "")); reader.readAsDataURL(file); }} /></label>
                 <div className="voucher-fields">
                   <label>Aplicación<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as "yape" | "plin")}><option value="yape">Yape</option><option value="plin">Plin</option></select></label>
-                  <label>Llegó a la cuenta<input value="Cuenta oficial TENE" readOnly /></label>
+                  <label>Llegó a la cuenta<input value={paymentDestination?.displayName ?? "Sin configurar"} readOnly /></label>
                   <label>Monto (S/)<input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
                   <label>N.º de operación<input value={operationCode} onChange={(event) => setOperationCode(event.target.value.replace(/\s/g, ""))} placeholder="Código del voucher" /></label>
                   <label>Fecha del pago<input type="date" value={paymentDate} onChange={(event) => setPaymentDate(event.target.value)} /></label>
@@ -1667,7 +1689,7 @@ function EnhancedDashboard({
             ) : (
               <div className="withdrawal-fields"><p className="wallet-help">Disponible: S/ {balance.toFixed(2)} · Retiro mínimo S/ 10 · Haber jugado una sala.</p><label>Titular de Yape/Plin<input value={withdrawalName} onChange={(event) => setWithdrawalName(event.target.value)} placeholder="Nombre completo" /></label><label>Celular de destino<input inputMode="numeric" value={withdrawalPhone} onChange={(event) => setWithdrawalPhone(event.target.value.replace(/\D/g, "").slice(0, 9))} placeholder="9XXXXXXXX" /></label></div>
             )}
-            <button className="primary-button w-full" onClick={applyWallet}>
+            <button className="primary-button w-full" onClick={applyWallet} disabled={walletAction === "deposit" && !paymentDestination}>
               Enviar solicitud
             </button>
           </section>
@@ -4664,7 +4686,7 @@ const seedPayments: PaymentRequest[] = [
     status: "Pendiente",
   },
 ];
-function FinancePanel({ notify }: { notify: (message: string) => void }) {
+function FinancePanel({ notify, session }: { notify: (message: string) => void; session: SessionData | null }) {
   const [requests, setRequests] = useState(seedPayments.slice(0, 0));
   const [selectedId, setSelectedId] = useState("");
   const [financeTab, setFinanceTab] = useState("Pendientes");
@@ -4804,7 +4826,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
         </article>
       </div>
       <div className="staff-tabs">
-        {["Pendientes", "Procesadas", "Libro mayor"].map((tab) => (
+        {["Pendientes", "Procesadas", "Libro mayor", ...(session?.user.role === "owner" ? ["Cuentas de cobro"] : [])].map((tab) => (
           <button
             key={tab}
             className={financeTab === tab ? "active" : ""}
@@ -4814,7 +4836,7 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
           </button>
         ))}
       </div>
-      {financeTab !== "Libro mayor" ? (
+      {financeTab === "Cuentas de cobro" ? <PaymentDestinationsManager notify={notify} /> : financeTab !== "Libro mayor" ? (
         <div className="finance-workspace">
           <aside className="payment-list">
             <div className="candidate-filter">
@@ -4929,6 +4951,57 @@ function FinancePanel({ notify }: { notify: (message: string) => void }) {
       )}
     </section>
   );
+}
+
+function PaymentDestinationsManager({ notify }: { notify: (message: string) => void }) {
+  const [destinations, setDestinations] = useState<Array<{ method: "yape" | "plin"; displayName: string; phone: string; status: "active" | "inactive"; hasQr: boolean }>>([]);
+  const [method, setMethod] = useState<"yape" | "plin">("yape");
+  const [displayName, setDisplayName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [status, setStatus] = useState<"active" | "inactive">("inactive");
+  const [qr, setQr] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const load = async () => {
+    const response = await fetch("/api/staff/payment-destinations", { cache: "no-store" });
+    if (!response.ok) return;
+    const body = await response.json() as { destinations: typeof destinations };
+    setDestinations(body.destinations);
+  };
+  // The first load is intentionally tied to mounting; later saves refresh explicitly.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    const current = destinations.find((item) => item.method === method);
+    setDisplayName(current?.displayName ?? "");
+    setPhone(current?.phone ?? "");
+    setStatus(current?.status ?? "inactive");
+    setQr(null);
+  }, [method, destinations]);
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    const form = new FormData();
+    form.set("method", method); form.set("displayName", displayName); form.set("phone", phone); form.set("status", status);
+    if (qr) form.set("qr", qr);
+    const response = await fetch("/api/staff/payment-destinations", { method: "POST", body: form });
+    const body = await response.json() as { error?: string };
+    setSaving(false);
+    if (!response.ok) return notify(body.error === "invalid_qr" ? "El QR debe ser JPG, PNG o WebP y pesar máximo 2 MB" : "Revisa el titular y el celular de nueve dígitos");
+    notify(`${method === "yape" ? "Yape" : "Plin"} actualizado correctamente`);
+    await load();
+  };
+  const selected = destinations.find((item) => item.method === method);
+  return <section className="payment-destinations-manager">
+    <div className="payment-config-copy"><span>CONFIGURACIÓN PROTEGIDA</span><h3>Cuenta oficial de cobro</h3><p>Este nombre, número y QR serán visibles únicamente en el formulario de recarga. Cada cambio queda registrado en auditoría.</p></div>
+    <div className="payment-config-grid">
+      <label>Método<select value={method} onChange={(event) => setMethod(event.target.value as "yape" | "plin")}><option value="yape">Yape</option><option value="plin">Plin</option></select></label>
+      <label>Nombre del titular<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Como aparece al pagar" /></label>
+      <label>Celular<input inputMode="numeric" value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 9))} placeholder="9XXXXXXXX" /></label>
+      <label>Estado<select value={status} onChange={(event) => setStatus(event.target.value as "active" | "inactive")}><option value="inactive">Inactivo</option><option value="active">Activo</option></select></label>
+      <label className="payment-qr-upload">QR oficial<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setQr(event.target.files?.[0] ?? null)} /><span>{qr?.name ?? (selected?.hasQr ? "QR guardado · elige otro para reemplazarlo" : "Selecciona una imagen")}</span></label>
+    </div>
+    <div className="payment-config-actions"><small>{status === "active" ? "Los jugadores podrán enviar recargas a esta cuenta." : "Las recargas con este método permanecerán bloqueadas."}</small><button className="primary-button" disabled={saving} onClick={save}>{saving ? "Guardando…" : "Guardar cuenta"}</button></div>
+  </section>;
 }
 function LedgerPanel({ entries }: { entries: Array<{ id: string; nickname: string; roomId: string | null; type: string; amountCents: number; description: string; createdAt: string }> }) {
   return (

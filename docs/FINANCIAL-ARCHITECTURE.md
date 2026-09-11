@@ -10,6 +10,7 @@ La wallet es una proyección rápida para la interfaz. La fuente contable formal
 - `ledger_transactions`: operación contable en estado `draft`, `posted` o `reversed`.
 - `ledger_entries`: débitos y créditos positivos asociados a una transacción.
 - `outbox_events`: trabajo durable que puede reintentarse después de una falla parcial.
+- `payment_destinations`: cuentas oficiales Yape/Plin visibles para el jugador, versionadas y activables por el propietario.
 
 Una transacción solamente puede pasar a `posted` si tiene como mínimo dos asientos y la suma de débitos es igual a la suma de créditos. D1 impide modificar o borrar sus asientos una vez publicada. Una corrección crea una transacción inversa; nunca altera el historial.
 
@@ -40,8 +41,15 @@ La autorización se evalúa por permiso y admite override individual `allow`/`de
 - `reconciliation.run`
 - `reconciliation.close`
 - `audit.read`
+- `payment.destination.manage`
 
 El rol `admin` no obtiene aprobación de retiros ni ajustes contables por defecto. `owner` conserva todos los permisos. Los overrides explícitos tienen prioridad.
+
+## Cuentas oficiales de cobro
+
+El teléfono, titular, método y estado se guardan en D1. La imagen QR se almacena en R2 y se entrega mediante una ruta controlada; no forma parte del repositorio. Solo `owner` puede crear, reemplazar, activar o desactivar un destino. Cada cambio incrementa su versión, invalida la caché del QR y genera auditoría con el teléfono enmascarado.
+
+Una recarga se rechaza si el método elegido no tiene un destino activo. El servidor valida tanto el MIME como la firma binaria PNG, JPEG o WebP del comprobante y registra su SHA-256 en R2 para preservar evidencia.
 
 ## Recuperación y conciliación
 

@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "../../db";
 import { rolePermissions, userPermissions } from "../../db/schema";
 
-export const FINANCIAL_PERMISSIONS = ["payment.review", "withdrawal.approve", "ledger.read", "ledger.adjust", "reconciliation.run", "reconciliation.close", "audit.read"] as const;
+export const FINANCIAL_PERMISSIONS = ["payment.review", "payment.destination.manage", "withdrawal.approve", "ledger.read", "ledger.adjust", "reconciliation.run", "reconciliation.close", "audit.read"] as const;
 export type FinancialPermission = (typeof FINANCIAL_PERMISSIONS)[number];
 
 const defaults: Record<string, readonly FinancialPermission[]> = {

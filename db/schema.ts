@@ -412,6 +412,22 @@ export const paymentRequests = sqliteTable(
   ],
 );
 
+export const paymentDestinations = sqliteTable(
+  "payment_destinations",
+  {
+    id: text("id").primaryKey(),
+    method: text("method", { enum: ["yape", "plin"] }).notNull().unique(),
+    displayName: text("display_name").notNull(),
+    phone: text("phone").notNull(),
+    qrObjectKey: text("qr_object_key"),
+    status: text("status", { enum: ["active", "inactive"] }).notNull().default("inactive"),
+    version: integer("version").notNull().default(1),
+    updatedById: text("updated_by_id").notNull().references(() => users.id),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [index("idx_payment_destinations_status").on(table.status)],
+);
+
 export const idempotencyKeys = sqliteTable(
   "idempotency_keys",
   {

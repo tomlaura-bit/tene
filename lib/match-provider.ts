@@ -1,16 +1,5 @@
 import { env } from "cloudflare:workers";
-
-type RuntimeEnv = {
-  MATCH_PROVIDER?: "dathost" | "matchzy";
-  DATHOST_EMAIL?: string;
-  DATHOST_PASSWORD?: string;
-  DATHOST_GAME_SERVER_ID?: string;
-  DATHOST_WEBHOOK_TOKEN?: string;
-  DATHOST_SERVER_PASSWORD?: string;
-  MATCHZY_API_URL?: string;
-  MATCHZY_API_TOKEN?: string;
-  MATCHZY_WEBHOOK_SECRET?: string;
-};
+import { matchProviderReadiness, type MatchProviderRuntime } from "./match-provider-config";
 
 export type MatchPlayer = { steamId64: string | null; team: string; nickname?: string | null };
 export type ProvisionInput = {
@@ -33,8 +22,8 @@ const mapNames: Record<string, string> = {
 };
 
 export function matchProviderConfig() {
-  const runtime = env as unknown as RuntimeEnv;
-  const provider = runtime.MATCH_PROVIDER ?? (runtime.DATHOST_GAME_SERVER_ID ? "dathost" : runtime.MATCHZY_API_URL ? "matchzy" : undefined);
+  const runtime = env as unknown as MatchProviderRuntime;
+  const provider = matchProviderReadiness(runtime).provider ?? undefined;
   return {
     provider,
     dathost: {

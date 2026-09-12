@@ -1,5 +1,14 @@
 # Manual operativo de TENE
 
+## Activación del servidor de partidas
+
+Antes de abrir salas con dinero real, `/api/health` debe informar `checks.matchProvider.status: "configured"`. El diagnóstico indica el proveedor elegido y enumera únicamente los nombres de las variables faltantes; nunca expone sus valores.
+
+- DatHost requiere `MATCH_PROVIDER=dathost`, `DATHOST_EMAIL`, `DATHOST_PASSWORD`, `DATHOST_GAME_SERVER_ID` y `DATHOST_WEBHOOK_TOKEN`. `DATHOST_SERVER_PASSWORD` es opcional.
+- MatchZy requiere `MATCH_PROVIDER=matchzy`, `MATCHZY_API_URL`, `MATCHZY_API_TOKEN` y `MATCHZY_WEBHOOK_SECRET`.
+- Realizar una partida cerrada de diez cuentas verificadas y confirmar la secuencia: aprovisionamiento, conexión, inicio, marcador, finalización y revisión del resultado.
+- No habilitar liquidación automática hasta verificar webhooks duplicados, tardíos y con firma inválida en el entorno operativo.
+
 Este documento define la operación mínima segura del servicio. Las acciones administrativas deben ejecutarse con una cuenta `owner` o `admin` y quedar registradas en `audit_logs`.
 
 ## Controles automáticos

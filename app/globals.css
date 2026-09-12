@@ -5723,17 +5723,20 @@ body { min-width:320px; overflow-x:hidden; }
 }
 .wallet-modal:has(.voucher-form) { width:min(100%,980px); }
 .payment-destination-card {
-  --payment-qr-size:clamp(220px,25vw,300px);
-  grid-template-columns:var(--payment-qr-size) minmax(0,1fr);
-  gap:clamp(18px,3vw,34px);
-  padding:clamp(18px,3vw,28px);
+  --payment-qr-size:clamp(260px,30vw,340px);
+  grid-template-columns:1fr;
+  justify-items:center;
+  gap:0;
+  border:0;
+  background:transparent;
+  padding:0;
 }
 .payment-destination-card > div {
   position:relative;
   width:var(--payment-qr-size);
-  height:var(--payment-qr-size);
-  border:10px solid #fff;
-  border-radius:14px;
+  height:calc(var(--payment-qr-size) * 1.058);
+  border:0;
+  border-radius:13px;
 }
 /* The official Yape artwork contains a large portrait canvas. This viewport
    presents its untouched QR pixels at scanning size without modifying them. */
@@ -5749,6 +5752,7 @@ body { min-width:320px; overflow-x:hidden; }
 }
 .payment-destination-card strong { font-size:clamp(1.1rem,2vw,1.35rem); overflow-wrap:anywhere; }
 .payment-destination-card b { font-size:clamp(1.45rem,3vw,2rem); overflow-wrap:anywhere; }
+.payment-destination-card > p { display:none; }
 
 /* The public landing and authenticated shell share one centered width and
    spacing scale, so browser zoom produces reflow instead of clipping. */
@@ -5795,8 +5799,7 @@ body { min-width:320px; overflow-x:hidden; }
   .modal-backdrop { align-items:start; }
   .wallet-modal,.modal-card { padding:20px 16px; }
   .voucher-form { grid-template-columns:1fr; }
-  .payment-destination-card { --payment-qr-size:min(78vw,300px); grid-template-columns:1fr; justify-items:center; text-align:center; }
-  .payment-destination-card p { justify-items:center; }
+  .payment-destination-card { --payment-qr-size:min(82vw,340px); }
   .app-bg[data-section="Salas"] .rooms-section { padding-inline:16px; }
   .landing-page > header { flex-wrap:wrap; padding-inline:20px; }
   .landing-page > header nav { display:flex; order:3; width:100%; gap:20px; }

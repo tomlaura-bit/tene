@@ -6023,3 +6023,108 @@ body { background:var(--tene-bg); }
 /* Keep the expanded landing composition after the compact theme overrides. */
 .landing-simple { display:grid; grid-template-columns:minmax(0,1fr) minmax(360px,.78fr); }
 @media (max-width:1000px) { .landing-simple { grid-template-columns:1fr; } }
+
+/* TENE identity system — electric violet, arctic blue and arena graphite. */
+:root {
+  --tene-bg:#080a12;
+  --tene-sidebar:#0b0d15;
+  --tene-surface:#111522;
+  --tene-surface-raised:#171c2b;
+  --tene-line:#2a3042;
+  --tene-accent:#8d5cff;
+  --tene-accent-hover:#a77bff;
+  --tene-accent-2:#39c6ff;
+  --tene-accent-soft:rgba(141,92,255,.14);
+  --tene-text:#f7f7fb;
+  --tene-text-muted:#aeb4c4;
+  --tene-text-subtle:#747b8e;
+  --tene-radius:12px;
+}
+body {
+  background:#080a12;
+  color:var(--tene-text);
+  background-image:radial-gradient(circle at 82% -10%,rgba(54,101,255,.13),transparent 36%),radial-gradient(circle at 12% 90%,rgba(141,92,255,.08),transparent 32%);
+  background-attachment:fixed;
+}
+.landing-page {
+  background-color:#080a12;
+  background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+  background-size:72px 72px;
+}
+.landing-page::before {
+  background-image:linear-gradient(90deg,#080a12 0%,rgba(8,10,18,.94) 35%,rgba(8,10,18,.34) 72%,rgba(8,10,18,.12) 100%),linear-gradient(0deg,#080a12 0%,transparent 38%),url('/tene-competitive-hero.webp');
+  filter:saturate(1.12) contrast(1.06);
+}
+.landing-page > header {
+  background:linear-gradient(90deg,rgba(8,10,18,.98),rgba(13,16,28,.96));
+  border-color:rgba(133,147,185,.18);
+}
+.brand-mark { background:linear-gradient(145deg,#9869ff,#5636d6); border-color:#ba9aff; color:white; box-shadow:0 8px 30px rgba(118,72,255,.34); }
+.gradient-text { background:linear-gradient(100deg,#8f60ff 5%,#c586ff 48%,#54c8ff 100%); background-clip:text; color:transparent; }
+.primary-button,.landing-match-foot button { background:linear-gradient(135deg,#7447ed,#9d5fff 62%,#4dbcf5); box-shadow:0 12px 34px rgba(113,67,232,.3); }
+.landing-match-card { border-color:rgba(145,100,255,.42); background:linear-gradient(155deg,rgba(20,24,39,.96),rgba(10,12,21,.96)); box-shadow:0 32px 100px rgba(0,0,0,.58),0 0 80px rgba(92,72,230,.16); }
+.landing-match-stage { background:radial-gradient(circle at 50% 35%,rgba(69,178,255,.18),transparent 28%),radial-gradient(circle at 50% 70%,rgba(150,85,255,.29),transparent 38%),linear-gradient(155deg,#151a2a,#090c15 72%); }
+.landing-room-strip { border-color:#2a3042; background:linear-gradient(90deg,#0c1019,#111426 50%,#0c1019); }
+.landing-process { background:linear-gradient(180deg,#0a0d16,#0d101a) !important; }
+.landing-process-grid article { border-color:#2c3348 !important; background:linear-gradient(145deg,#151927,#0f131e); box-shadow:inset 0 1px rgba(255,255,255,.025); }
+.landing-process-grid article:hover { transform:translateY(-3px); border-color:rgba(141,92,255,.55) !important; background:linear-gradient(145deg,#1b2032,#121625); }
+.landing-final-cta { border-color:rgba(141,92,255,.45); background:radial-gradient(circle at 82% 25%,rgba(45,190,255,.2),transparent 30%),radial-gradient(circle at 64% 100%,rgba(141,92,255,.38),transparent 42%),linear-gradient(120deg,#15182a,#0b0e18 68%); }
+.ranking-card,.landing-ranking .ranking-card { border-color:#30374c; background:linear-gradient(155deg,#151927,#0e121c); }
+.ranking-row:hover { background:rgba(141,92,255,.08); }
+
+/* Authenticated arena: a single centered grid and recognizable TENE depth. */
+.app-bg,.app-bg[data-section] {
+  background-color:#0a0d14 !important;
+  background-image:radial-gradient(circle at 78% 5%,rgba(62,88,203,.09),transparent 32%),linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px) !important;
+  background-size:auto,64px 64px,64px 64px !important;
+  background-attachment:fixed !important;
+}
+.app-sidebar {
+  background:linear-gradient(180deg,#0d1019,#090c13 72%);
+  border-color:#252b3a;
+  box-shadow:10px 0 35px rgba(0,0,0,.22);
+}
+.dashboard-topbar,.app-bg .dashboard-topbar {
+  background:rgba(10,13,21,.94);
+  border-color:#252b3a;
+  box-shadow:0 12px 34px rgba(0,0,0,.16);
+}
+.app-content { padding-inline:clamp(24px,4vw,64px); }
+.app-content > :where(.app-header,.dashboard-grid,.account-panel,.legal-panel,.section-panel,.sidebar-destination-panel,.benefits-panel,.conduct-panel,.community-panel,.notifications-panel,.public-profile-panel,.staff-panel,.finance-panel) { width:min(100%,1280px); }
+.app-header { min-height:136px; padding-top:42px !important; }
+.app-header h1 { font-size:clamp(2.5rem,4vw,4rem) !important; }
+.app-header::after { background:linear-gradient(90deg,var(--tene-accent),var(--tene-accent-2)) !important; width:96px !important; }
+.sidebar-primary-group > button,.sidebar-lower-group > button { min-height:46px; border-radius:9px; font-size:.875rem; }
+.sidebar-primary-group > button.active,.sidebar-lower-group > button.active { border-color:rgba(141,92,255,.4); background:linear-gradient(90deg,rgba(141,92,255,.2),rgba(57,198,255,.045)); box-shadow:inset 3px 0 #9e73ff,0 8px 24px rgba(0,0,0,.14); }
+.player-sidebar-nav .sidebar-lower-group .discord-sidebar,.player-sidebar-nav .sidebar-lower-group .discord-sidebar:hover { background:linear-gradient(135deg,#5865f2,#6d5df5); box-shadow:0 12px 30px rgba(64,74,210,.22); }
+.app-bg :where(.verification-card,.wallet-card,.rooms-panel,.stats-card,.activity-card,.account-surface,.room-row-rich,.rooms-chat,.chat-layout,.benefits-hero,.rewards-board,.conduct-hero,.conduct-status,.sanction-history,.ranking-card,.balance-builder,.season-board,.wallet-hero,.wallet-ledger,.legal-hero,.legal-grid article,.legal-note,.legal-acceptance-card,.staff-surface,.finance-card,.sidebar-destination-panel,.destination-empty,.destination-steps article,.destination-faq details) {
+  border-color:#2b3245;
+  background:linear-gradient(145deg,rgba(20,24,38,.98),rgba(14,18,28,.98));
+  box-shadow:0 16px 44px rgba(0,0,0,.16),inset 0 1px rgba(255,255,255,.025);
+}
+.app-bg :where(.verification-card,.wallet-card,.room-row-rich,.legal-grid article,.destination-steps article):hover { border-color:rgba(141,92,255,.5); background:linear-gradient(145deg,#1a2031,#121725); transform:translateY(-1px); }
+.rooms-section { max-width:1280px; }
+.rooms-list { gap:14px; }
+.room-row-rich { position:relative; min-height:112px; overflow:hidden; padding:18px 20px; }
+.room-row-rich::before { content:""; position:absolute; inset:0 auto 0 0; width:3px; border-radius:12px 0 0 12px; background:linear-gradient(180deg,var(--tene-accent),var(--tene-accent-2)); opacity:.7; }
+.rooms-chat { background:linear-gradient(180deg,#121625,#0d111b) !important; border-left-color:#343b50 !important; box-shadow:-18px 0 50px rgba(0,0,0,.22) !important; }
+.rooms-chat-header { background:rgba(15,19,31,.92); border-color:#2b3245; }
+.rooms-chat-message > span:first-child { background:linear-gradient(145deg,#34215f,#1d274b); border:1px solid rgba(143,104,255,.25); }
+.topbar-balance,.profile-trigger { border-color:#30384c !important; background:linear-gradient(145deg,#151a28,#0e121c) !important; }
+.level,.verified-badge { border-color:rgba(57,198,255,.25); background:rgba(57,198,255,.08); color:#6bd4ff; }
+.room-enter,.join-button,.create-room-action,.rooms-chat-compose button { background:linear-gradient(135deg,#7548ee,#955dff) !important; color:white !important; box-shadow:0 9px 24px rgba(117,72,238,.23); }
+.app-bg :where(input,select,textarea) { border-color:#30384c; background:#0c101a; }
+.app-bg :where(input,select,textarea):focus { border-color:#8d5cff; outline:3px solid rgba(141,92,255,.13); }
+.destination-empty { min-height:270px; display:flex; flex-direction:column; justify-content:center; }
+.destination-empty::before { content:"T"; display:grid; place-items:center; width:54px; height:54px; margin-bottom:20px; border:1px solid #4a3b73; border-radius:14px; background:linear-gradient(145deg,#312052,#17203c); color:#cbb7ff; font-weight:900; }
+
+@media (max-width:1200px) {
+  .app-content { padding-inline:24px; }
+  .app-header { min-height:120px; }
+}
+@media (max-width:760px) {
+  .app-content { padding-inline:16px; }
+  .app-header { min-height:108px; padding-top:26px !important; }
+  .app-header h1 { font-size:2.4rem !important; }
+  .room-row-rich { min-height:104px; padding:16px; }
+}

@@ -5280,6 +5280,113 @@ button {
   .landing-page::before { background-image:linear-gradient(90deg,rgba(5,5,9,.92),rgba(5,5,9,.72)),linear-gradient(0deg,#09080d,transparent 55%),url('/tene-competitive-hero.webp'); background-position:68% center; opacity:.72; }
 }
 
+/* Public landing — competitive arena narrative. */
+.landing-simple {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(360px,.78fr);
+  gap:clamp(36px,6vw,90px);
+  align-items:center;
+}
+.landing-hero-copy { min-width:0; }
+.landing-match-card {
+  overflow:hidden;
+  border:1px solid rgba(179,139,255,.3);
+  border-radius:12px;
+  background:rgba(12,14,18,.88);
+  box-shadow:0 32px 90px rgba(0,0,0,.55),0 0 70px rgba(139,92,246,.12);
+  backdrop-filter:blur(14px);
+}
+.landing-match-head,.landing-match-foot { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:16px 18px; }
+.landing-match-head { border-bottom:1px solid rgba(255,255,255,.08); font-size:.73rem; font-weight:800; letter-spacing:.12em; }
+.landing-match-head span { display:flex; align-items:center; gap:9px; }
+.landing-match-head i { width:7px; height:7px; border-radius:50%; background:var(--tene-success); box-shadow:0 0 12px var(--tene-success); }
+.landing-match-head small { color:var(--tene-text-subtle); font-size:.68rem; }
+.landing-match-stage {
+  position:relative;
+  min-height:330px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  background:radial-gradient(circle at 50% 42%,rgba(155,99,255,.28),transparent 38%),linear-gradient(155deg,#151320,#0a0d11 70%);
+  text-align:center;
+}
+.landing-match-stage::before { content:""; position:absolute; inset:0; opacity:.28; background:repeating-linear-gradient(90deg,transparent 0 79px,rgba(255,255,255,.04) 80px); }
+.landing-match-stage > * { position:relative; }
+.match-kicker { color:#b995ff; font-size:.66rem; font-weight:800; letter-spacing:.22em; }
+.landing-match-stage > strong { margin-top:13px; font-size:clamp(2rem,4vw,3.4rem); letter-spacing:-.06em; }
+.landing-match-stage > p { margin-top:6px; color:var(--tene-text-muted); font-size:.78rem; letter-spacing:.16em; }
+.match-versus { display:flex; align-items:center; gap:25px; margin-top:35px; }
+.match-versus b { display:grid; place-items:center; width:58px; height:58px; border:1px solid #514268; border-radius:10px; background:#211a31; color:#d7c0ff; font-size:1.1rem; }
+.match-versus span { color:#76727d; font-size:.72rem; font-weight:800; }
+.landing-match-foot { border-top:1px solid rgba(255,255,255,.08); }
+.landing-match-foot > span { display:flex; flex-direction:column; color:#777b82; font-size:.6rem; letter-spacing:.12em; }
+.landing-match-foot strong { margin-top:2px; color:#fff; font-size:.9rem; letter-spacing:0; }
+.landing-match-foot button,.landing-room-strip button { min-height:39px; border-radius:7px; background:var(--tene-accent); padding:0 16px; color:#fff; font-size:.72rem; font-weight:900; }
+.landing-room-strip { width:100% !important; max-width:none; border-block:1px solid var(--tene-line); background:#0d1013; }
+.landing-room-strip > div { width:min(100% - 40px,1280px); min-height:98px; margin:auto; display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:32px; }
+.room-strip-copy { display:flex; align-items:center; gap:14px; }
+.room-strip-copy p { display:flex; flex-direction:column; margin:0; }
+.room-strip-copy strong { font-size:.92rem; }
+.room-strip-copy small { margin-top:3px; color:var(--tene-text-subtle); font-size:.72rem; }
+.room-strip-slots { display:flex; }
+.room-strip-slots span { display:grid; place-items:center; width:35px; height:35px; margin-left:-3px; border:1px solid #30353b; border-radius:50%; background:#121519; color:#5f646b; font:700 .65rem var(--font-geist-mono); }
+.room-strip-slots span.filled { z-index:1; border-color:#8b5cf6; background:#2b1e43; color:#fff; }
+.landing-room-strip button { border:1px solid #3c334a; background:#171a1e; }
+.landing-room-strip button span { margin-left:12px; color:#b995ff; }
+.landing-section-heading { width:min(100% - 40px,1280px); margin:0 auto 32px; padding-top:76px; }
+.landing-section-heading h2 { margin-top:17px; font-size:clamp(2.1rem,4vw,3.8rem); font-weight:900; letter-spacing:-.055em; }
+.landing-section-heading > p { margin-top:10px; color:var(--tene-text-muted); font-size:1rem; }
+.landing-process { padding-bottom:76px; background:#0b0d10 !important; }
+.landing-process-grid { width:min(100% - 40px,1280px); margin:auto; display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.landing-process-grid article { min-height:190px; border:1px solid var(--tene-line) !important; border-radius:9px; background:#121518; padding:25px; }
+.landing-process-grid article h3 { font-size:1rem; }
+.landing-process-grid article p { color:var(--tene-text-muted) !important; font-size:.86rem; }
+.landing-ranking { padding-block:100px !important; }
+.landing-ranking .ranking-card { align-self:center; overflow:hidden; border:1px solid var(--tene-line); background:#111417; }
+.landing-fair-play { width:min(100% - 40px,1280px) !important; margin:auto; padding:90px 0; display:grid; grid-template-columns:.9fr 1.1fr; gap:clamp(44px,8vw,120px); border-top:1px solid var(--tene-line); }
+.landing-fair-copy h2 { margin-top:20px; font-size:clamp(2.3rem,4.5vw,4.5rem); font-weight:900; line-height:.98; letter-spacing:-.065em; }
+.landing-fair-copy > p { max-width:570px; margin-top:24px; color:var(--tene-text-muted); font-size:1rem; line-height:1.75; }
+.landing-fair-copy button { margin-top:28px; }
+.landing-principles { display:flex; flex-direction:column; justify-content:center; }
+.landing-principles article { display:grid; grid-template-columns:48px 1fr; gap:18px; padding:25px 0; border-bottom:1px solid var(--tene-line); }
+.landing-principles article:first-child { border-top:1px solid var(--tene-line); }
+.landing-principles article > span { color:#a77aff; font:700 .75rem var(--font-geist-mono); }
+.landing-principles strong { font-size:1rem; }
+.landing-principles p { margin-top:6px; color:var(--tene-text-muted); font-size:.86rem; }
+.landing-final-cta { width:min(100% - 40px,1280px) !important; margin:0 auto 72px; overflow:hidden; border:1px solid #3c3150; border-radius:12px; background:radial-gradient(circle at 85% 35%,rgba(155,99,255,.32),transparent 34%),linear-gradient(120deg,#15121d,#0e1115 65%); }
+.landing-final-cta > div { padding:clamp(36px,7vw,84px); }
+.landing-final-cta > div > span { color:#b894ff; font-size:.7rem; font-weight:800; letter-spacing:.18em; }
+.landing-final-cta h2 { margin:16px 0 30px; font-size:clamp(2.6rem,6vw,5.8rem); font-weight:900; line-height:.9; letter-spacing:-.07em; }
+.landing-page footer { background:#080a0c; }
+
+@media (max-width:1000px) {
+  .landing-simple { grid-template-columns:1fr; padding-top:72px !important; }
+  .landing-match-card { width:min(100%,680px); }
+  .landing-room-strip > div { grid-template-columns:1fr auto; padding-block:20px; }
+  .room-strip-slots { grid-column:1/-1; grid-row:2; }
+  .landing-process-grid { grid-template-columns:repeat(2,1fr); }
+  .landing-fair-play { grid-template-columns:1fr; }
+}
+@media (max-width:620px) {
+  .landing-simple { gap:38px; }
+  .landing-match-stage { min-height:260px; }
+  .landing-match-foot { flex-wrap:wrap; }
+  .landing-match-foot button { width:100%; }
+  .landing-room-strip > div { grid-template-columns:1fr; gap:18px; }
+  .landing-room-strip button { width:100%; }
+  .room-strip-slots { grid-column:1; grid-row:auto; max-width:100%; overflow:hidden; }
+  .room-strip-slots span { flex:0 0 32px; height:32px; }
+  .landing-section-heading { padding-top:56px; }
+  .landing-process { padding-bottom:56px; }
+  .landing-process-grid { grid-template-columns:1fr; }
+  .landing-process-grid article { min-height:0; }
+  .landing-ranking { padding-block:64px !important; }
+  .landing-fair-play { padding-block:64px; }
+  .landing-final-cta { margin-bottom:40px; }
+}
+
 /* Player shell v3 — neutral FACEIT-inspired structure, original TENE styling. */
 .app-bg { background:#171717 !important; background-image:none !important; }
 .app-sidebar {
@@ -5912,3 +6019,7 @@ body { background:var(--tene-bg); }
   .landing-page > header nav :where(a,button) { flex:1; min-height:36px; padding:7px 8px; }
   .landing-simple { align-items:flex-start; }
 }
+
+/* Keep the expanded landing composition after the compact theme overrides. */
+.landing-simple { display:grid; grid-template-columns:minmax(0,1fr) minmax(360px,.78fr); }
+@media (max-width:1000px) { .landing-simple { grid-template-columns:1fr; } }

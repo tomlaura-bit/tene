@@ -313,7 +313,7 @@ export default function Home() {
       </header>
 
       <section className="landing-simple relative z-10 mx-auto max-w-[1440px] px-5 pb-20 pt-12 md:px-10 lg:pb-28 lg:pt-24">
-        <div className="max-w-3xl">
+        <div className="landing-hero-copy">
           <div className="eyebrow">
             <span /> CS2 competitivo · Perú
           </div>
@@ -325,8 +325,8 @@ export default function Home() {
             GANA.
           </h1>
           <p className="mt-7 max-w-lg text-base leading-7 text-white/55 md:text-lg">
-            Partidas privadas 5v5 de CS2 para la comunidad peruana. Entra,
-            compite con jugadores de tu nivel y demuestra tu juego.
+            Salas privadas 5v5 de CS2 para la comunidad peruana. Entra solo o
+            con tu equipo, compite en partidas organizadas y demuestra tu juego.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-4">
             <button className="primary-button" onClick={joinRoom}>
@@ -356,13 +356,48 @@ export default function Home() {
             <span>EQUIPO</span>
           </div>
         </div>
+        <aside className="landing-match-card" aria-label="Vista previa de una sala competitiva">
+          <div className="landing-match-head">
+            <span><i /> SALA ABIERTA</span>
+            <small>LIMA · PERÚ</small>
+          </div>
+          <div className="landing-match-stage">
+            <span className="match-kicker">PRÓXIMA PARTIDA</span>
+            <strong>TENE ARENA</strong>
+            <p>5 VS 5 · DRAFT BALANCEADO</p>
+            <div className="match-versus"><b>CT</b><span>VS</span><b>TR</b></div>
+          </div>
+          <div className="landing-match-foot">
+            <span>ENTRADA <strong>S/ 6</strong></span>
+            <span>PREMIO <strong>S/ 10</strong></span>
+            <button onClick={joinRoom}>UNIRME ↗</button>
+          </div>
+        </aside>
+      </section>
+
+      <section className="landing-room-strip relative z-10">
+        <div>
+          <div className="room-strip-copy">
+            <span className="live-pulse" />
+            <p><strong>Salas listas para jugar</strong><small>10 puestos visibles · un solo chat general · nivel abierto</small></p>
+          </div>
+          <div className="room-strip-slots" aria-label="Diez puestos de jugadores">
+            {Array.from({ length: 10 }, (_, index) => <span className={index === 0 ? "filled" : ""} key={index}>{index === 0 ? "T" : index + 1}</span>)}
+          </div>
+          <button onClick={joinRoom}>Ver salas <span>→</span></button>
+        </div>
       </section>
 
       <section
         id="como-funciona"
-        className="relative z-10 border-y border-white/7 bg-white/[0.018]"
+        className="landing-process relative z-10 border-y border-white/7 bg-white/[0.018]"
       >
-        <div className="mx-auto grid max-w-[1440px] grid-cols-2 gap-px md:grid-cols-4">
+        <div className="landing-section-heading">
+          <div className="eyebrow"><span /> DE LA SALA AL SERVIDOR</div>
+          <h2>Competir debe ser simple.</h2>
+          <p>Nosotros organizamos la partida. Tú concéntrate en jugar.</p>
+        </div>
+        <div className="landing-process-grid">
           {[
             [
               "01",
@@ -372,7 +407,7 @@ export default function Home() {
             [
               "02",
               "Recarga tu saldo",
-              "Agrega saldo y reserva tu lugar en una sala.",
+              "Agrega saldo con Yape o Plin y únete a una sala.",
             ],
             [
               "03",
@@ -401,7 +436,7 @@ export default function Home() {
 
       <section
         id="ranking"
-        className="relative z-10 mx-auto grid max-w-[1440px] gap-10 px-5 py-20 md:px-10 lg:grid-cols-[.7fr_1.3fr]"
+        className="landing-ranking relative z-10 mx-auto grid max-w-[1440px] gap-10 px-5 py-20 md:px-10 lg:grid-cols-[.7fr_1.3fr]"
       >
         <div>
           <div className="eyebrow">
@@ -430,6 +465,28 @@ export default function Home() {
               <span className="ml-auto font-mono text-sm">NIVEL {player.level}</span>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="landing-fair-play relative z-10">
+        <div className="landing-fair-copy">
+          <div className="eyebrow"><span /> COMPETENCIA CON REGLAS CLARAS</div>
+          <h2>Tu partida. Tu nivel.<br />Sin ventajas ocultas.</h2>
+          <p>Perfiles verificados, conducta registrada y resultados confirmados. Cada sala está diseñada para que el resultado dependa del equipo.</p>
+          <button className="secondary-button" onClick={() => setSteamOpen(true)}>Crear mi cuenta</button>
+        </div>
+        <div className="landing-principles">
+          <article><span>01</span><div><strong>Identidad verificada</strong><p>Steam vinculado y revisión inicial antes de competir.</p></div></article>
+          <article><span>02</span><div><strong>Equipos balanceados</strong><p>Draft visible con jugadores de todos los niveles.</p></div></article>
+          <article><span>03</span><div><strong>Economía transparente</strong><p>Entrada, saldo bloqueado y premio siempre visibles.</p></div></article>
+        </div>
+      </section>
+
+      <section className="landing-final-cta relative z-10">
+        <div>
+          <span>LA PRÓXIMA RONDA EMPIEZA CONTIGO</span>
+          <h2>Entra a la sala.<br />Haz que cuente.</h2>
+          <button className="primary-button" onClick={joinRoom}>Jugar ahora <span>↗</span></button>
         </div>
       </section>
 

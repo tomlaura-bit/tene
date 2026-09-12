@@ -5820,3 +5820,95 @@ body { min-width:320px; overflow-x:hidden; }
   .landing-page > header .steam-button { margin-left:auto; }
   .landing-simple { min-height:calc(100dvh - 132px); padding-top:48px !important; padding-bottom:64px !important; }
 }
+
+/* TENE arena UI — compact, high-contrast esports direction inspired by the
+   information density of modern competitive platforms. */
+:root {
+  --tene-accent:#9b63ff;
+  --tene-accent-hover:#b487ff;
+  --tene-accent-soft:rgba(155,99,255,.12);
+  --tene-bg:#090b0d;
+  --tene-sidebar:#0d0f11;
+  --tene-surface:#121518;
+  --tene-surface-raised:#181c20;
+  --tene-line:#282d32;
+  --tene-text:#f7f7f8;
+  --tene-text-muted:#a2a7ad;
+  --tene-text-subtle:#6f757c;
+  --tene-radius:9px;
+}
+body { background:var(--tene-bg); }
+.landing-page { background:var(--tene-bg); }
+.landing-page::before {
+  height:min(900px,100vh);
+  background-image:linear-gradient(90deg,#090b0d 0%,rgba(9,11,13,.96) 32%,rgba(9,11,13,.42) 65%,rgba(9,11,13,.14) 100%),linear-gradient(0deg,var(--tene-bg) 0%,transparent 38%),url('/tene-competitive-hero.webp');
+}
+.landing-page > header {
+  position:sticky;
+  top:0;
+  z-index:40;
+  max-width:none !important;
+  padding:14px max(24px,calc((100vw - 1280px)/2)) !important;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  background:rgba(9,11,13,.92);
+  backdrop-filter:blur(16px);
+}
+.landing-page > header nav { gap:8px !important; }
+.landing-page > header nav :where(a,button) {
+  min-height:40px;
+  padding:9px 15px;
+  border:1px solid transparent;
+  border-radius:7px;
+  color:#9ca1a7;
+  font-weight:700;
+}
+.landing-page > header nav :where(a,button):hover,
+.landing-page > header nav button.text-white { border-color:#34303d; background:#17191d; color:#fff; box-shadow:inset 0 -2px var(--tene-accent); }
+.brand-mark { border-color:var(--tene-accent); background:linear-gradient(145deg,#24183a,#111319); color:#d9c5ff; box-shadow:0 0 24px rgba(155,99,255,.18); }
+.steam-button { border-color:#30343a; border-radius:7px; background:#15181b; }
+.steam-button:hover { border-color:var(--tene-accent); background:#1a1d21; }
+.landing-simple { display:flex; align-items:center; min-height:calc(100dvh - 69px); }
+.landing-simple .eyebrow { color:#c3a6ff; }
+.landing-simple h1 { max-width:700px; text-transform:uppercase; text-shadow:0 14px 50px rgba(0,0,0,.62); }
+.gradient-text { background:linear-gradient(95deg,#8b5cf6,#d8b4fe); background-clip:text; color:transparent; }
+.primary-button { border-radius:7px; background:linear-gradient(135deg,#8b4df2,#a765ff); box-shadow:0 10px 30px rgba(139,77,242,.24); }
+.primary-button:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 14px 38px rgba(139,77,242,.34); }
+#como-funciona article { border-color:#252a2f; border-radius:9px; background:#111417; }
+
+.app-bg,.app-bg[data-section] { background:var(--tene-bg) !important; color:var(--tene-text); }
+.app-sidebar { border-right:1px solid var(--tene-line); background:var(--tene-sidebar); }
+.dashboard-topbar,.app-bg .dashboard-topbar { border-bottom:1px solid var(--tene-line); background:rgba(13,15,17,.97); backdrop-filter:blur(14px); }
+.sidebar-primary-group > button,.sidebar-lower-group > button { color:#9da2a8; font-size:13px; }
+.sidebar-primary-group > button:hover,.sidebar-lower-group > button:hover { background:#171a1e; }
+.sidebar-primary-group > button.active,.sidebar-lower-group > button.active {
+  border:1px solid #342d42;
+  background:linear-gradient(90deg,rgba(155,99,255,.16),rgba(155,99,255,.035));
+  color:#fff;
+  box-shadow:inset 3px 0 var(--tene-accent);
+}
+.app-header { min-height:108px; border-color:var(--tene-line) !important; }
+.app-header::after { width:76px !important; background:var(--tene-accent) !important; box-shadow:0 0 14px rgba(155,99,255,.35) !important; }
+.app-header h1 { font-size:clamp(2rem,3.4vw,3.15rem) !important; letter-spacing:-.035em; text-shadow:none !important; }
+.app-header .eyebrow { color:#ad83ff !important; }
+.app-bg :where(.verification-card,.wallet-card,.rooms-panel,.stats-card,.activity-card,.account-surface,.room-row-rich,.rooms-chat,.chat-layout,.benefits-hero,.rewards-board,.conduct-hero,.conduct-status,.sanction-history,.ranking-card,.balance-builder,.season-board,.wallet-hero,.wallet-ledger,.legal-hero,.legal-grid article,.legal-note,.legal-acceptance-card,.staff-surface,.finance-card,.sidebar-destination-panel,.destination-empty,.destination-steps article,.destination-faq details) {
+  border-color:var(--tene-line);
+  background:var(--tene-surface);
+  box-shadow:none;
+  backdrop-filter:none;
+}
+.app-bg :where(.verification-card,.wallet-card,.room-row-rich,.legal-grid article,.destination-steps article) { transition:border-color .18s ease,background .18s ease,transform .18s ease; }
+.app-bg :where(.verification-card,.wallet-card,.room-row-rich,.legal-grid article,.destination-steps article):hover { border-color:#3b3448; background:var(--tene-surface-raised); }
+.topbar-balance,.profile-trigger { border-color:#30353b !important; background:#15181b !important; }
+.panel-title,.section-intro,.account-title { border-color:var(--tene-line) !important; }
+.verified-badge { border-color:rgba(52,211,153,.28); background:rgba(52,211,153,.07); }
+.room-enter,.join-button,.create-room-action { border-radius:7px !important; }
+.wallet-modal,.modal-card,.profile-dropdown { border-color:#34303d; background:#111418; box-shadow:0 26px 80px rgba(0,0,0,.65); }
+.app-bg :where(input,select,textarea) { border-color:#30353b; background:#0d0f12; }
+.app-bg :where(input,select,textarea):focus { border-color:var(--tene-accent); outline:2px solid rgba(155,99,255,.12); }
+
+@media (max-width:760px) {
+  .landing-page > header { padding:12px 18px !important; }
+  .landing-page > header nav { border-top:1px solid rgba(255,255,255,.06); padding-top:8px; }
+  .landing-page > header nav :where(a,button) { flex:1; min-height:36px; padding:7px 8px; }
+  .landing-simple { align-items:flex-start; }
+}

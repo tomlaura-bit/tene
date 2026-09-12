@@ -5699,3 +5699,103 @@ button {
 .app-bg .profile-dropdown a { color:var(--tene-danger); }
 .player-sidebar-nav .sidebar-lower-group .discord-sidebar,.player-sidebar-nav .sidebar-lower-group .discord-sidebar:hover { border-color:rgba(88,101,242,.45); background:var(--tene-discord); color:#fff; }
 .player-sidebar-nav .sidebar-lower-group .discord-sidebar > span { background:rgba(255,255,255,.16); }
+
+/* Responsive stabilization — zoom, vertical scrolling and payment scanning. */
+html { min-width:320px; scroll-behavior:smooth; }
+body { min-width:320px; overflow-x:hidden; }
+.app-bg,.app-content { min-height:100dvh; height:auto; }
+.app-sidebar { max-height:100dvh; overflow-y:auto; overscroll-behavior:contain; }
+.dashboard-topbar { min-width:0; }
+.topbar-account,.profile-menu-wrap,.profile-trigger { min-width:0; }
+.modal-backdrop {
+  z-index:200;
+  align-items:center;
+  overflow-x:hidden;
+  overflow-y:auto;
+  padding:clamp(12px,3vw,32px);
+}
+.wallet-modal,.modal-card {
+  width:min(100%,980px);
+  max-width:980px;
+  max-height:calc(100dvh - 2 * clamp(12px,3vw,32px));
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+.wallet-modal:has(.voucher-form) { width:min(100%,980px); }
+.payment-destination-card {
+  --payment-qr-size:clamp(220px,25vw,300px);
+  grid-template-columns:var(--payment-qr-size) minmax(0,1fr);
+  gap:clamp(18px,3vw,34px);
+  padding:clamp(18px,3vw,28px);
+}
+.payment-destination-card > div {
+  width:var(--payment-qr-size);
+  height:var(--payment-qr-size);
+  border:10px solid #fff;
+  border-radius:14px;
+}
+/* The official Yape artwork contains a large portrait canvas. This viewport
+   presents its untouched QR pixels at scanning size without modifying them. */
+.payment-destination-card img {
+  width:calc(var(--payment-qr-size) * 1.724);
+  max-width:none;
+  height:calc(var(--payment-qr-size) * 2.438);
+  object-fit:fill;
+  transform:translateY(calc(var(--payment-qr-size) * -.507));
+}
+.payment-destination-card strong { font-size:clamp(1.1rem,2vw,1.35rem); overflow-wrap:anywhere; }
+.payment-destination-card b { font-size:clamp(1.45rem,3vw,2rem); overflow-wrap:anywhere; }
+
+/* The public landing and authenticated shell share one centered width and
+   spacing scale, so browser zoom produces reflow instead of clipping. */
+.landing-page > header,
+.landing-page > section { width:min(100%,1440px); }
+.landing-page > header { gap:24px; }
+.landing-page nav { flex-wrap:wrap; justify-content:center; }
+.landing-simple { min-height:min(760px,calc(100dvh - 78px)); padding-inline:clamp(20px,4vw,56px) !important; }
+.landing-page :where(p,button,a) { line-height:1.5; }
+
+@media (max-width:1200px) {
+  .app-sidebar {
+    inset:64px 0 auto;
+    width:100%;
+    min-height:0;
+    height:58px;
+    max-height:58px;
+    overflow:hidden;
+    padding:7px 10px;
+    border-right:0;
+    border-bottom:1px solid #2b2b2b;
+  }
+  .app-sidebar .sidebar-brand,.app-sidebar .sidebar-bottom,.sidebar-rule { display:none; }
+  .app-sidebar .player-sidebar-nav { flex-direction:row; gap:4px; margin:0; overflow-x:auto; overflow-y:hidden; }
+  .sidebar-primary-group,.sidebar-lower-group { display:contents; }
+  .sidebar-primary-group > button,.sidebar-lower-group > button { width:auto; min-width:max-content; min-height:42px; padding:9px 12px; }
+  .player-sidebar-nav .sidebar-lower-group .discord-sidebar { display:flex; min-height:42px; margin:0; padding:9px 12px; }
+  .player-sidebar-nav .sidebar-lower-group .discord-sidebar > span { width:22px; height:22px; }
+  .dashboard-topbar,.app-bg[data-section="Salas"] .dashboard-topbar { left:0; }
+  .app-content,.app-bg[data-section="Salas"] .app-content { width:100% !important; margin-left:0 !important; padding-top:122px; }
+  .app-bg[data-section="Salas"] .rooms-section { padding-right:32px; }
+  .app-bg[data-section="Salas"] .rooms-chat {
+    position:static;
+    display:grid;
+    width:100%;
+    height:clamp(440px,68dvh,680px);
+    margin-top:24px;
+    border:1px solid #2b2b2b;
+    border-radius:var(--tene-radius);
+  }
+}
+
+@media (max-width:760px) {
+  .modal-backdrop { align-items:start; }
+  .wallet-modal,.modal-card { padding:20px 16px; }
+  .voucher-form { grid-template-columns:1fr; }
+  .payment-destination-card { --payment-qr-size:min(78vw,300px); grid-template-columns:1fr; justify-items:center; text-align:center; }
+  .payment-destination-card p { justify-items:center; }
+  .app-bg[data-section="Salas"] .rooms-section { padding-inline:16px; }
+  .landing-page > header { flex-wrap:wrap; padding-inline:20px; }
+  .landing-page > header nav { display:flex; order:3; width:100%; gap:20px; }
+  .landing-page > header .steam-button { margin-left:auto; }
+  .landing-simple { min-height:calc(100dvh - 132px); padding-top:48px !important; padding-bottom:64px !important; }
+}

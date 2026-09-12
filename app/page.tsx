@@ -356,23 +356,6 @@ export default function Home() {
             <span>EQUIPO</span>
           </div>
         </div>
-        <aside className="landing-match-card" aria-label="Vista previa de una sala competitiva">
-          <div className="landing-match-head">
-            <span><i /> SALA ABIERTA</span>
-            <small>LIMA · PERÚ</small>
-          </div>
-          <div className="landing-match-stage">
-            <span className="match-kicker">PRÓXIMA PARTIDA</span>
-            <strong>TENE ARENA</strong>
-            <p>5 VS 5 · DRAFT BALANCEADO</p>
-            <div className="match-versus"><b>CT</b><span>VS</span><b>TR</b></div>
-          </div>
-          <div className="landing-match-foot">
-            <span>ENTRADA <strong>S/ 6</strong></span>
-            <span>PREMIO <strong>S/ 10</strong></span>
-            <button onClick={joinRoom}>UNIRME ↗</button>
-          </div>
-        </aside>
       </section>
 
       <section className="landing-room-strip relative z-10">

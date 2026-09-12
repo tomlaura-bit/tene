@@ -5382,6 +5382,14 @@ body {
   .landing-room-strip::before,.landing-process::before { clip-path:none; }
 }
 
+/* Hero without the promotional match card. */
+.landing-simple,
+.landing-simple:last-of-type {
+  grid-template-columns:minmax(0,820px);
+  justify-content:start;
+}
+.landing-hero-copy { width:min(100%,820px); }
+
 /* Public landing — competitive arena narrative. */
 .landing-simple {
   display:grid;
@@ -6252,3 +6260,6 @@ body { background:#07090e url('/tene-tactical-texture-v2.png') center top / cove
   body { background-attachment:scroll; }
   .landing-page::before,.app-bg::before { position:absolute; background-size:auto 1000px; background-repeat:repeat-y; }
 }
+
+.landing-simple { grid-template-columns:minmax(0,820px); justify-content:start; }
+.landing-hero-copy { width:min(100%,820px); }

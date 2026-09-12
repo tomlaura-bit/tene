@@ -5195,6 +5195,15 @@ button {
 .legal-grid p { margin:0; font-size:13px; }
 .legal-note { display:flex; gap:14px; align-items:center; border-color:rgba(139,92,246,.35); }
 .legal-note strong { color:#c4b5fd; white-space:nowrap; }
+.legal-acceptance-card { display:grid; gap:18px; padding:24px; border:1px solid rgba(139,92,246,.42); border-radius:18px; background:linear-gradient(135deg,rgba(124,58,237,.13),rgba(15,12,22,.92)); }
+.legal-acceptance-card > div { display:flex; align-items:flex-start; gap:14px; }
+.legal-acceptance-card > div > span { display:grid; place-items:center; width:38px; height:38px; flex:0 0 auto; border-radius:50%; background:#7c3aed; font-weight:900; }
+.legal-acceptance-card p { margin:5px 0 0; color:#aaa6b1; line-height:1.55; }
+.legal-acceptance-card label { display:flex; align-items:flex-start; gap:10px; padding:14px; border-radius:10px; background:rgba(255,255,255,.035); color:#ddd8e7; line-height:1.5; }
+.legal-acceptance-card label input { width:18px; height:18px; flex:0 0 auto; margin-top:2px; }
+.legal-acceptance-card .primary-button { justify-self:start; }
+.legal-acceptance-card.accepted { border-color:rgba(52,211,153,.35); }
+.legal-acceptance-card.accepted > div > span { background:#159a70; }
 @media (max-width: 900px) { .legal-grid { grid-template-columns:1fr; } .legal-note { align-items:flex-start; flex-direction:column; } }
 
 /* Simplified TENE navigation */
@@ -5455,6 +5464,12 @@ button {
 }
 .wallet-modal:has(.voucher-form) { width:min(980px,calc(100vw - 28px)); max-width:980px; }
 .voucher-form { display:grid; grid-template-columns:150px 1fr; gap:14px; margin:18px 0; }
+.recharge-steps { grid-column:1/-1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:0; padding:0; list-style:none; }
+.recharge-steps li { display:flex; align-items:center; gap:10px; min-width:0; padding:12px; border:1px solid rgba(255,255,255,.09); border-radius:10px; background:rgba(255,255,255,.025); }
+.recharge-steps li > b { display:grid; place-items:center; width:28px; height:28px; flex:0 0 auto; border-radius:50%; background:#7c3aed; color:#fff; font-size:13px; }
+.recharge-steps li span { display:grid; gap:2px; min-width:0; }
+.recharge-steps strong { font-size:13px; }
+.recharge-steps small { color:#918b9a; font-size:11px; }
 .voucher-status { grid-column:1/-1; padding:11px 13px; border:1px solid rgba(52,211,153,.3); border-radius:10px; background:rgba(16,185,129,.08); color:#8ce8c2; font-size:12px; }
 .payment-destination-card { grid-column:1/-1; display:grid; grid-template-columns:132px 1fr; gap:18px; align-items:center; padding:16px; border:1px solid rgba(139,92,246,.38); border-radius:12px; background:linear-gradient(135deg,rgba(124,58,237,.13),rgba(18,18,22,.94)); }
 .payment-destination-card > div { display:grid; place-items:center; width:132px; height:132px; overflow:hidden; border-radius:10px; background:#fff; }
@@ -5797,6 +5812,7 @@ body { min-width:320px; overflow-x:hidden; }
   .modal-backdrop { align-items:start; }
   .wallet-modal,.modal-card { padding:20px 16px; }
   .voucher-form { grid-template-columns:1fr; }
+  .recharge-steps { grid-template-columns:1fr; }
   .payment-destination-card { --payment-qr-size:min(82vw,340px); }
   .app-bg[data-section="Salas"] .rooms-section { padding-inline:16px; }
   .landing-page > header { flex-wrap:wrap; padding-inline:20px; }

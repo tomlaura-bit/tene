@@ -1437,6 +1437,7 @@ function EnhancedDashboard({
     return () => { active = false; };
   }, []);
   const paymentDestination = paymentDestinations.find((item) => item.method === paymentMethod) ?? null;
+  const depositReady = Boolean(paymentDestination && paymentProof && operationCode.trim() && paymentDate && paymentTime && Number(amount) > 0);
   const flash = (message: string) => {
     setNotice(message);
     window.setTimeout(() => setNotice(""), 3500);
@@ -1597,6 +1598,7 @@ function EnhancedDashboard({
             session={session}
             setBalance={setBalance}
             notify={flash}
+            onLegalRequired={() => setActiveTab("Reglas legales")}
           />
         )}
         {activeTab === "Wallet" && (
@@ -1618,7 +1620,7 @@ function EnhancedDashboard({
         {activeTab === "Staff" && <StaffPanel notify={flash} />}
         {activeTab === "Finanzas" && <FinancePanel notify={flash} session={session} />}
         {activeTab === "Cuenta" && <AccountPanel session={session} />}
-        {activeTab === "Reglas legales" && <LegalPanel />}
+        {activeTab === "Reglas legales" && <LegalPanel session={session} notify={flash} />}
       </div>
       {walletAction && (
         <div
@@ -1669,11 +1671,16 @@ function EnhancedDashboard({
             </label></>}
             {walletAction === "deposit" ? (
               <div className="voucher-form">
+                <ol className="recharge-steps" aria-label="Pasos para recargar">
+                  <li><b>1</b><span><strong>Escanea el QR</strong><small>Paga desde Yape o Plin.</small></span></li>
+                  <li><b>2</b><span><strong>Adjunta el voucher</strong><small>Usa la captura original.</small></span></li>
+                  <li><b>3</b><span><strong>Confirma los datos</strong><small>El staff validará la operación.</small></span></li>
+                </ol>
                 {paymentDestination ? <div className="payment-destination-card">
                   <div>{paymentDestination.qrUrl ? <img src={paymentDestination.qrUrl} alt={`QR oficial de ${paymentMethod === "yape" ? "Yape o Plin" : "Plin"} para TENE`} /> : <span className="payment-qr-empty">QR pendiente</span>}</div>
                   <p><small>ENVÍA A LA CUENTA OFICIAL</small><strong>{paymentDestination.displayName}</strong><b>{paymentDestination.phone}</b><span>{paymentMethod === "yape" ? "Yape o Plin" : "Plin"} · Verifica el nombre antes de pagar</span></p>
                 </div> : <div className="payment-destination-missing"><strong>Recargas temporalmente desactivadas</strong><span>La cuenta oficial de cobro todavía no ha sido configurada.</span></div>}
-                <div className="voucher-status">🔒 Verifica el nombre y número oficiales antes de pagar. Luego adjunta tu voucher.</div>
+                <div className="voucher-status">🔒 Escanea únicamente este QR oficial y conserva el comprobante.</div>
                 <label className="voucher-preview">{proofPreview ? <img src={proofPreview} alt="Vista previa del voucher" /> : <span>Sube tu voucher<br/><small>JPG, PNG o WebP</small></span>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0] ?? null; setPaymentProof(file); if (!file) return setProofPreview(""); const reader = new FileReader(); reader.onload = () => setProofPreview(String(reader.result ?? "")); reader.readAsDataURL(file); }} /></label>
                 <div className="voucher-fields">
                   <label>Aplicación<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as "yape" | "plin")}><option value="yape">Yape o Plin</option>{paymentDestinations.some((item) => item.method === "plin") && <option value="plin">Plin (cuenta separada)</option>}</select></label>
@@ -1689,8 +1696,8 @@ function EnhancedDashboard({
             ) : (
               <div className="withdrawal-fields"><p className="wallet-help">Disponible: S/ {balance.toFixed(2)} · Retiro mínimo S/ 10 · Haber jugado una sala.</p><label>Titular de Yape/Plin<input value={withdrawalName} onChange={(event) => setWithdrawalName(event.target.value)} placeholder="Nombre completo" /></label><label>Celular de destino<input inputMode="numeric" value={withdrawalPhone} onChange={(event) => setWithdrawalPhone(event.target.value.replace(/\D/g, "").slice(0, 9))} placeholder="9XXXXXXXX" /></label></div>
             )}
-            <button className="primary-button w-full" onClick={applyWallet} disabled={walletAction === "deposit" && !paymentDestination}>
-              Enviar solicitud
+            <button className="primary-button w-full" onClick={applyWallet} disabled={walletAction === "deposit" && !depositReady}>
+              {walletAction === "deposit" ? "Enviar recarga para revisión" : "Solicitar retiro"}
             </button>
           </section>
         </div>
@@ -2064,7 +2071,24 @@ function AccountPanel({ session }: { session: SessionData | null }) {
   );
 }
 
-function LegalPanel() {
+function LegalPanel({ session, notify }: { session: SessionData | null; notify: (message: string) => void }) {
+  const acceptedInitially = session?.user.legalVersion === "2026-08-27" && Boolean(session.user.termsAcceptedAt);
+  const [confirmed, setConfirmed] = useState(false);
+  const [accepted, setAccepted] = useState(acceptedInitially);
+  const [saving, setSaving] = useState(false);
+  const acceptRules = async () => {
+    if (!session || !confirmed || accepted) return;
+    setSaving(true);
+    const response = await fetch("/api/me", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ fullName: session.user.fullName, nickname: session.user.nickname, email: session.user.email, birthDate: session.user.birthDate, acceptTerms: true }),
+    });
+    setSaving(false);
+    if (!response.ok) return notify("No se pudo registrar la aceptación. Revisa que tu perfil esté completo.");
+    setAccepted(true);
+    notify("Reglas aceptadas · ya puedes unirte a una sala");
+  };
   return <section className="legal-panel">
     <div className="legal-hero"><span className="verified-badge">VERSIÓN 27/08/2026</span><h2>Reglas, dinero y privacidad sin letra pequeña</h2><p>Resumen operativo aplicable a todos los jugadores de TENE.</p></div>
     <div className="legal-grid">
@@ -2076,6 +2100,10 @@ function LegalPanel() {
       <article><h3>Privacidad</h3><p>TENE usa identidad, mayoría de edad, SteamID64, horas, avatar, resultados y movimientos para operar las salas. Nunca almacena tu contraseña de ChatGPT ni de Steam.</p></article>
     </div>
     <div className="legal-note"><strong>Juego competitivo, no apuesta contra la casa.</strong><span>TENE no fija cuotas ni participa como rival. Organiza partidas de habilidad y cobra una tarifa de servicio informada.</span></div>
+    <div className={`legal-acceptance-card ${accepted ? "accepted" : ""}`}>
+      <div><span>{accepted ? "✓" : "!"}</span><div><strong>{accepted ? "Reglas aceptadas" : "Aceptación necesaria para jugar"}</strong><p>{accepted ? "Tu cuenta ya tiene registrada la versión vigente." : "Lee el resumen anterior y confirma la versión vigente para poder unirte a las salas."}</p></div></div>
+      {!accepted && <><label><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} /><span>He leído y acepto los términos, las reglas competitivas y la política de privacidad. Confirmo que soy mayor de 18 años.</span></label><button className="primary-button" disabled={!confirmed || saving} onClick={() => void acceptRules()}>{saving ? "Guardando…" : "Aceptar reglas y continuar"}</button></>}
+    </div>
   </section>;
 }
 
@@ -2198,11 +2226,13 @@ function RoomsPanel({
   session,
   setBalance,
   notify,
+  onLegalRequired,
 }: {
   openRoom: (roomId?: string) => void;
   session: SessionData | null;
   setBalance: (value: number) => void;
   notify: (message: string) => void;
+  onLegalRequired: () => void;
 }) {
   const [realRooms, setRealRooms] = useState<RoomData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2251,10 +2281,12 @@ function RoomsPanel({
       authentication_required: "Inicia sesión para reservar",
       legal_acceptance_required: "Acepta las reglas vigentes desde Cuenta antes de jugar",
     };
-    if (!response.ok)
+    if (!response.ok) {
+      if (body.error === "legal_acceptance_required") onLegalRequired();
       return notify(
         labels[body.error ?? ""] ?? "No se pudo reservar el puesto",
       );
+    }
     if (body.wallet) setBalance(body.wallet.availableCents / 100);
     notify(
       body.alreadyJoined
@@ -2856,7 +2888,7 @@ function NotificationsPanel({ setActiveTab, openRoom }: { setActiveTab: (tab: st
   };
   const notificationTarget = (item: (typeof items)[number]) => {
     if (item.actionUrl?.startsWith("/rooms/")) return { kind: "room" as const, value: item.actionUrl.slice(7), label: "Ver partida" };
-    const tabByUrl: Record<string, string> = { "/ranking": "Ranking", "/conduct": "Conducta", "/wallet": "Wallet", "/account": "Cuenta", "/history": "Historial", "/benefits": "Beneficios" };
+    const tabByUrl: Record<string, string> = { "/ranking": "Ranking", "/conduct": "Conducta", "/wallet": "Wallet", "/account": "Cuenta", "/history": "Historial", "/benefits": "Beneficios", "/legal": "Reglas legales", "/rules": "Reglas legales" };
     if (item.actionUrl && tabByUrl[item.actionUrl]) return { kind: "tab" as const, value: tabByUrl[item.actionUrl], label: "Revisar" };
     if (item.sourceType === "security") return { kind: "tab" as const, value: "Cuenta", label: "Revisar cuenta" };
     if (item.sourceType === "sanction") return { kind: "tab" as const, value: "Conducta", label: "Ver sanción" };

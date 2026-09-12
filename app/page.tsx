@@ -1663,20 +1663,20 @@ function EnhancedDashboard({
                   setPaymentMethod(event.target.value as "yape" | "plin")
                 }
               >
-                <option value="yape">Yape</option>
-                <option value="plin">Plin</option>
+                <option value="yape">Yape o Plin</option>
+                {paymentDestinations.some((item) => item.method === "plin") && <option value="plin">Plin (cuenta separada)</option>}
               </select>
             </label></>}
             {walletAction === "deposit" ? (
               <div className="voucher-form">
                 {paymentDestination ? <div className="payment-destination-card">
-                  <div>{paymentDestination.qrUrl ? <img src={paymentDestination.qrUrl} alt={`QR oficial de ${paymentMethod === "yape" ? "Yape" : "Plin"} para TENE`} /> : <span className="payment-qr-empty">QR pendiente</span>}</div>
-                  <p><small>ENVÍA A LA CUENTA OFICIAL</small><strong>{paymentDestination.displayName}</strong><b>{paymentDestination.phone}</b><span>{paymentMethod === "yape" ? "Yape" : "Plin"} · Verifica el nombre antes de pagar</span></p>
+                  <div>{paymentDestination.qrUrl ? <img src={paymentDestination.qrUrl} alt={`QR oficial de ${paymentMethod === "yape" ? "Yape o Plin" : "Plin"} para TENE`} /> : <span className="payment-qr-empty">QR pendiente</span>}</div>
+                  <p><small>ENVÍA A LA CUENTA OFICIAL</small><strong>{paymentDestination.displayName}</strong><b>{paymentDestination.phone}</b><span>{paymentMethod === "yape" ? "Yape o Plin" : "Plin"} · Verifica el nombre antes de pagar</span></p>
                 </div> : <div className="payment-destination-missing"><strong>Recargas temporalmente desactivadas</strong><span>La cuenta oficial de cobro todavía no ha sido configurada.</span></div>}
                 <div className="voucher-status">🔒 Verifica el nombre y número oficiales antes de pagar. Luego adjunta tu voucher.</div>
                 <label className="voucher-preview">{proofPreview ? <img src={proofPreview} alt="Vista previa del voucher" /> : <span>Sube tu voucher<br/><small>JPG, PNG o WebP</small></span>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0] ?? null; setPaymentProof(file); if (!file) return setProofPreview(""); const reader = new FileReader(); reader.onload = () => setProofPreview(String(reader.result ?? "")); reader.readAsDataURL(file); }} /></label>
                 <div className="voucher-fields">
-                  <label>Aplicación<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as "yape" | "plin")}><option value="yape">Yape</option><option value="plin">Plin</option></select></label>
+                  <label>Aplicación<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as "yape" | "plin")}><option value="yape">Yape o Plin</option>{paymentDestinations.some((item) => item.method === "plin") && <option value="plin">Plin (cuenta separada)</option>}</select></label>
                   <label>Llegó a la cuenta<input value={paymentDestination?.displayName ?? "Sin configurar"} readOnly /></label>
                   <label>Monto (S/)<input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
                   <label>N.º de operación<input value={operationCode} onChange={(event) => setOperationCode(event.target.value.replace(/\s/g, ""))} placeholder="Código del voucher" /></label>
@@ -4987,14 +4987,14 @@ function PaymentDestinationsManager({ notify }: { notify: (message: string) => v
     const body = await response.json() as { error?: string };
     setSaving(false);
     if (!response.ok) return notify(body.error === "invalid_qr" ? "El QR debe ser JPG, PNG o WebP y pesar máximo 2 MB" : "Revisa el titular y el celular de nueve dígitos");
-    notify(`${method === "yape" ? "Yape" : "Plin"} actualizado correctamente`);
+    notify(`${method === "yape" ? "Yape o Plin" : "Plin"} actualizado correctamente`);
     await load();
   };
   const selected = destinations.find((item) => item.method === method);
   return <section className="payment-destinations-manager">
     <div className="payment-config-copy"><span>CONFIGURACIÓN PROTEGIDA</span><h3>Cuenta oficial de cobro</h3><p>Este nombre, número y QR serán visibles únicamente en el formulario de recarga. Cada cambio queda registrado en auditoría.</p></div>
     <div className="payment-config-grid">
-      <label>Método<select value={method} onChange={(event) => setMethod(event.target.value as "yape" | "plin")}><option value="yape">Yape</option><option value="plin">Plin</option></select></label>
+      <label>Método<select value={method} onChange={(event) => setMethod(event.target.value as "yape" | "plin")}><option value="yape">Yape o Plin</option><option value="plin">Plin (cuenta separada futura)</option></select></label>
       <label>Nombre del titular<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Como aparece al pagar" /></label>
       <label>Celular<input inputMode="numeric" value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 9))} placeholder="9XXXXXXXX" /></label>
       <label>Estado<select value={status} onChange={(event) => setStatus(event.target.value as "active" | "inactive")}><option value="inactive">Inactivo</option><option value="active">Activo</option></select></label>

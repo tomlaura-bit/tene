@@ -5729,6 +5729,7 @@ body { min-width:320px; overflow-x:hidden; }
   padding:clamp(18px,3vw,28px);
 }
 .payment-destination-card > div {
+  position:relative;
   width:var(--payment-qr-size);
   height:var(--payment-qr-size);
   border:10px solid #fff;
@@ -5737,11 +5738,14 @@ body { min-width:320px; overflow-x:hidden; }
 /* The official Yape artwork contains a large portrait canvas. This viewport
    presents its untouched QR pixels at scanning size without modifying them. */
 .payment-destination-card img {
+  position:absolute;
+  top:0;
+  left:50%;
   width:calc(var(--payment-qr-size) * 1.724);
   max-width:none;
   height:calc(var(--payment-qr-size) * 2.438);
   object-fit:fill;
-  transform:translateY(calc(var(--payment-qr-size) * -.507));
+  transform:translate(-50%,calc(var(--payment-qr-size) * -.507));
 }
 .payment-destination-card strong { font-size:clamp(1.1rem,2vw,1.35rem); overflow-wrap:anywhere; }
 .payment-destination-card b { font-size:clamp(1.45rem,3vw,2rem); overflow-wrap:anywhere; }

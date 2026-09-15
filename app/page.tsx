@@ -2327,6 +2327,8 @@ function RoomsPanel({
 }) {
   const [realRooms, setRealRooms] = useState<RoomData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [queue, setQueue] = useState<{ queued: boolean; playersInQueue: number; joinedAt: string | null; matchedRoomId: string | null }>({ queued: false, playersInQueue: 0, joinedAt: null, matchedRoomId: null });
+  const [queueBusy, setQueueBusy] = useState(false);
   const loadRooms = async () => {
     const response = await fetch("/api/rooms");
     if (response.ok) {
@@ -2338,6 +2340,34 @@ function RoomsPanel({
   useEffect(() => {
     void loadRooms();
   }, []);
+  useEffect(() => {
+    if (!session) return;
+    const loadQueue = async () => {
+      const response = await fetch("/api/matchmaking", { cache: "no-store" });
+      if (!response.ok) return;
+      const body = await response.json() as typeof queue;
+      setQueue(body);
+      if (body.matchedRoomId) openRoom(body.matchedRoomId);
+    };
+    void loadQueue();
+    const timer = window.setInterval(() => void loadQueue(), 5000);
+    return () => window.clearInterval(timer);
+  }, [session]);
+  const toggleQueue = async () => {
+    if (!session) return notify("Inicia sesión para buscar partida");
+    setQueueBusy(true);
+    const response = await fetch("/api/matchmaking", { method: queue.queued ? "DELETE" : "POST" });
+    const body = await response.json() as typeof queue & { error?: string };
+    setQueueBusy(false);
+    if (!response.ok) {
+      const labels: Record<string, string> = { legal_acceptance_required: "Acepta las reglas antes de entrar a la cola", staff_verification_required: "Tu cuenta debe estar verificada", insufficient_balance: "Necesitas S/ 6 disponibles", active_room_exists: "Ya estás dentro de una sala" };
+      if (body.error === "legal_acceptance_required") onLegalRequired();
+      return notify(labels[body.error ?? ""] ?? "No se pudo actualizar la cola");
+    }
+    setQueue(body);
+    if (body.matchedRoomId) openRoom(body.matchedRoomId);
+    else notify(queue.queued ? "Saliste de la cola" : "Buscando jugadores de tu nivel");
+  };
   const createRoom = async () => {
     const name = window.prompt("Nombre de la nueva sala", "Sala TENE");
     if (!name) return;
@@ -2404,6 +2434,19 @@ function RoomsPanel({
         </div>
         {canCreate && <button className="create-room-action" onClick={createRoom}>＋ Crear sala</button>}
       </div>
+      <article className={`matchmaking-card ${queue.queued ? "searching" : ""}`}>
+        <div className="matchmaking-icon">⌁</div>
+        <div className="matchmaking-copy">
+          <span>{queue.queued ? "BÚSQUEDA EN CURSO" : "EMPAREJAMIENTO AUTOMÁTICO"}</span>
+          <h3>{queue.queued ? "Buscando tu mejor match" : "¿No quieres elegir una sala?"}</h3>
+          <p>Te agrupamos con jugadores de nivel cercano en Lima. Al completar 10, creamos la sala y te llevamos directo al draft.</p>
+        </div>
+        <div className="matchmaking-meter">
+          <strong>{queue.playersInQueue}<small>/10</small></strong>
+          <span>EN COLA</span>
+        </div>
+        <button disabled={queueBusy} onClick={() => void toggleQueue()}>{queueBusy ? "Procesando…" : queue.queued ? "Salir de la cola" : "Buscar partida"}</button>
+      </article>
       <div className="rooms-with-chat">
       <div className="rooms-main-column">
       <div className="rooms-catalog">

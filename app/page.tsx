@@ -280,6 +280,7 @@ export default function Home() {
         roomId={selectedRoomId}
         session={session}
         balance={balance}
+        setBalance={setBalance}
         bannedMaps={bannedMaps}
         setBannedMaps={setBannedMaps}
         onReserve={() => {
@@ -3621,12 +3622,21 @@ type LiveRoomState = {
   events: Array<{ id: string; type: string; payload: Record<string, string | number> }>;
 };
 
-function LiveRoomFlow({ roomId, balance, goBack, notice, session }: { roomId: string; balance: number; goBack: () => void; notice: string; session: SessionData | null }) {
+function LiveRoomFlow({ roomId, balance, setBalance, goBack, notice, session }: { roomId: string; balance: number; setBalance: (value: number) => void; goBack: () => void; notice: string; session: SessionData | null }) {
   const [data, setData] = useState<LiveRoomState | null>(null);
   const [busy, setBusy] = useState(false);
   const load = async () => { const response = await fetch(`/api/rooms/${roomId}/state`, { cache: "no-store" }); if (response.ok) setData(await response.json()); };
   useEffect(() => { void load(); const timer = window.setInterval(() => void load(), 5000); return () => window.clearInterval(timer); }, [roomId]);
   const act = async (path: string, body: Record<string, string>) => { setBusy(true); const response = await fetch(`/api/rooms/${roomId}/${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); setBusy(false); await load(); return response.ok; };
+  const leaveRoom = async () => {
+    setBusy(true);
+    const response = await fetch(`/api/rooms/${roomId}/join`, { method: "DELETE" });
+    const body = await response.json() as { wallet?: { availableCents: number } };
+    setBusy(false);
+    if (!response.ok) return;
+    if (body.wallet) setBalance(body.wallet.availableCents / 100);
+    goBack();
+  };
   if (!data) return <main className="app-bg room-screen min-h-screen text-white"><div className="room-loading">Cargando sala…</div></main>;
   const picks = data.events.filter((event) => event.type === "draft_pick");
   const bans = data.events.filter((event) => event.type === "map_ban").map((event) => String(event.payload.map));
@@ -3640,7 +3650,7 @@ function LiveRoomFlow({ roomId, balance, goBack, notice, session }: { roomId: st
   return <main className="app-bg room-screen min-h-screen text-white">
     <header className="room-header"><button onClick={goBack}>← Volver a salas</button><div><span className="status-pill"><i /> {data.room.status.toUpperCase()}</span><strong>{data.room.name}</strong></div><div className="room-balance"><small>SALDO</small>S/ {balance.toFixed(2)}</div></header>
     <section className="room-layout"><div className="room-main"><div className="room-stage"><div><p className="eyebrow"><span /> MATCH COMPETITIVO</p><h1>{data.room.status === "open" ? `Faltan ${10 - data.players.length} para arrancar` : data.room.status === "draft" ? "Armen los equipos" : data.room.status === "veto" ? "Veto de mapas" : "Match listo"}</h1><p>{data.room.status === "open" ? "Invita a tu team. El draft empieza al completar los 10 slots." : "Los cambios quedan guardados y solo actúa el capitán de turno."}</p></div><div className="room-count"><strong>{data.players.length}/10</strong><span>jugadores</span></div></div>
-      {data.room.status === "open" && <article className="reserve-card"><h3>Estás dentro</h3><p>Slot asegurado. El draft arranca cuando estén los diez.</p></article>}
+      {data.room.status === "open" && <article className="reserve-card"><div><h3>Estás dentro</h3><p>Slot asegurado. El draft arranca cuando estén los diez.</p></div><button className="secondary-button" disabled={busy} onClick={() => void leaveRoom()}>{busy ? "Saliendo…" : "Salir de la sala"}</button></article>}
       {data.room.status === "draft" && <article className="draft-board"><div className="veto-head"><div><small>TURNO ACTUAL</small><strong>{expectedDraftTeam ? `Capitán ${expectedDraftTeam.toUpperCase()} elige` : "Equipos completos"}</strong></div><span>{picks.length}/8 elecciones</span></div><div className="draft-columns"><div><span className="team-label a">EQUIPO A</span>{data.players.filter((p) => p.team === "a").map((p) => <b key={p.userId}>{p.nickname}{p.isCaptain ? " · CAP" : ""}</b>)}</div><div className="draft-pool"><small>JUGADORES DISPONIBLES</small>{data.players.filter((p) => p.team === "pool").map((p) => <button disabled={busy || !data.viewer?.isCaptain || data.viewer.team !== expectedDraftTeam} key={p.userId} onClick={() => void act("draft", { playerId: p.userId })}><span>{p.nickname[0]}</span><b>{p.nickname}</b><i>LVL {p.level}</i></button>)}</div><div><span className="team-label b">EQUIPO B</span>{data.players.filter((p) => p.team === "b").map((p) => <b key={p.userId}>{p.nickname}{p.isCaptain ? " · CAP" : ""}</b>)}</div></div></article>}
       {data.room.status === "veto" && <article className="veto-card"><div className="veto-head"><div><small>TURNO ACTUAL</small><strong>{bans.length < 6 ? `Capitán ${expectedVetoTeam.toUpperCase()} banea` : `Capitán ${sideChooser.toUpperCase()} elige lado`}</strong></div><span>{bans.length}/6 baneos</span></div>{bans.length < 6 ? <div className="maps-grid">{mapPool.map((map) => <button key={map} className={bans.includes(map) ? "banned" : ""} disabled={busy || bans.includes(map) || !data.viewer?.isCaptain || data.viewer.team !== expectedVetoTeam} onClick={() => void act("veto", { map })}><span>{map.slice(0,2).toUpperCase()}</span><strong>{map}</strong><small>{bans.includes(map) ? "BANEADO" : "BANEAR"}</small></button>)}</div> : <div className="veto-next"><strong>{remainingMaps[0]} será el mapa</strong><button disabled={busy || !data.viewer?.isCaptain || data.viewer.team !== sideChooser} className="primary-button" onClick={() => void act("veto", { side: "ct" })}>Elegir CT</button><button disabled={busy || !data.viewer?.isCaptain || data.viewer.team !== sideChooser} className="secondary-button" onClick={() => void act("veto", { side: "t" })}>Elegir T</button></div>}</article>}
       {["live", "review", "settled", "cancelled"].includes(data.room.status) && <LiveMatchOperations roomId={roomId} data={data} session={session} reload={load} />}
@@ -3652,6 +3662,7 @@ function EnhancedRoomFlow({
   roomId,
   session,
   balance,
+  setBalance,
   bannedMaps,
   setBannedMaps,
   onReserve,
@@ -3662,6 +3673,7 @@ function EnhancedRoomFlow({
   roomId: string | null;
   session: SessionData | null;
   balance: number;
+  setBalance: (value: number) => void;
   bannedMaps: string[];
   setBannedMaps: (maps: string[]) => void;
   onReserve: () => void;
@@ -3671,7 +3683,7 @@ function EnhancedRoomFlow({
 }) {
   const [draftPicks, setDraftPicks] = useState<string[]>([]);
   const [phase, setPhase] = useState<"draft" | "veto" | "match">("draft");
-  if (roomId) return <LiveRoomFlow roomId={roomId} balance={balance} goBack={goBack} notice={notice} session={session} />;
+  if (roomId) return <LiveRoomFlow roomId={roomId} balance={balance} setBalance={setBalance} goBack={goBack} notice={notice} session={session} />;
   const sequence = ["A", "B", "B", "A", "A", "B", "B", "A"];
   const remainingMaps = mapPool.filter((map) => !bannedMaps.includes(map));
   const currentCaptain =

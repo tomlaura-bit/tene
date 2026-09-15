@@ -142,3 +142,38 @@ export async function POST(
   const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, user.id)).limit(1);
   return Response.json({ ok: true, wallet: wallet ?? charged[0], usedPass: Boolean(pass) });
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ roomId: string }> },
+) {
+  const identity = getAuthenticatedUser(request);
+  if (!identity) return unauthorized();
+  const limited = await enforceRateLimit(request, "room_leave", 10, 60);
+  if (limited) return limited;
+  const { roomId } = await params;
+  const db = getDb();
+  const [user] = await db.select().from(users).where(eq(users.authSubjectId, identity.id)).limit(1);
+  if (!user) return Response.json({ ok: false, error: "onboarding_required" }, { status: 409 });
+  const [room] = await db.select().from(rooms).where(eq(rooms.id, roomId)).limit(1);
+  if (!room || room.status !== "open")
+    return Response.json({ ok: false, error: "room_already_started" }, { status: 409 });
+  const [membership] = await db.select().from(roomPlayers).where(and(eq(roomPlayers.roomId, roomId), eq(roomPlayers.userId, user.id))).limit(1);
+  if (!membership) return Response.json({ ok: true, alreadyLeft: true });
+  const [pass] = await db.select().from(benefitPasses).where(and(eq(benefitPasses.userId, user.id), eq(benefitPasses.roomId, roomId), eq(benefitPasses.status, "used"))).limit(1);
+
+  await releaseRoomSlot(getD1(), membership.id);
+  if (pass) {
+    await db.batch([
+      db.update(benefitPasses).set({ status: "available", roomId: null }).where(eq(benefitPasses.id, pass.id)),
+      db.insert(ledgerEntries).values({ id: `led_${crypto.randomUUID()}`, userId: user.id, roomId, type: "adjustment", amountCents: 0, description: `Pase liberado al salir de ${room.name}`, createdAt: new Date() }),
+    ]);
+  } else {
+    await db.batch([
+      db.update(wallets).set({ availableCents: sql`${wallets.availableCents} + ${room.entryCents}`, lockedCents: sql`max(0, ${wallets.lockedCents} - ${room.entryCents})` }).where(eq(wallets.userId, user.id)),
+      db.insert(ledgerEntries).values({ id: `led_${crypto.randomUUID()}`, userId: user.id, roomId, type: "entry_release", amountCents: room.entryCents, description: `Saldo liberado al salir de ${room.name}`, createdAt: new Date() }),
+    ]);
+  }
+  const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, user.id)).limit(1);
+  return Response.json({ ok: true, wallet, restoredPass: Boolean(pass) });
+}

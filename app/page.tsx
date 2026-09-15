@@ -325,25 +325,25 @@ export default function Home() {
             GANA.
           </h1>
           <p className="mt-7 max-w-lg text-base leading-7 text-white/55 md:text-lg">
-            Salas privadas 5v5 de CS2 para la comunidad peruana. Entra solo o
-            con tu equipo, compite en partidas organizadas y demuestra tu juego.
+            Arma tu 5, entra solo o completa el equipo. Partidas privadas de
+            CS2, draft balanceado y competencia hecha para Perú.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-4">
             <button className="primary-button" onClick={joinRoom}>
-              Ver salas disponibles <span>↗</span>
+              Buscar partida <span>↗</span>
             </button>
             <div className="flex items-center gap-3 text-sm text-white/50">
-              <span className="live-pulse" /> {publicData?.activePlayers ?? 0} jugadores en salas activas
+              <span className="live-pulse" /> {publicData?.activePlayers ?? 0} jugadores buscando partida
             </div>
           </div>
           <div className="mt-10 flex gap-8 border-t border-white/8 pt-6">
             <div>
               <strong className="block text-xl">S/ 6</strong>
-              <span className="text-xs text-white/40">entrada</span>
+              <span className="text-xs text-white/40">para asegurar tu slot</span>
             </div>
             <div>
               <strong className="block text-xl">S/ 10</strong>
-              <span className="text-xs text-white/40">por ganador</span>
+              <span className="text-xs text-white/40">por victoria</span>
             </div>
             <div>
               <strong className="block text-xl">5v5</strong>
@@ -362,12 +362,12 @@ export default function Home() {
         <div>
           <div className="room-strip-copy">
             <span className="live-pulse" />
-            <p><strong>Salas listas para jugar</strong><small>10 puestos visibles · un solo chat general · nivel abierto</small></p>
+            <p><strong>Hay partida</strong><small>10 slots visibles · chat general · nivel abierto</small></p>
           </div>
           <div className="room-strip-slots" aria-label="Diez puestos de jugadores">
             {Array.from({ length: 10 }, (_, index) => <span className={index === 0 ? "filled" : ""} key={index}>{index === 0 ? "T" : index + 1}</span>)}
           </div>
-          <button onClick={joinRoom}>Ver salas <span>→</span></button>
+          <button onClick={joinRoom}>Buscar partida <span>→</span></button>
         </div>
       </section>
 
@@ -377,8 +377,8 @@ export default function Home() {
       >
         <div className="landing-section-heading">
           <div className="eyebrow"><span /> DE LA SALA AL SERVIDOR</div>
-          <h2>Competir debe ser simple.</h2>
-          <p>Nosotros organizamos la partida. Tú concéntrate en jugar.</p>
+          <h2>De la sala al GG.</h2>
+          <p>Nosotros armamos el match. Tú concéntrate en jugar.</p>
         </div>
         <div className="landing-process-grid">
           {[
@@ -390,17 +390,17 @@ export default function Home() {
             [
               "02",
               "Recarga tu saldo",
-              "Agrega saldo con Yape o Plin y únete a una sala.",
+              "Agrega saldo con Yape o Plin y asegura tu slot.",
             ],
             [
               "03",
               "Draft y veto",
-              "Capitanes balancean equipos y eligen el mapa.",
+              "Los capitanes arman equipos y hacen el veto de mapas.",
             ],
             [
               "04",
-              "Juega y gana",
-              "Los ganadores reciben S/ 10 directo a su saldo.",
+              "Juega el match",
+              "Si ganas, recibes S/ 10 directo a tu saldo. GG.",
             ],
           ].map(([number, title, copy]) => (
             <article
@@ -468,8 +468,8 @@ export default function Home() {
       <section className="landing-final-cta relative z-10">
         <div>
           <span>LA PRÓXIMA RONDA EMPIEZA CONTIGO</span>
-          <h2>Entra a la sala.<br />Haz que cuente.</h2>
-          <button className="primary-button" onClick={joinRoom}>Jugar ahora <span>↗</span></button>
+          <h2>Tu team te espera.<br />Haz que cuente.</h2>
+          <button className="primary-button" onClick={joinRoom}>Buscar partida <span>↗</span></button>
         </div>
       </section>
 
@@ -2297,7 +2297,7 @@ function RoomsPanel({
     });
     notify(
       response.ok
-        ? "Sala creada correctamente"
+        ? "Sala lista · faltan 10 para arrancar"
         : "No tienes permiso para crear salas",
     );
     if (response.ok) await loadRooms();
@@ -2313,25 +2313,25 @@ function RoomsPanel({
       usedPass?: boolean;
     };
     const labels: Record<string, string> = {
-      insufficient_balance: "Saldo insuficiente: necesitas S/ 6 disponibles",
+      insufficient_balance: "Te falta saldo · necesitas S/ 6 para asegurar tu slot",
       staff_verification_required:
         "El staff debe verificar tu cuenta antes de jugar",
-      room_full: "La sala ya está completa",
-      room_unavailable: "La sala ya no está disponible",
-      authentication_required: "Inicia sesión para reservar",
-      legal_acceptance_required: "Acepta las reglas vigentes desde Cuenta antes de jugar",
+      room_full: "Sala completa · busca otra partida",
+      room_unavailable: "Esta sala ya cerró · busca otra partida",
+      authentication_required: "Inicia sesión para unirte",
+      legal_acceptance_required: "Acepta las reglas para entrar al match",
     };
     if (!response.ok) {
       if (body.error === "legal_acceptance_required") onLegalRequired();
       return notify(
-        labels[body.error ?? ""] ?? "No se pudo reservar el puesto",
+        labels[body.error ?? ""] ?? "No pudimos asegurar tu slot",
       );
     }
     if (body.wallet) setBalance(body.wallet.availableCents / 100);
     notify(
       body.alreadyJoined
-        ? "Ya tienes un puesto en esta sala"
-        : body.usedPass ? "Puesto reservado · pase gratuito utilizado" : "Puesto reservado · S/ 6 bloqueados",
+        ? "Ya estás dentro · espera a los demás jugadores"
+        : body.usedPass ? "Estás dentro · pase gratuito utilizado" : "Slot asegurado · S/ 6 bloqueados",
     );
     await loadRooms();
     openRoom(roomId);
@@ -2345,10 +2345,10 @@ function RoomsPanel({
           <span className="verified-badge">
             {realRooms.length} SALAS REGISTRADAS
           </span>
-          <h2>Elige dónde competir</h2>
+          <h2>Busca tu próxima partida</h2>
           <p>
-            Tu saldo se bloquea al reservar el puesto. Todos los niveles pueden
-            jugar; el draft mantiene el balance.
+            Asegura un slot y completa el 5v5. Tu entrada queda bloqueada hasta
+            que termine el match; el draft mantiene los equipos balanceados.
           </p>
         </div>
         {canCreate && <button className="create-room-action" onClick={createRoom}>＋ Crear sala</button>}
@@ -2359,10 +2359,9 @@ function RoomsPanel({
         {loading && <p className="wallet-help">Cargando salas…</p>}
         {!loading && !realRooms.length && (
           <article className="account-surface">
-            <h3>Todavía no hay salas abiertas</h3>
+            <h3>No hay partidas abiertas</h3>
             <p className="wallet-help">
-              Cuando el staff cree la primera sala aparecerá aquí en tiempo
-              real.
+              Apenas se abra una sala aparecerá aquí. Vuelve en unos minutos.
             </p>
           </article>
         )}
@@ -2410,7 +2409,7 @@ function RoomsChat({ session, notify }: { session: SessionData | null; notify: (
     <aside className="rooms-chat">
       <header><div><span className="live-pulse" /><strong>Chat general</strong></div><small>Comunidad TENE</small></header>
       <div className="rooms-chat-stream">
-        {!messages.length && <p>Escribe el primer mensaje.</p>}
+        {!messages.length && <p>Rompe el hielo: arma team o llama a tu quinto.</p>}
         {messages.slice(-30).map((message) => (
           <article key={message.id}>
             <span className="rooms-chat-avatar">{message.name.slice(0, 1).toUpperCase()}</span>
@@ -2419,7 +2418,7 @@ function RoomsChat({ session, notify }: { session: SessionData | null; notify: (
         ))}
       </div>
       <div className="rooms-chat-compose">
-        <input aria-label="Mensaje para el chat general" maxLength={240} value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => event.key === "Enter" && void send()} placeholder={session ? "Escribe un mensaje…" : "Inicia sesión para escribir"} />
+        <input aria-label="Mensaje para el chat general" maxLength={240} value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => event.key === "Enter" && void send()} placeholder={session ? "¿Falta uno? Escribe aquí…" : "Inicia sesión para escribir"} />
         <button aria-label="Enviar mensaje" disabled={sending || !text.trim()} onClick={() => void send()}>➤</button>
       </div>
     </aside>
@@ -2441,7 +2440,7 @@ function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
             </div>
             <small>
               <i />{" "}
-              {room.status === "open" ? "Esperando jugadores" : room.status}
+              {room.status === "open" ? `Faltan ${10 - room.players.length} para arrancar` : room.status}
             </small>
           </div>
         </div>
@@ -2471,7 +2470,7 @@ function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
         onClick={join}
         disabled={room.players.length >= 10}
       >
-        Unirse por S/ 6 <span>→</span>
+        {room.players.length >= 10 ? "Sala completa" : "Unirme por S/ 6"} <span>→</span>
       </button>
     </article>
   );
@@ -2948,10 +2947,10 @@ function NotificationsPanel({ setActiveTab, openRoom }: { setActiveTab: (tab: st
       <div className="notification-head">
         <div>
           <span className="verified-badge">CENTRO DE ALERTAS</span>
-          <h2>No te pierdas tu partida</h2>
+          <h2>Lo importante, sin ruido</h2>
           <p>
-            Los avisos críticos de conexión y sanciones siempre permanecen
-            activos dentro de TENE.
+            Si un aviso requiere acción, podrás abrir directamente el apartado
+            correcto. Los mensajes informativos solo te mantienen al día.
           </p>
         </div>
         <button onClick={() => { setRead(items.map((item) => item.id)); void fetch("/api/notifications", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ readAll: true }) }); }}>
@@ -3007,7 +3006,7 @@ function NotificationsPanel({ setActiveTab, openRoom }: { setActiveTab: (tab: st
             eventos importantes.
           </p>
           {[
-            ["rooms", "Salas y partidas", "Ready, draft y servidor"],
+            ["rooms", "Salas y partidas", "Sala completa, draft y servidor"],
             ["money", "Dinero", "Recargas, retiros y premios"],
             ["staff", "Staff y sanciones", "Verificación, reportes y mutes"],
             ["community", "Comunidad", "Chat y anuncios generales"],
@@ -3546,8 +3545,8 @@ function LiveRoomFlow({ roomId, balance, goBack, notice, session }: { roomId: st
   const sideChooser = lastBanTeam === "a" ? "b" : "a";
   return <main className="app-bg room-screen min-h-screen text-white">
     <header className="room-header"><button onClick={goBack}>← Volver a salas</button><div><span className="status-pill"><i /> {data.room.status.toUpperCase()}</span><strong>{data.room.name}</strong></div><div className="room-balance"><small>SALDO</small>S/ {balance.toFixed(2)}</div></header>
-    <section className="room-layout"><div className="room-main"><div className="room-stage"><div><p className="eyebrow"><span /> FLUJO COMPETITIVO</p><h1>{data.room.status === "open" ? "Esperando jugadores" : data.room.status === "draft" ? "Draft de equipos" : data.room.status === "veto" ? "Veto de mapas" : "Partida preparada"}</h1><p>Los cambios quedan guardados y solo el capitán del turno puede actuar.</p></div><div className="room-count"><strong>{data.players.length}/10</strong><span>jugadores</span></div></div>
-      {data.room.status === "open" && <article className="reserve-card"><h3>Tu puesto está reservado</h3><p>El draft comienza automáticamente cuando se completa la sala.</p></article>}
+    <section className="room-layout"><div className="room-main"><div className="room-stage"><div><p className="eyebrow"><span /> MATCH COMPETITIVO</p><h1>{data.room.status === "open" ? `Faltan ${10 - data.players.length} para arrancar` : data.room.status === "draft" ? "Armen los equipos" : data.room.status === "veto" ? "Veto de mapas" : "Match listo"}</h1><p>{data.room.status === "open" ? "Invita a tu team. El draft empieza al completar los 10 slots." : "Los cambios quedan guardados y solo actúa el capitán de turno."}</p></div><div className="room-count"><strong>{data.players.length}/10</strong><span>jugadores</span></div></div>
+      {data.room.status === "open" && <article className="reserve-card"><h3>Estás dentro</h3><p>Slot asegurado. El draft arranca cuando estén los diez.</p></article>}
       {data.room.status === "draft" && <article className="draft-board"><div className="veto-head"><div><small>TURNO ACTUAL</small><strong>{expectedDraftTeam ? `Capitán ${expectedDraftTeam.toUpperCase()} elige` : "Equipos completos"}</strong></div><span>{picks.length}/8 elecciones</span></div><div className="draft-columns"><div><span className="team-label a">EQUIPO A</span>{data.players.filter((p) => p.team === "a").map((p) => <b key={p.userId}>{p.nickname}{p.isCaptain ? " · CAP" : ""}</b>)}</div><div className="draft-pool"><small>JUGADORES DISPONIBLES</small>{data.players.filter((p) => p.team === "pool").map((p) => <button disabled={busy || !data.viewer?.isCaptain || data.viewer.team !== expectedDraftTeam} key={p.userId} onClick={() => void act("draft", { playerId: p.userId })}><span>{p.nickname[0]}</span><b>{p.nickname}</b><i>LVL {p.level}</i></button>)}</div><div><span className="team-label b">EQUIPO B</span>{data.players.filter((p) => p.team === "b").map((p) => <b key={p.userId}>{p.nickname}{p.isCaptain ? " · CAP" : ""}</b>)}</div></div></article>}
       {data.room.status === "veto" && <article className="veto-card"><div className="veto-head"><div><small>TURNO ACTUAL</small><strong>{bans.length < 6 ? `Capitán ${expectedVetoTeam.toUpperCase()} banea` : `Capitán ${sideChooser.toUpperCase()} elige lado`}</strong></div><span>{bans.length}/6 baneos</span></div>{bans.length < 6 ? <div className="maps-grid">{mapPool.map((map) => <button key={map} className={bans.includes(map) ? "banned" : ""} disabled={busy || bans.includes(map) || !data.viewer?.isCaptain || data.viewer.team !== expectedVetoTeam} onClick={() => void act("veto", { map })}><span>{map.slice(0,2).toUpperCase()}</span><strong>{map}</strong><small>{bans.includes(map) ? "BANEADO" : "BANEAR"}</small></button>)}</div> : <div className="veto-next"><strong>{remainingMaps[0]} será el mapa</strong><button disabled={busy || !data.viewer?.isCaptain || data.viewer.team !== sideChooser} className="primary-button" onClick={() => void act("veto", { side: "ct" })}>Elegir CT</button><button disabled={busy || !data.viewer?.isCaptain || data.viewer.team !== sideChooser} className="secondary-button" onClick={() => void act("veto", { side: "t" })}>Elegir T</button></div>}</article>}
       {["live", "review", "settled", "cancelled"].includes(data.room.status) && <LiveMatchOperations roomId={roomId} data={data} session={session} reload={load} />}

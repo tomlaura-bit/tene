@@ -49,7 +49,8 @@ export async function POST(request: Request) {
   }
 
   const candidates = await db.select().from(matchmakingQueue).where(eq(matchmakingQueue.region, "lima")).orderBy(asc(matchmakingQueue.joinedAt)).limit(30);
-  if (candidates.length < 10) return Response.json({ ok: true, queued: true, playersInQueue: candidates.length });
+  const [currentWallet] = await db.select().from(wallets).where(eq(wallets.userId, user.id)).limit(1);
+  if (candidates.length < 10) return Response.json({ ok: true, queued: true, joinedAt: inserted[0]?.joinedAt ?? null, matchedRoomId: null, playersInQueue: candidates.length, wallet: currentWallet });
   const anchor = candidates[0];
   const matched = [...candidates].sort((a, b) => Math.abs(a.eloAtJoin - anchor.eloAtJoin) - Math.abs(b.eloAtJoin - anchor.eloAtJoin) || a.joinedAt.getTime() - b.joinedAt.getTime()).slice(0, 10);
   const captainIds = [...matched].sort((a, b) => b.eloAtJoin - a.eloAtJoin).slice(0, 2).map((entry) => entry.userId);
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
     ...matched.map((entry, index) => db.insert(roomPlayers).values({ id: `rp_${crypto.randomUUID()}`, roomId, userId: entry.userId, slotNumber: index + 1, joinedAt: now, isCaptain: captainIds.includes(entry.userId), team: entry.userId === captainIds[0] ? "a" : entry.userId === captainIds[1] ? "b" : "pool" })),
     db.delete(matchmakingQueue).where(inArray(matchmakingQueue.userId, matched.map((entry) => entry.userId))),
   ]);
-  return Response.json({ ok: true, queued: false, matchedRoomId: roomId, playersInQueue: 0 });
+  return Response.json({ ok: true, queued: false, joinedAt: null, matchedRoomId: roomId, playersInQueue: 0, wallet: currentWallet });
 }
 
 export async function DELETE(request: Request) {
@@ -74,5 +75,6 @@ export async function DELETE(request: Request) {
       db.insert(ledgerEntries).values({ id: `led_${crypto.randomUUID()}`, userId: user.id, type: "entry_release", amountCents: ENTRY_CENTS, description: "Saldo liberado al salir de matchmaking", createdAt: new Date() }),
     ]);
   }
-  return Response.json({ ok: true, queued: false });
+  const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, user.id)).limit(1);
+  return Response.json({ ok: true, queued: false, joinedAt: null, matchedRoomId: null, playersInQueue: 0, wallet });
 }

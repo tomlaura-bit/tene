@@ -170,6 +170,12 @@ export default function Home() {
       .then((data) => {
         setSession(data);
         if (data?.wallet) setBalance(data.wallet.availableCents / 100);
+        if (data && window.location.hash.startsWith("#room/")) {
+          const roomId = decodeURIComponent(window.location.hash.slice("#room/".length));
+          setSelectedRoomId(roomId === "demo" ? null : roomId);
+          setScreen("room");
+          return;
+        }
         const restoredTab = dashboardTabFromHash(window.location.hash);
         if (data && restoredTab) {
           setActiveTab(restoredTab);
@@ -191,6 +197,27 @@ export default function Home() {
       );
       window.setTimeout(() => setNotice(""), 5000);
     }
+  }, []);
+
+  useEffect(() => {
+    const restoreFromHistory = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith("#room/")) {
+        const roomId = decodeURIComponent(hash.slice("#room/".length));
+        setSelectedRoomId(roomId === "demo" ? null : roomId);
+        setScreen("room");
+        return;
+      }
+      const restoredTab = dashboardTabFromHash(hash);
+      if (restoredTab) {
+        setActiveTab(restoredTab);
+        setScreen("dashboard");
+        return;
+      }
+      setScreen("landing");
+    };
+    window.addEventListener("popstate", restoreFromHistory);
+    return () => window.removeEventListener("popstate", restoreFromHistory);
   }, []);
 
   useEffect(() => {
@@ -236,7 +263,11 @@ export default function Home() {
         setBalance={setBalance}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        openRoom={(roomId) => { setSelectedRoomId(roomId ?? null); setScreen("room"); }}
+        openRoom={(roomId) => {
+          setSelectedRoomId(roomId ?? null);
+          window.history.pushState({ screen: "room", roomId: roomId ?? null }, "", `${window.location.pathname}${window.location.search}#room/${encodeURIComponent(roomId ?? "demo")}`);
+          setScreen("room");
+        }}
         goHome={goToLanding}
         notice={notice}
         setNotice={setNotice}
@@ -260,7 +291,11 @@ export default function Home() {
           }
         }}
         joined={joined}
-        goBack={() => setScreen("dashboard")}
+        goBack={() => {
+          setActiveTab("Salas");
+          window.history.replaceState({ screen: "dashboard", tab: "Salas" }, "", `${window.location.pathname}${window.location.search}#panel/salas`);
+          setScreen("dashboard");
+        }}
         notice={notice}
       />
     );
@@ -356,6 +391,22 @@ export default function Home() {
             <span>EQUIPO</span>
           </div>
         </div>
+        <aside className="landing-arena-brief" aria-label="Resumen de una partida TENE">
+          <span className="landing-arena-status"><i /> COLA ABIERTA</span>
+          <div>
+            <small>FORMATO</small>
+            <strong>5 VS 5</strong>
+          </div>
+          <div>
+            <small>FLUJO</small>
+            <strong>DRAFT + VETO</strong>
+          </div>
+          <div>
+            <small>REGIÓN</small>
+            <strong>LIMA · PERÚ</strong>
+          </div>
+          <button onClick={joinRoom}>Entrar a la cola <span>→</span></button>
+        </aside>
       </section>
 
       <section className="landing-room-strip relative z-10">

@@ -6263,3 +6263,66 @@ body { background:#07090e url('/tene-tactical-texture-v2.png') center top / cove
 
 .landing-simple { grid-template-columns:minmax(0,820px); justify-content:start; }
 .landing-hero-copy { width:min(100%,820px); }
+
+/* Landing v3 — editorial esports composition with an original arena scene. */
+.landing-page::before {
+  background:
+    linear-gradient(90deg,rgba(5,7,12,.98) 0%,rgba(5,7,12,.9) 34%,rgba(5,7,12,.34) 68%,rgba(5,7,12,.18) 100%),
+    linear-gradient(180deg,rgba(5,7,12,.08) 54%,#07090e 100%),
+    url('/tene-arena-hero-v3.png') center top / cover no-repeat;
+}
+.landing-simple {
+  width:min(100% - 48px,1280px);
+  min-height:calc(100dvh - 70px);
+  margin:auto;
+  padding:clamp(72px,9vh,120px) 0 64px !important;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(280px,380px);
+  align-items:end;
+  gap:clamp(48px,8vw,128px);
+}
+.landing-hero-copy { max-width:700px; }
+.landing-simple h1 { font-size:clamp(4rem,7.3vw,7.5rem) !important; line-height:.82 !important; }
+.landing-arena-brief {
+  align-self:end;
+  margin-bottom:46px;
+  border:1px solid rgba(138,150,183,.28);
+  border-top:2px solid var(--tene-accent);
+  border-radius:4px;
+  background:linear-gradient(155deg,rgba(13,17,28,.92),rgba(7,10,17,.84));
+  box-shadow:0 28px 80px rgba(0,0,0,.46);
+  backdrop-filter:blur(14px);
+}
+.landing-arena-status {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:18px 20px;
+  border-bottom:1px solid rgba(138,150,183,.2);
+  color:#d9dcea;
+  font-size:.72rem;
+  font-weight:900;
+  letter-spacing:.15em;
+}
+.landing-arena-status i { width:7px; height:7px; border-radius:50%; background:#34d399; box-shadow:0 0 16px #34d399; }
+.landing-arena-brief > div { display:flex; align-items:center; justify-content:space-between; padding:18px 20px; border-bottom:1px solid rgba(138,150,183,.14); }
+.landing-arena-brief small { color:#767e93; font-size:.68rem; font-weight:800; letter-spacing:.14em; }
+.landing-arena-brief strong { font-size:.88rem; letter-spacing:.04em; }
+.landing-arena-brief button { width:calc(100% - 28px); min-height:48px; margin:14px; border-radius:3px; background:linear-gradient(100deg,#7548ee,#955dff 68%,#49bdef); color:white; font-weight:900; }
+.landing-arena-brief button span { float:right; margin-right:4px; }
+.landing-room-strip { border-top:1px solid rgba(108,124,161,.32) !important; }
+.landing-section-heading { text-align:left; }
+.landing-process-grid article { border-radius:4px; }
+.landing-ranking .ranking-card,.landing-final-cta { border-radius:4px; }
+
+@media (max-width:1000px) {
+  .landing-page::before { background-position:62% top; }
+  .landing-simple { grid-template-columns:1fr; align-items:center; }
+  .landing-arena-brief { width:min(100%,560px); margin:0; }
+}
+@media (max-width:760px) {
+  .landing-page::before { background-position:68% top; }
+  .landing-simple { width:min(100% - 32px,1280px); min-height:auto; padding-top:74px !important; gap:38px; }
+  .landing-simple h1 { font-size:clamp(3.15rem,17vw,5.2rem) !important; }
+  .landing-arena-brief { margin-bottom:18px; }
+}

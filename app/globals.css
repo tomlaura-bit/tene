@@ -6384,38 +6384,3 @@ body { background:#07090e url('/tene-tactical-texture-v2.png') center top / cove
   .landing-simple,.landing-room-strip > div,.landing-process-grid,.landing-fair-play,.landing-final-cta { width:min(calc(100% - 32px),1760px) !important; }
   .app-bg[data-section="Salas"] .rooms-section { padding-inline:16px; }
 }
-
-.matchmaking-card {
-  display:grid;
-  grid-template-columns:auto minmax(260px,1fr) auto auto;
-  align-items:center;
-  gap:22px;
-  width:100%;
-  margin:0 0 22px;
-  padding:20px;
-  border:1px solid #343b50;
-  border-radius:10px;
-  background:linear-gradient(105deg,rgba(25,29,46,.98),rgba(13,17,28,.98));
-  box-shadow:inset 0 1px rgba(255,255,255,.03);
-}
-.matchmaking-card.searching { border-color:rgba(57,198,255,.48); background:linear-gradient(105deg,rgba(22,31,52,.98),rgba(18,20,39,.98)); }
-.matchmaking-icon { display:grid; place-items:center; width:54px; height:54px; border:1px solid rgba(141,92,255,.5); border-radius:50%; background:rgba(141,92,255,.12); color:#bd9dff; font-size:1.5rem; }
-.matchmaking-card.searching .matchmaking-icon { animation:matchmaking-pulse 1.7s ease-in-out infinite; }
-.matchmaking-copy span { color:#9b78ff; font-size:.68rem; font-weight:900; letter-spacing:.15em; }
-.matchmaking-copy h3 { margin:5px 0 4px; font-size:1.05rem; }
-.matchmaking-copy p { max-width:680px; margin:0; color:#969daf; font-size:.8rem; line-height:1.5; }
-.matchmaking-meter { min-width:74px; text-align:center; }
-.matchmaking-meter strong { display:block; font:800 1.45rem/1 monospace; }
-.matchmaking-meter strong small { color:#737b91; font-size:.75rem; }
-.matchmaking-meter > span { color:#737b91; font-size:.6rem; font-weight:800; letter-spacing:.12em; }
-.matchmaking-card > button { min-width:150px; min-height:44px; border-radius:7px; background:linear-gradient(135deg,#7548ee,#955dff); color:#fff; font-size:.8rem; font-weight:900; }
-.matchmaking-card.searching > button { border:1px solid #465069; background:transparent; }
-@keyframes matchmaking-pulse { 50% { box-shadow:0 0 0 10px rgba(57,198,255,0),0 0 25px rgba(57,198,255,.32); border-color:#39c6ff; } }
-@media (max-width:900px) {
-  .matchmaking-card { grid-template-columns:auto 1fr auto; }
-  .matchmaking-card > button { grid-column:1/-1; width:100%; }
-}
-@media (max-width:560px) {
-  .matchmaking-card { grid-template-columns:auto 1fr; gap:16px; }
-  .matchmaking-meter { grid-column:1/-1; display:flex; align-items:baseline; justify-content:center; gap:8px; }
-}

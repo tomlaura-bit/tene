@@ -187,20 +187,6 @@ export const roomPlayers = sqliteTable(
   ],
 );
 
-export const matchmakingQueue = sqliteTable(
-  "matchmaking_queue",
-  {
-    userId: text("user_id").primaryKey().references(() => users.id),
-    region: text("region").notNull().default("lima"),
-    eloAtJoin: integer("elo_at_join").notNull().default(1000),
-    joinedAt: integer("joined_at", { mode: "timestamp" }).notNull(),
-  },
-  (table) => [
-    index("idx_matchmaking_queue_region_joined").on(table.region, table.joinedAt),
-    index("idx_matchmaking_queue_region_elo").on(table.region, table.eloAtJoin),
-  ],
-);
-
 export const ledgerEntries = sqliteTable("ledger_entries", {
   id: text("id").primaryKey(),
   transactionId: text("transaction_id").references(() => ledgerTransactions.id),

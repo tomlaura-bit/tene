@@ -2358,7 +2358,7 @@ function RoomsPanel({
     if (!session) return notify("Inicia sesión para buscar partida");
     setQueueBusy(true);
     const response = await fetch("/api/matchmaking", { method: queue.queued ? "DELETE" : "POST" });
-    const body = await response.json() as typeof queue & { error?: string; wallet?: { availableCents: number } };
+    const body = await response.json() as typeof queue & { error?: string };
     setQueueBusy(false);
     if (!response.ok) {
       const labels: Record<string, string> = { legal_acceptance_required: "Acepta las reglas antes de entrar a la cola", staff_verification_required: "Tu cuenta debe estar verificada", insufficient_balance: "Necesitas S/ 6 disponibles", active_room_exists: "Ya estás dentro de una sala" };
@@ -2366,7 +2366,6 @@ function RoomsPanel({
       return notify(labels[body.error ?? ""] ?? "No se pudo actualizar la cola");
     }
     setQueue(body);
-    if (body.wallet) setBalance(body.wallet.availableCents / 100);
     if (body.matchedRoomId) openRoom(body.matchedRoomId);
     else notify(queue.queued ? "Saliste de la cola" : "Buscando jugadores de tu nivel");
   };

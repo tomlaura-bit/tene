@@ -6326,3 +6326,61 @@ body { background:#07090e url('/tene-tactical-texture-v2.png') center top / cove
   .landing-simple h1 { font-size:clamp(3.15rem,17vw,5.2rem) !important; }
   .landing-arena-brief { margin-bottom:18px; }
 }
+
+/* Fluid canvas: use the available viewport at browser zoom levels below 100%. */
+.landing-page > header {
+  width:calc(100% - 32px) !important;
+  max-width:1760px !important;
+  margin-inline:auto !important;
+  flex-wrap:nowrap !important;
+}
+.landing-page > header nav {
+  display:flex;
+  width:auto !important;
+  flex-wrap:nowrap !important;
+  order:initial !important;
+  white-space:nowrap;
+}
+.landing-simple,
+.landing-room-strip > div,
+.landing-process-grid,
+.landing-fair-play,
+.landing-final-cta {
+  width:min(calc(100% - 48px),1760px) !important;
+  max-width:none !important;
+}
+.landing-simple {
+  grid-template-columns:minmax(560px,1.15fr) minmax(340px,.6fr);
+  gap:clamp(40px,6vw,112px);
+}
+.landing-hero-copy { width:100%; max-width:820px; }
+.landing-ranking { max-width:1760px !important; }
+
+.app-content > :where(.app-header,.dashboard-grid,.account-panel,.legal-panel,.section-panel,.sidebar-destination-panel,.benefits-panel,.conduct-panel,.community-panel,.notifications-panel,.public-profile-panel,.staff-panel,.finance-panel) {
+  width:100%;
+  max-width:none;
+}
+.app-bg[data-section="Salas"] .rooms-section {
+  width:100%;
+  max-width:none !important;
+  padding-left:clamp(28px,3vw,64px);
+  padding-right:calc(var(--rooms-chat-width) + clamp(28px,3vw,64px));
+}
+.app-bg[data-section="Salas"] .rooms-catalog { width:100%; max-width:none; }
+.app-bg[data-section="Salas"] .section-intro { width:100%; }
+.app-bg[data-section="Salas"] .room-row-rich {
+  grid-template-columns:minmax(300px,1.15fr) minmax(290px,.8fr) minmax(150px,auto);
+}
+
+@media (max-width:1200px) {
+  .landing-page > header { flex-wrap:wrap !important; }
+  .landing-page > header nav { order:3 !important; width:100% !important; }
+  .landing-simple { grid-template-columns:1fr; }
+  .app-bg[data-section="Salas"] .rooms-section { padding-inline:32px; }
+}
+@media (max-width:760px) {
+  .landing-page > header { width:100% !important; }
+  .landing-page > header nav { overflow-x:auto; justify-content:flex-start; }
+  .landing-simple,.landing-room-strip > div,.landing-process-grid,.landing-fair-play,.landing-final-cta { width:min(calc(100% - 32px),1760px) !important; }
+  .app-bg[data-section="Salas"] .rooms-section { padding-inline:16px; }
+}

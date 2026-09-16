@@ -2397,13 +2397,14 @@ function RoomsPanel({
           <span className="verified-badge">
             {realRooms.length} SALAS REGISTRADAS
           </span>
+          <span className="rooms-kicker">LOBBY COMPETITIVO · LIMA</span>
           <h2>Busca tu próxima partida</h2>
           <p>
-            Asegura un slot y completa el 5v5. Tu entrada queda bloqueada hasta
-            que termine el match; el draft mantiene los equipos balanceados.
+            Elige un lobby, asegura tu slot y completa el 5v5. Cuando estén los
+            diez, comienza el draft y el veto de mapas.
           </p>
         </div>
-        {canCreate && <button className="create-room-action" onClick={createRoom}>＋ Crear sala</button>}
+        {canCreate && <button className="create-room-action" onClick={createRoom}><span>＋</span> Crear sala</button>}
       </div>
       <div className="rooms-with-chat">
       <div className="rooms-main-column">
@@ -2479,9 +2480,11 @@ function RoomsChat({ session, notify }: { session: SessionData | null; notify: (
 
 function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
   const creatorName = room.creator?.nickname ?? "Staff TENE";
+  const availableSlots = Math.max(0, 10 - room.players.length);
   return (
     <article className="room-row-rich">
       <div className="room-info">
+        <div className="room-tactical-label"><i /> LOBBY ABIERTO <span>5V5 · LIMA</span></div>
         <div className="room-title-line">
           <span className="room-symbol">T</span>
           <div className="room-title-copy">
@@ -2492,7 +2495,7 @@ function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
             </div>
             <small>
               <i />{" "}
-              {room.status === "open" ? `Faltan ${10 - room.players.length} para arrancar` : room.status}
+              {room.status === "open" ? availableSlots === 0 ? "Listos para el draft" : `Faltan ${availableSlots} para completar el 5v5` : room.status}
             </small>
           </div>
         </div>
@@ -2522,7 +2525,11 @@ function RealRoomRow({ room, join }: { room: RoomData; join: () => void }) {
         onClick={join}
         disabled={room.players.length >= 10}
       >
-        {room.players.length >= 10 ? "Sala completa" : "Unirme por S/ 6"} <span>→</span>
+        <span className="room-enter-copy">
+          <small>{room.players.length >= 10 ? "LOBBY CERRADO" : "ASEGURA TU SLOT"}</small>
+          <b>{room.players.length >= 10 ? "Sala completa" : "Unirme por S/ 6"}</b>
+        </span>
+        <span className="room-enter-arrow">→</span>
       </button>
     </article>
   );

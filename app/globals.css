@@ -6384,3 +6384,265 @@ body { background:#07090e url('/tene-tactical-texture-v2.png') center top / cove
   .landing-simple,.landing-room-strip > div,.landing-process-grid,.landing-fair-play,.landing-final-cta { width:min(calc(100% - 32px),1760px) !important; }
   .app-bg[data-section="Salas"] .rooms-section { padding-inline:16px; }
 }
+
+/* Salas v4 — tactical lobby: dense, legible and game-native without visual noise. */
+.app-bg[data-section="Salas"] {
+  --room-violet:#9567ff;
+  --room-cyan:#51d2ff;
+  --room-green:#45e6a8;
+  --room-panel:#0d111c;
+  --room-line:rgba(135,151,190,.2);
+}
+.app-bg[data-section="Salas"] .rooms-section {
+  position:relative;
+}
+.app-bg[data-section="Salas"] .rooms-section::before {
+  content:"";
+  position:absolute;
+  inset:-120px 0 auto 0;
+  height:440px;
+  pointer-events:none;
+  background:radial-gradient(ellipse at 34% 18%,rgba(117,72,238,.13),transparent 56%),radial-gradient(ellipse at 74% 4%,rgba(45,177,234,.08),transparent 48%);
+  mask-image:linear-gradient(#000,transparent);
+}
+.app-bg[data-section="Salas"] .section-intro {
+  position:relative;
+  z-index:1;
+  min-height:164px;
+  padding:26px 28px 28px;
+  border:1px solid var(--room-line) !important;
+  border-radius:14px;
+  background:linear-gradient(112deg,rgba(18,23,38,.94),rgba(10,14,24,.78) 62%,rgba(16,23,38,.9));
+  box-shadow:0 24px 70px rgba(0,0,0,.24),inset 0 1px rgba(255,255,255,.035);
+  overflow:hidden;
+}
+.app-bg[data-section="Salas"] .section-intro::after {
+  content:"";
+  position:absolute;
+  right:-80px;
+  top:-120px;
+  width:360px;
+  height:360px;
+  border:1px solid rgba(81,210,255,.13);
+  border-radius:50%;
+  box-shadow:0 0 0 54px rgba(149,103,255,.035),0 0 0 108px rgba(81,210,255,.018);
+}
+.app-bg[data-section="Salas"] .section-intro > * { position:relative; z-index:1; }
+.app-bg[data-section="Salas"] .verified-badge {
+  position:absolute;
+  right:28px;
+  top:24px;
+  margin:0;
+  border-color:rgba(69,230,168,.35);
+  background:rgba(69,230,168,.075);
+  color:#66efb7;
+  font-size:.72rem;
+  font-weight:850;
+  letter-spacing:.08em;
+}
+.app-bg[data-section="Salas"] .rooms-kicker {
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin-bottom:14px;
+  color:#a98aff;
+  font-size:.72rem;
+  font-weight:900;
+  letter-spacing:.17em;
+}
+.app-bg[data-section="Salas"] .rooms-kicker::before {
+  content:"";
+  width:28px;
+  height:1px;
+  background:linear-gradient(90deg,var(--room-violet),var(--room-cyan));
+  box-shadow:0 0 10px rgba(149,103,255,.7);
+}
+.app-bg[data-section="Salas"] .section-intro h2 {
+  font-size:clamp(1.7rem,2.5vw,2.45rem);
+  font-weight:780;
+  letter-spacing:-.035em;
+}
+.app-bg[data-section="Salas"] .section-intro p {
+  max-width:620px;
+  color:#a4adbf;
+  font-size:.9rem;
+  line-height:1.6;
+}
+.app-bg[data-section="Salas"] .create-room-action {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  min-height:50px;
+  padding:0 22px;
+  border:1px solid rgba(169,138,255,.55) !important;
+  border-radius:9px !important;
+  background:linear-gradient(115deg,#7040e7,#965fff 66%,#4ebff2) !important;
+  box-shadow:0 14px 34px rgba(103,62,224,.27),inset 0 1px rgba(255,255,255,.18);
+  font-size:.88rem;
+  font-weight:850;
+  letter-spacing:.01em;
+  transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
+}
+.app-bg[data-section="Salas"] .create-room-action span { font-size:1.2rem; font-weight:400; }
+.app-bg[data-section="Salas"] .create-room-action:hover {
+  transform:translateY(-2px);
+  filter:brightness(1.08);
+  box-shadow:0 18px 42px rgba(103,62,224,.38),0 0 0 3px rgba(149,103,255,.1);
+}
+.app-bg[data-section="Salas"] .rooms-catalog {
+  display:grid;
+  gap:14px;
+  margin-top:18px;
+}
+.app-bg[data-section="Salas"] .room-row-rich {
+  isolation:isolate;
+  min-height:150px;
+  padding:22px 22px 20px;
+  border:1px solid var(--room-line);
+  border-radius:13px !important;
+  background:linear-gradient(112deg,rgba(17,22,36,.98),rgba(11,15,25,.98) 68%,rgba(14,19,32,.98));
+  box-shadow:0 18px 45px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.035);
+  transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+.app-bg[data-section="Salas"] .room-row-rich::before {
+  width:4px;
+  opacity:1;
+  background:linear-gradient(180deg,var(--room-violet),var(--room-cyan));
+  box-shadow:6px 0 24px rgba(116,80,255,.18);
+}
+.app-bg[data-section="Salas"] .room-row-rich::after {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(90deg,rgba(149,103,255,.055),transparent 24%),repeating-linear-gradient(120deg,transparent 0 26px,rgba(255,255,255,.008) 26px 27px);
+}
+.app-bg[data-section="Salas"] .room-row-rich:hover {
+  transform:translateY(-2px);
+  border-color:rgba(149,103,255,.52);
+  background:linear-gradient(112deg,rgba(24,28,46,.99),rgba(13,17,29,.99));
+  box-shadow:0 24px 58px rgba(0,0,0,.3),0 0 0 1px rgba(149,103,255,.09);
+}
+.app-bg[data-section="Salas"] .room-tactical-label {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:0 0 15px 56px;
+  color:#8993aa;
+  font:800 .66rem/1 var(--font-geist-mono),monospace;
+  letter-spacing:.13em;
+}
+.app-bg[data-section="Salas"] .room-tactical-label i {
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--room-green);
+  box-shadow:0 0 12px rgba(69,230,168,.8);
+}
+.app-bg[data-section="Salas"] .room-tactical-label span {
+  margin-left:auto;
+  color:#626c82;
+}
+.app-bg[data-section="Salas"] .room-symbol {
+  position:relative;
+  width:44px;
+  height:44px;
+  border:1px solid rgba(180,153,255,.55);
+  border-radius:11px;
+  background:linear-gradient(145deg,#8d5cff,#5432cb);
+  box-shadow:0 10px 24px rgba(90,53,216,.25),inset 0 1px rgba(255,255,255,.25);
+}
+.app-bg[data-section="Salas"] .room-heading > strong {
+  color:#fff;
+  font-size:1rem;
+  font-weight:780;
+  letter-spacing:-.01em;
+}
+.app-bg[data-section="Salas"] .room-heading > span {
+  border-color:rgba(125,139,174,.2);
+  background:rgba(114,126,158,.07);
+  color:#929bae;
+  font:700 .66rem/1 var(--font-geist-mono),monospace;
+}
+.app-bg[data-section="Salas"] .room-heading > span:last-child {
+  border-color:rgba(81,210,255,.22);
+  background:rgba(81,210,255,.065);
+  color:#73dbff;
+}
+.app-bg[data-section="Salas"] .room-title-line small {
+  color:#a6afc0;
+  font-size:.78rem;
+}
+.app-bg[data-section="Salas"] .room-title-line small i { background:var(--room-green); box-shadow:0 0 8px rgba(69,230,168,.7); }
+.app-bg[data-section="Salas"] .room-created { color:#707a90; font-size:.72rem; }
+.app-bg[data-section="Salas"] .room-created b { color:#b8c0d0; }
+.app-bg[data-section="Salas"] .room-capacity { color:#818ba1; font-size:.68rem; }
+.app-bg[data-section="Salas"] .mini-progress { height:4px; border-radius:99px; background:#22283a; }
+.app-bg[data-section="Salas"] .mini-progress i { background:linear-gradient(90deg,var(--room-violet),var(--room-cyan)); box-shadow:0 0 12px rgba(81,210,255,.38); }
+.app-bg[data-section="Salas"] .profile-anchor,
+.app-bg[data-section="Salas"] .vacant-avatar {
+  width:31px;
+  height:31px;
+  border-color:#101523;
+  background:#191e2c;
+  box-shadow:0 0 0 1px rgba(130,143,176,.16);
+}
+.app-bg[data-section="Salas"] .room-enter {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  min-width:190px;
+  min-height:58px;
+  padding:9px 10px 9px 16px;
+  border:1px solid rgba(155,116,255,.65);
+  border-radius:9px !important;
+  background:linear-gradient(110deg,rgba(105,59,224,.2),rgba(56,39,111,.16)) !important;
+  color:#fff;
+  box-shadow:inset 0 1px rgba(255,255,255,.055),0 10px 26px rgba(0,0,0,.2);
+  text-align:left;
+  transition:transform .18s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.app-bg[data-section="Salas"] .room-enter-copy { display:grid; gap:3px; }
+.app-bg[data-section="Salas"] .room-enter-copy small { color:#a990ea; font-size:.59rem; font-weight:900; letter-spacing:.12em; }
+.app-bg[data-section="Salas"] .room-enter-copy b { font-size:.84rem; font-weight:850; }
+.app-bg[data-section="Salas"] .room-enter-arrow {
+  display:grid;
+  place-items:center;
+  width:38px;
+  height:38px;
+  flex:0 0 auto;
+  border-radius:7px;
+  background:linear-gradient(135deg,#7b49ee,#a264ff);
+  box-shadow:0 8px 18px rgba(111,67,230,.3);
+  font-size:1.05rem;
+}
+.app-bg[data-section="Salas"] .room-enter:hover:not(:disabled) {
+  transform:translateY(-2px);
+  border-color:#b195ff;
+  background:linear-gradient(110deg,rgba(122,72,238,.38),rgba(65,41,127,.28)) !important;
+  box-shadow:0 14px 32px rgba(76,43,164,.24),0 0 0 3px rgba(149,103,255,.08);
+}
+.app-bg[data-section="Salas"] .room-enter:focus-visible,
+.app-bg[data-section="Salas"] .create-room-action:focus-visible {
+  outline:3px solid rgba(81,210,255,.42);
+  outline-offset:3px;
+}
+.app-bg[data-section="Salas"] .room-enter:disabled { opacity:.55; cursor:not-allowed; filter:saturate(.45); }
+
+@media (max-width:1080px) {
+  .app-bg[data-section="Salas"] .section-intro { padding:24px; }
+  .app-bg[data-section="Salas"] .verified-badge { right:24px; top:22px; }
+  .app-bg[data-section="Salas"] .room-tactical-label { margin-left:0; }
+}
+@media (max-width:760px) {
+  .app-bg[data-section="Salas"] .section-intro { align-items:flex-start; padding:22px 18px; }
+  .app-bg[data-section="Salas"] .verified-badge { position:static; order:-1; margin:0 0 22px; }
+  .app-bg[data-section="Salas"] .rooms-kicker { margin-bottom:12px; }
+  .app-bg[data-section="Salas"] .create-room-action { width:100%; margin-top:18px; }
+  .app-bg[data-section="Salas"] .room-row-rich { min-height:0; padding:18px 16px; }
+  .app-bg[data-section="Salas"] .room-tactical-label span { display:none; }
+  .app-bg[data-section="Salas"] .room-enter { width:100%; min-width:0; }
+}

@@ -366,10 +366,10 @@ export default function Home() {
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-4">
             <button className="primary-button" onClick={joinRoom}>
-              Buscar partida <span>↗</span>
+              Ver salas disponibles <span>↗</span>
             </button>
             <div className="flex items-center gap-3 text-sm text-white/50">
-              <span className="live-pulse" /> {publicData?.activePlayers ?? 0} jugadores buscando partida
+              <span className="live-pulse" /> Salas disponibles ahora
             </div>
           </div>
           <div className="mt-10 flex gap-8 border-t border-white/8 pt-6">
@@ -392,22 +392,6 @@ export default function Home() {
             <span>EQUIPO</span>
           </div>
         </div>
-        <aside className="landing-arena-brief" aria-label="Resumen de una partida TENE">
-          <span className="landing-arena-status"><i /> COLA ABIERTA</span>
-          <div>
-            <small>FORMATO</small>
-            <strong>5 VS 5</strong>
-          </div>
-          <div>
-            <small>FLUJO</small>
-            <strong>DRAFT + VETO</strong>
-          </div>
-          <div>
-            <small>REGIÓN</small>
-            <strong>LIMA · PERÚ</strong>
-          </div>
-          <button onClick={joinRoom}>Entrar a la cola <span>→</span></button>
-        </aside>
       </section>
 
       <section className="landing-room-strip relative z-10">
@@ -419,7 +403,7 @@ export default function Home() {
           <div className="room-strip-slots" aria-label="Diez puestos de jugadores">
             {Array.from({ length: 10 }, (_, index) => <span className={index === 0 ? "filled" : ""} key={index}>{index === 0 ? "T" : index + 1}</span>)}
           </div>
-          <button onClick={joinRoom}>Buscar partida <span>→</span></button>
+          <button onClick={joinRoom}>Ver salas <span>→</span></button>
         </div>
       </section>
 
@@ -1742,25 +1726,6 @@ function EnhancedDashboard({
                 ? "Agregar saldo"
                 : "Solicitar retiro"}
             </h2>
-            {walletAction === "withdraw" && <><label>
-              Monto en soles
-              <input
-                inputMode="decimal"
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-              />
-            </label><label>
-              Método
-              <select
-                value={paymentMethod}
-                onChange={(event) =>
-                  setPaymentMethod(event.target.value as "yape" | "plin")
-                }
-              >
-                <option value="yape">Yape o Plin</option>
-                {paymentDestinations.some((item) => item.method === "plin") && <option value="plin">Plin (cuenta separada)</option>}
-              </select>
-            </label></>}
             {walletAction === "deposit" ? (
               <div className="voucher-form">
                 <ol className="recharge-steps" aria-label="Pasos para recargar">
@@ -1786,7 +1751,20 @@ function EnhancedDashboard({
                 <small className="voucher-warning">El saldo quedará pendiente hasta que el administrador valide el comprobante. Vouchers falsos o repetidos pueden generar suspensión.</small>
               </div>
             ) : (
-              <div className="withdrawal-fields"><p className="wallet-help">Disponible: S/ {balance.toFixed(2)} · Retiro mínimo S/ 10 · Haber jugado una sala.</p><label>Titular de Yape/Plin<input value={withdrawalName} onChange={(event) => setWithdrawalName(event.target.value)} placeholder="Nombre completo" /></label><label>Celular de destino<input inputMode="numeric" value={withdrawalPhone} onChange={(event) => setWithdrawalPhone(event.target.value.replace(/\D/g, "").slice(0, 9))} placeholder="9XXXXXXXX" /></label></div>
+              <div className="withdrawal-flow">
+                <div className="withdrawal-summary">
+                  <span><small>DISPONIBLE</small><strong>S/ {balance.toFixed(2)}</strong></span>
+                  <span><small>RETIRO MÍNIMO</small><strong>S/ 10.00</strong></span>
+                  <span><small>TIEMPO DE REVISIÓN</small><strong>Hasta 24 h</strong></span>
+                </div>
+                <div className="withdrawal-fields">
+                  <label>Monto en soles<input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="S/ 0.00" /></label>
+                  <label>Método<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as "yape" | "plin")}><option value="yape">Yape o Plin</option>{paymentDestinations.some((item) => item.method === "plin") && <option value="plin">Plin (cuenta separada)</option>}</select></label>
+                  <label>Titular de la cuenta<input value={withdrawalName} onChange={(event) => setWithdrawalName(event.target.value)} placeholder="Nombre completo" /></label>
+                  <label>Celular de destino<input inputMode="numeric" value={withdrawalPhone} onChange={(event) => setWithdrawalPhone(event.target.value.replace(/\D/g, "").slice(0, 9))} placeholder="9XXXXXXXX" /></label>
+                </div>
+                <p className="wallet-process-note">Verifica que el titular y el número sean correctos. El retiro se procesará después de la revisión del staff.</p>
+              </div>
             )}
             <button className="primary-button w-full" onClick={applyWallet} disabled={walletAction === "deposit" && !depositReady}>
               {walletAction === "deposit" ? "Enviar recarga para revisión" : "Solicitar retiro"}

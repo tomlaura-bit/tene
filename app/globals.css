@@ -6646,3 +6646,138 @@ body { background:#07090e url('/tene-tactical-texture-v2.png') center top / cove
   .app-bg[data-section="Salas"] .room-tactical-label span { display:none; }
   .app-bg[data-section="Salas"] .room-enter { width:100%; min-width:0; }
 }
+
+/* Experience standardization — typography, landing density and wallet flows */
+:root {
+  --tene-type:var(--font-geist-sans),Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --tene-mono:var(--font-geist-mono),"SFMono-Regular",Consolas,monospace;
+}
+html { font-family:var(--tene-type); }
+body,button,input,select,textarea { font-family:var(--tene-type); }
+button,input,select,textarea { font-size:.875rem; }
+
+.landing-page { font-family:var(--tene-type); }
+.landing-simple {
+  width:min(calc(100% - 48px),1360px) !important;
+  min-height:clamp(620px,78dvh,780px) !important;
+  display:grid !important;
+  grid-template-columns:minmax(0,780px) !important;
+  align-items:center !important;
+  justify-content:start !important;
+  padding-block:64px 54px !important;
+}
+.landing-hero-copy { width:100%; max-width:780px; }
+.landing-simple .eyebrow,
+.landing-section-heading .eyebrow { font:800 .75rem/1.3 var(--tene-mono); letter-spacing:.16em; }
+.landing-simple h1 {
+  margin-top:22px !important;
+  font-size:clamp(4rem,7.1vw,7rem) !important;
+  line-height:.86 !important;
+  letter-spacing:-.065em !important;
+}
+.landing-hero-copy > p { max-width:610px !important; font-size:1.0625rem !important; line-height:1.65 !important; }
+.landing-page .primary-button { min-height:50px; padding-inline:22px; border-radius:7px; font-size:.9rem; }
+.landing-hero-copy .text-sm { font-size:.875rem; }
+.landing-hero-copy .text-xs { font-size:.78rem; }
+.hero-motivation { margin-top:26px; font-size:.68rem; }
+.landing-room-strip > div {
+  width:min(calc(100% - 48px),1360px) !important;
+  min-height:84px !important;
+  gap:28px !important;
+}
+.room-strip-copy p strong { font-size:.95rem; }
+.room-strip-copy p small { font-size:.78rem; line-height:1.45; }
+.landing-room-strip button { min-height:44px; padding-inline:20px; font-size:.8rem; }
+.landing-process {
+  width:min(calc(100% - 48px),1360px) !important;
+  margin-inline:auto !important;
+  padding:72px 0 !important;
+}
+.landing-section-heading,
+.landing-process-grid,
+.landing-fair-play,
+.landing-final-cta { width:100% !important; max-width:none !important; }
+.landing-section-heading { margin:0 0 32px !important; padding:0 !important; }
+.landing-section-heading h2 { margin-top:20px; font-size:clamp(2.6rem,4.5vw,4.6rem); line-height:.98; letter-spacing:-.045em; }
+.landing-section-heading p { margin-top:16px; font-size:1rem; line-height:1.65; }
+.landing-process-grid { gap:14px !important; padding:0 !important; }
+.landing-process-grid article { min-height:172px !important; padding:24px !important; border-radius:10px !important; }
+.landing-process-grid article strong { font-size:1rem !important; }
+.landing-process-grid article p { font-size:.875rem !important; line-height:1.55 !important; }
+.landing-fair-play { padding-block:72px !important; }
+.landing-final-cta { padding-block:68px !important; }
+
+.wallet-modal {
+  width:min(920px,calc(100vw - 32px));
+  max-width:920px;
+  max-height:min(900px,calc(100dvh - 32px));
+  padding:28px;
+  border-radius:16px;
+}
+.wallet-modal:has(.voucher-form) { width:min(1040px,calc(100vw - 32px)); max-width:1040px; }
+.wallet-modal > .card-label { margin-top:18px; font:800 .72rem/1.3 var(--tene-mono); letter-spacing:.13em; }
+.wallet-modal > h2 { margin:7px 0 22px; font-size:clamp(1.8rem,3vw,2.4rem); letter-spacing:-.035em; }
+.voucher-form {
+  display:grid !important;
+  grid-template-columns:minmax(230px,.72fr) minmax(0,1.28fr) !important;
+  grid-template-areas:
+    "steps steps"
+    "qr fields"
+    "upload fields"
+    "status status"
+    "warning warning";
+  gap:14px 18px !important;
+  margin:0 0 20px !important;
+}
+.recharge-steps { grid-area:steps; gap:10px !important; margin:0 0 2px !important; }
+.recharge-steps li { min-height:66px; padding:12px 14px !important; border-radius:10px !important; }
+.recharge-steps li b { width:28px !important; height:28px !important; font-size:.78rem !important; }
+.recharge-steps strong { font-size:.82rem !important; }
+.recharge-steps small { margin-top:3px; font-size:.72rem !important; line-height:1.35; }
+.payment-destination-card {
+  --payment-qr-size:clamp(210px,19vw,248px) !important;
+  grid-area:qr !important;
+  align-self:start;
+  display:grid !important;
+  place-items:center !important;
+  min-width:0;
+  padding:14px !important;
+  border:1px solid rgba(139,92,246,.34) !important;
+  border-radius:12px !important;
+  background:linear-gradient(145deg,rgba(124,58,237,.1),rgba(12,15,23,.95)) !important;
+}
+.payment-destination-card > div { width:var(--payment-qr-size) !important; height:var(--payment-qr-size) !important; background-position:center top !important; }
+.payment-destination-card img { object-fit:contain !important; object-position:center !important; }
+.voucher-preview { grid-area:upload !important; min-height:112px !important; padding:14px !important; border-radius:10px !important; }
+.voucher-preview span { font-size:.82rem; line-height:1.55; }
+.voucher-fields { grid-area:fields !important; align-self:stretch; display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; align-content:start; gap:14px !important; padding:18px; border:1px solid rgba(133,145,174,.2); border-radius:12px; background:rgba(11,14,22,.72); }
+.voucher-fields label,.withdrawal-fields label { gap:7px !important; color:#aeb6c8; font-size:.78rem !important; line-height:1.4; }
+.voucher-fields input,.voucher-fields select,.withdrawal-fields input,.withdrawal-fields select { min-height:46px !important; padding:0 13px !important; font-size:.9rem !important; }
+.voucher-payer { grid-column:1/-1 !important; }
+.voucher-status { grid-area:status !important; min-height:42px; margin:0 !important; padding:11px 14px !important; font-size:.76rem !important; line-height:1.45; }
+.voucher-warning { grid-area:warning !important; margin:0 !important; padding:11px 14px !important; font-size:.75rem !important; line-height:1.5; }
+.withdrawal-flow { display:grid; gap:18px; margin-bottom:20px; }
+.withdrawal-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.withdrawal-summary span { display:grid; gap:7px; min-height:78px; padding:14px 16px; border:1px solid rgba(136,149,180,.2); border-radius:10px; background:rgba(13,16,25,.82); }
+.withdrawal-summary small { color:#737d92; font:800 .66rem/1.2 var(--tene-mono); letter-spacing:.1em; }
+.withdrawal-summary strong { color:#f5f6fb; font-size:1.05rem; }
+.withdrawal-fields { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:15px !important; margin:0 !important; }
+.wallet-process-note { margin:0; padding:13px 15px; border-left:2px solid #8d5cff; background:rgba(125,77,236,.075); color:#aeb5c4; font-size:.8rem; line-height:1.55; }
+.wallet-modal > .primary-button { min-height:50px; font-size:.9rem; }
+
+@media (max-width:900px) {
+  .landing-simple { min-height:600px !important; padding-block:56px 44px !important; }
+  .landing-process { padding-block:56px !important; }
+  .voucher-form { grid-template-columns:1fr !important; grid-template-areas:"steps" "qr" "upload" "fields" "status" "warning" !important; }
+  .payment-destination-card { --payment-qr-size:min(64vw,280px) !important; }
+}
+@media (max-width:640px) {
+  .landing-simple,.landing-room-strip > div,.landing-process { width:min(calc(100% - 32px),1360px) !important; }
+  .landing-simple { min-height:auto !important; padding-block:54px 42px !important; }
+  .landing-simple h1 { font-size:clamp(3.25rem,18vw,5rem) !important; }
+  .landing-room-strip > div { padding-block:18px !important; }
+  .landing-process-grid { grid-template-columns:1fr !important; }
+  .wallet-modal { padding:22px 18px; }
+  .recharge-steps { grid-template-columns:1fr !important; }
+  .voucher-fields,.withdrawal-fields,.withdrawal-summary { grid-template-columns:1fr !important; }
+}
